@@ -1,7 +1,5 @@
 # NATS Dashboard
 
-A Vue 3 SPA that connects to NATS over WebSocket and displays live messages.
-
 ## Setup
 
 ```bash

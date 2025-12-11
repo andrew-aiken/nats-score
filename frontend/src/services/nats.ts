@@ -1,4 +1,4 @@
-import { ref, readonly } from 'vue'
+import { create } from 'zustand'
 import { connect, StringCodec, consumerOpts, createInbox } from 'nats.ws'
 import type { NatsConnection, JetStreamClient, JetStreamSubscription } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
@@ -14,92 +14,95 @@ const NATS_CONFIG = {
 
 const sc = StringCodec()
 
-class NatsService {
-  private connection: NatsConnection | null = null
-  private jetstream: JetStreamClient | null = null
-  private jsSubscription: JetStreamSubscription | null = null
-  
-  private _status = ref<ConnectionStatus>('disconnected')
-  private _messages = ref<NatsMessage[]>([])
-  private _error = ref<string | null>(null)
-  private _subscribedSubject = ref<string | null>(null)
+interface NatsState {
+  status: ConnectionStatus
+  messages: NatsMessage[]
+  error: string | null
+  subscribedSubject: string | null
+  connect: () => Promise<void>
+  disconnect: () => Promise<void>
+  subscribeToStream: (subject: string) => Promise<void>
+  clearMessages: () => void
+  getSubscribedSubjects: () => string[]
+}
 
-  public status = readonly(this._status)
-  public messages = readonly(this._messages)
-  public error = readonly(this._error)
-  public subscribedSubject = readonly(this._subscribedSubject)
+// Store connection references outside of Zustand state (non-serializable)
+let connection: NatsConnection | null = null
+let jetstream: JetStreamClient | null = null
+let jsSubscription: JetStreamSubscription | null = null
 
-  async connect(): Promise<void> {
-    if (this.connection) {
+export const useNatsStore = create<NatsState>((set, get) => ({
+  status: 'disconnected',
+  messages: [],
+  error: null,
+  subscribedSubject: null,
+
+  connect: async () => {
+    if (connection) {
       return
     }
 
-    this._status.value = 'connecting'
-    this._error.value = null
+    set({ status: 'connecting', error: null })
 
     try {
-      this.connection = await connect({
+      connection = await connect({
         servers: NATS_CONFIG.servers,
         user: NATS_CONFIG.user,
         pass: NATS_CONFIG.pass,
       })
 
-      this._status.value = 'connected'
+      set({ status: 'connected' })
       console.log('Connected to NATS')
 
       // Get JetStream context
-      this.jetstream = this.connection.jetstream()
+      jetstream = connection.jetstream()
       console.log('JetStream context created')
 
       // Monitor connection status
-      this.monitorConnection()
+      const done = connection.closed()
+      done.then(() => {
+        set({ status: 'disconnected' })
+        connection = null
+        jetstream = null
+        console.log('NATS connection closed')
+      })
 
       // Auto-subscribe to stream with history
-      await this.subscribeToStream(NATS_CONFIG.subject)
+      await get().subscribeToStream(NATS_CONFIG.subject)
     } catch (err) {
-      this._status.value = 'error'
-      this._error.value = err instanceof Error ? err.message : 'Failed to connect'
+      set({ 
+        status: 'error', 
+        error: err instanceof Error ? err.message : 'Failed to connect' 
+      })
       console.error('Failed to connect to NATS:', err)
       throw err
     }
-  }
+  },
 
-  private async monitorConnection(): Promise<void> {
-    if (!this.connection) return
-
-    const done = this.connection.closed()
-    done.then(() => {
-      this._status.value = 'disconnected'
-      this.connection = null
-      this.jetstream = null
-      console.log('NATS connection closed')
-    })
-  }
-
-  async disconnect(): Promise<void> {
-    if (!this.connection) return
+  disconnect: async () => {
+    if (!connection) return
 
     // Unsubscribe from JetStream
-    if (this.jsSubscription) {
-      this.jsSubscription.unsubscribe()
-      this.jsSubscription = null
-      this._subscribedSubject.value = null
+    if (jsSubscription) {
+      jsSubscription.unsubscribe()
+      jsSubscription = null
+      set({ subscribedSubject: null })
     }
 
-    await this.connection.drain()
-    this.connection = null
-    this.jetstream = null
-    this._status.value = 'disconnected'
-  }
+    await connection.drain()
+    connection = null
+    jetstream = null
+    set({ status: 'disconnected' })
+  },
 
-  async subscribeToStream(subject: string): Promise<void> {
-    if (!this.connection || !this.jetstream) {
+  subscribeToStream: async (subject: string) => {
+    if (!connection || !jetstream) {
       throw new Error('Not connected to NATS')
     }
 
-    if (this.jsSubscription) {
+    if (jsSubscription) {
       console.log('Already subscribed, unsubscribing first...')
-      this.jsSubscription.unsubscribe()
+      jsSubscription.unsubscribe()
     }
 
     try {
@@ -111,63 +114,62 @@ class NatsService {
 
       console.log(`Subscribing to JetStream: ${subject} (with history)`)
       
-      this.jsSubscription = await this.jetstream.subscribe(subject, opts)
-      this._subscribedSubject.value = subject
+      jsSubscription = await jetstream.subscribe(subject, opts)
+      set({ subscribedSubject: subject })
       
       console.log(`Subscribed to ${subject} - loading historical messages...`)
 
       // Process messages (both historical and new)
-      this.processJetStreamMessages()
+      const sub = jsSubscription
+      ;(async () => {
+        for await (const msg of sub) {
+          try {
+            const payload = sc.decode(msg.data)
+            
+            // Get message timestamp from JetStream metadata if available
+            const info = msg.info
+            const timestamp = info?.timestampNanos 
+              ? new Date(Number(info.timestampNanos) / 1_000_000)
+              : new Date()
+            
+            console.log(`[JetStream] ${msg.subject} (seq: ${info?.streamSequence}):`, payload)
+            
+            const natsMessage: NatsMessage = {
+              id: `${info?.streamSequence || crypto.randomUUID()}`,
+              subject: msg.subject,
+              payload,
+              timestamp,
+              sequence: info?.streamSequence
+            }
+            
+            // Add messages - deduplicate by ID to prevent duplicates
+            set(state => {
+              // Check if message already exists
+              if (state.messages.some(m => m.id === natsMessage.id)) {
+                return state
+              }
+              return {
+                messages: [...state.messages, natsMessage].slice(-500)
+              }
+            })
+          } catch (err) {
+            console.error('[JetStream] Error processing message:', err)
+          }
+        }
+      })()
     } catch (err) {
       console.error('Failed to subscribe to JetStream:', err)
-      this._error.value = err instanceof Error ? err.message : 'Failed to subscribe'
+      set({ error: err instanceof Error ? err.message : 'Failed to subscribe' })
       throw err
     }
+  },
+
+  clearMessages: () => {
+    set({ messages: [] })
+  },
+
+  getSubscribedSubjects: () => {
+    const { subscribedSubject } = get()
+    return subscribedSubject ? [subscribedSubject] : []
   }
-
-  private processJetStreamMessages(): void {
-    if (!this.jsSubscription) return
-
-    const sub = this.jsSubscription
-    ;(async () => {
-      for await (const msg of sub) {
-        try {
-          const payload = sc.decode(msg.data)
-          
-          // Get message timestamp from JetStream metadata if available
-          const info = msg.info
-          const timestamp = info?.timestampNanos 
-            ? new Date(Number(info.timestampNanos) / 1_000_000)
-            : new Date()
-          
-          console.log(`[JetStream] ${msg.subject} (seq: ${info?.streamSequence}):`, payload)
-          
-          const natsMessage: NatsMessage = {
-            id: `${info?.streamSequence || crypto.randomUUID()}`,
-            subject: msg.subject,
-            payload,
-            timestamp,
-            sequence: info?.streamSequence
-          }
-          
-          // Add messages - historical ones at the end, new ones at the beginning
-          // Since we're delivering all, we append to maintain order
-          this._messages.value = [...this._messages.value, natsMessage].slice(-500)
-        } catch (err) {
-          console.error('[JetStream] Error processing message:', err)
-        }
-      }
-    })()
-  }
-
-  getSubscribedSubjects(): string[] {
-    return this._subscribedSubject.value ? [this._subscribedSubject.value] : []
-  }
-
-  clearMessages(): void {
-    this._messages.value = []
-  }
-}
-
-// Export singleton instance
-export const natsService = new NatsService()
+}))
