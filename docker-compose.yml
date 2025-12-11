@@ -4,6 +4,7 @@ services:
     container_name: nats-score-server
     ports:
       - "4222:4222"
+      - "8080:8080"
     volumes:
       - ./nats/nats-server.conf:/etc/nats/nats-server.conf:ro
     command: ["-c", "/etc/nats/nats-server.conf"]

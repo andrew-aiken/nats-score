@@ -1,0 +1,90 @@
+<script setup lang="ts">
+import { RouterLink, useRoute } from 'vue-router'
+
+const route = useRoute()
+</script>
+
+<template>
+  <nav class="navbar">
+    <div class="nav-brand">
+      <h1 class="logo">NATS Dashboard</h1>
+    </div>
+    
+    <div class="nav-links">
+      <RouterLink 
+        to="/" 
+        class="nav-link"
+        :class="{ active: route.path === '/' }"
+      >
+        <span class="nav-icon">📊</span>
+        Messages
+      </RouterLink>
+      <RouterLink 
+        to="/health" 
+        class="nav-link"
+        :class="{ active: route.path === '/health' }"
+      >
+        <span class="nav-icon">💚</span>
+        Health Check
+      </RouterLink>
+    </div>
+  </nav>
+</template>
+
+<style scoped>
+.navbar {
+  display: flex;
+  align-items: center;
+  gap: 3rem;
+  padding: 0 2rem;
+  height: 60px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link.active {
+  color: var(--color-accent);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.nav-icon {
+  font-size: 1rem;
+}
+</style>
+

@@ -2,6 +2,7 @@ package noop
 
 import (
 	"context"
+	"time"
 
 	"github.com/aaiken/nats-score/pkg/checks"
 )
@@ -13,15 +14,18 @@ type Input struct {
 }
 
 func (d *Definition) Run(ctx context.Context, input map[string]interface{}) checks.Results {
+
+	result := checks.Results{
+		Timestamp: time.Now(),
+		Passed:    true,
+	}
+
 	var in Input
 	if err := checks.ConvertInputType(input, &in); err != nil {
-		return checks.Results{
-			Passed:  true,
-			Message: err.Error(),
-		}
+		result.Message = err.Error()
+		return result
 	}
-	return checks.Results{
-		Passed:  in.Pass,
-		Message: "",
-	}
+	result.Passed = in.Pass
+
+	return result
 }
