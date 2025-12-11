@@ -1,0 +1,30 @@
+{
+    "checks": {
+        "noop": {
+            "type": "noop",
+            "description": "No operation check",
+            "score_weight": 1
+        },
+        "icmp": {
+            "type": "icmp",
+            "description": "ICMP check",
+            "score_weight": 1,
+            "definition": {
+                "host": "1.1.1.1"
+            }
+        },
+        "http": {
+            "type": "http",
+            "description": "HTTP Check",
+            "score_weight": 2,
+            "definition": {
+                "host": "ifconfig.me",
+                "path": "/ip",
+                "MatchCode": true,
+                "MatchContent": true,
+                "ContentRegex": "97.89.244.253",
+                "VerifyCert": true
+            }
+        }
+    }
+}

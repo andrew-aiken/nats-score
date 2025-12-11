@@ -1,0 +1,20 @@
+services:
+  nats:
+    image: nats:latest
+    container_name: nats-score-server
+    ports:
+      - "4222:4222"
+    volumes:
+      - ./nats/nats-server.conf:/etc/nats/nats-server.conf:ro
+    command: ["-c", "/etc/nats/nats-server.conf"]
+
+  nats-setup:
+    image: natsio/nats-box:latest
+    container_name: nats-score-setup
+    volumes:
+      - ./nats/nats-setup.sh:/nats-setup.sh:ro
+    environment:
+      - NATS_URL=nats://nats:4222
+      - NATS_USER=admin
+      - NATS_PASSWORD=adminpass
+    command: ["/bin/sh", "/nats-setup.sh"]
