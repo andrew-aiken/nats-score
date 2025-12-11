@@ -6,6 +6,7 @@ import (
 
 	"github.com/creasty/defaults"
 
+	"github.com/aaiken/nats-score/pkg/checks/dns"
 	"github.com/aaiken/nats-score/pkg/checks/http"
 	"github.com/aaiken/nats-score/pkg/checks/icmp"
 	"github.com/aaiken/nats-score/pkg/checks/noop"
@@ -60,12 +61,14 @@ func (c *Checks) UnmarshalJSON(data []byte) error {
 
 	// Unmarshal Definition based on Type
 	switch raw.Type {
+	case "dns":
+		def = &dns.Definition{}
+	case "http":
+		def = &http.Definition{}
 	case "icmp":
 		def = &icmp.Definition{}
 	case "noop":
 		def = &noop.Definition{}
-	case "http":
-		def = &http.Definition{}
 	default:
 		// For unknown types, keep as raw JSON map
 		def = &noop.Definition{}

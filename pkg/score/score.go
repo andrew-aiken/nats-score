@@ -15,14 +15,6 @@ import (
 
 func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.MsgHandler {
 	return func(msg *nats.Msg) {
-		// log.Printf("📢 Ephemeral event received on [%s]: %s", msg.Subject, string(msg.Data))
-		// out, err := yaml.Marshal(settings)
-		// if err != nil {
-		// 	log.Printf("Failed to marshal settings to YAML: %v", err)
-		// } else {
-		// 	fmt.Println(string(out))
-		// }
-
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
 		streamName := "results." + strconv.Itoa(settings.TeamNumber) + "." + checkName
@@ -57,7 +49,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 			log.Printf("Failed to publish results: %v", err)
 		}
 
-		log.Printf("Check %s result: %v error: %s", checkName, result.Passed, result.Message)
+		log.Printf("Check %s result: %v", checkName, result.Passed)
 		for key, value := range result.Details {
 			log.Printf("Check %s detail: %s = %s", checkName, key, value)
 		}
