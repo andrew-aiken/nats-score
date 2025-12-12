@@ -24,6 +24,8 @@ func (d *Definition) Run(ctx context.Context, input map[string]interface{}) chec
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 
+	fmt.Printf("Running ICMP check for host: %s", d.Host)
+
 	// Create pinger
 	pinger, err := probing.NewPinger(d.Host)
 	if err != nil {
@@ -34,7 +36,7 @@ func (d *Definition) Run(ctx context.Context, input map[string]interface{}) chec
 	// Send ping
 	pinger.Count = d.Count
 	// TODO: change this to be relative to the parent context's timeout
-	pinger.Timeout = 25 * time.Second
+	pinger.Timeout = 10 * time.Second
 	_ = pinger.Run()
 
 	stats := pinger.Statistics()

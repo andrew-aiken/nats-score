@@ -13,16 +13,16 @@ import (
 )
 
 type Settings struct {
-	Checks     map[string]Checks     `json:"checks"`
-	Attributes map[string]Attributes `json:"attributes"`
+	Checks     map[string]Checks            `json:"checks"`
+	Attributes map[string]map[string]string `json:"attributes"`
 	TeamNumber int
 }
 
-type Attributes struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Token    string `json:"token"`
-}
+// type Attributes struct {
+// 	Username string `json:"username"`
+// 	Password string `json:"password"`
+// 	Token    string `json:"token"`
+// }
 
 type Checks struct {
 	Name          string      `json:"name"`
@@ -36,10 +36,12 @@ type Checks struct {
 func (c *Checks) UnmarshalJSON(data []byte) error {
 	// First, unmarshal into a temporary struct to get the type
 	type ChecksRaw struct {
-		Description string          `json:"description"`
-		Type        string          `json:"type"`
-		ScoreWeight int8            `json:"score_weight"`
-		Definition  json.RawMessage `json:"definition"`
+		Name          string          `json:"name"`
+		Description   string          `json:"description"`
+		Type          string          `json:"type"`
+		MutableFields []string        `json:"mutable_fields"`
+		ScoreWeight   int8            `json:"score_weight"`
+		Definition    json.RawMessage `json:"definition"`
 	}
 
 	var raw ChecksRaw
@@ -47,8 +49,10 @@ func (c *Checks) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	c.Name = raw.Name
 	c.Description = raw.Description
 	c.Type = raw.Type
+	c.MutableFields = raw.MutableFields
 	c.ScoreWeight = raw.ScoreWeight
 
 	var def interface{}

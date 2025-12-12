@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -17,7 +18,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
-		fmt.Println(settings.Attributes)
+		// fmt.Println(settings.Attributes)
 
 		streamName := "results." + strconv.Itoa(settings.TeamNumber) + "." + checkName
 
@@ -44,6 +45,15 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 			return
 		}
 
+		// Override the mutable fields with the team setting attributes
+		var override map[string]string
+		allowedArgumentOverrides(value.MutableFields, settings.Attributes[checkName], &override)
+
+		// Apply overrides to the check definition
+		if err := applyOverrides(value.Definition, override); err != nil {
+			log.Printf("Failed to apply overrides for check %s: %v", checkName, err)
+		}
+
 		ctx := context.Background()
 		result := checker.Run(ctx, input)
 
@@ -56,4 +66,85 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 			log.Printf("Check %s detail: %s = %s", checkName, key, value)
 		}
 	}
+}
+
+func allowedArgumentOverrides(allowedItems []string, attributes map[string]string, override *map[string]string) {
+	*override = make(map[string]string)
+	for key, value := range attributes {
+		for _, allowed := range allowedItems {
+			if key == allowed {
+				(*override)[key] = value
+			}
+		}
+	}
+}
+
+// applyOverrides uses reflection to set field values on the definition struct
+func applyOverrides(definition interface{}, overrides map[string]string) error {
+	if len(overrides) == 0 {
+		return nil
+	}
+
+	val := reflect.ValueOf(definition)
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return fmt.Errorf("definition must be a non-nil pointer")
+	}
+
+	val = val.Elem()
+	if val.Kind() != reflect.Struct {
+		return fmt.Errorf("definition must point to a struct")
+	}
+
+	typ := val.Type()
+
+	for key, value := range overrides {
+		// Find the field by name (case-insensitive match)
+		var field reflect.Value
+		var found bool
+		for i := 0; i < typ.NumField(); i++ {
+			if strings.EqualFold(typ.Field(i).Name, key) {
+				field = val.Field(i)
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Printf("Field %s not found in definition", key)
+			continue
+		}
+
+		if !field.CanSet() {
+			log.Printf("Field %s cannot be set", key)
+			continue
+		}
+
+		// Convert string value to appropriate type
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(value)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			intVal, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse int value for field %s: %w", key, err)
+			}
+			field.SetInt(intVal)
+		case reflect.Bool:
+			boolVal, err := strconv.ParseBool(value)
+			if err != nil {
+				return fmt.Errorf("failed to parse bool value for field %s: %w", key, err)
+			}
+			field.SetBool(boolVal)
+		case reflect.Float32, reflect.Float64:
+			floatVal, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse float value for field %s: %w", key, err)
+			}
+			field.SetFloat(floatVal)
+		default:
+			return fmt.Errorf("unsupported field type %s for field %s", field.Kind(), key)
+		}
+	}
+
+	return nil
 }

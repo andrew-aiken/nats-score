@@ -149,20 +149,18 @@ func main() {
 			case teamNumber + ".settings":
 				fmt.Println("Team-specific settings update")
 
-				var teamSettings struct {
-					Attributes map[string]config.Attributes `json:"attributes"`
-				}
+				var teamSettings map[string]map[string]string
 				if err := json.Unmarshal(entry.Value(), &teamSettings); err != nil {
 					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
 					continue
 				}
 
 				// Replace Attributes entirely with team-specific config (Checks remain untouched)
-				agentSettings.Attributes = teamSettings.Attributes
-				fmt.Println(agentSettings)
+				agentSettings.Attributes = teamSettings
+				fmt.Println(agentSettings.Attributes)
 			}
 
-			fmt.Println(string(entry.Value()))
+			// fmt.Println(string(entry.Value()))
 		}
 	}
 }

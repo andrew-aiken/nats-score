@@ -14,18 +14,21 @@ type Input struct {
 }
 
 func (d *Definition) Run(ctx context.Context, input map[string]interface{}) checks.Results {
-
 	result := checks.Results{
 		Timestamp: time.Now(),
 		Passed:    true,
 	}
 
-	var in Input
-	if err := checks.ConvertInputType(input, &in); err != nil {
+	var userInput Input
+	userInput.Pass = true
+
+	if err := checks.ConvertInputType(input, &userInput); err != nil {
 		result.Message = err.Error()
+		result.Passed = false
 		return result
 	}
-	result.Passed = in.Pass
+
+	result.Passed = userInput.Pass
 
 	return result
 }
