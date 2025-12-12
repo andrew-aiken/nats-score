@@ -25,10 +25,12 @@ type Attributes struct {
 }
 
 type Checks struct {
-	Description string      `json:"description"`
-	Type        string      `json:"type"`
-	ScoreWeight int8        `json:"score_weight"`
-	Definition  interface{} `json:"definition"`
+	Name          string      `json:"name"`
+	Definition    interface{} `json:"definition"`
+	Description   string      `json:"description"`
+	MutableFields []string    `json:"mutable_fields"`
+	ScoreWeight   int8        `json:"score_weight"`
+	Type          string      `json:"type"`
 }
 
 func (c *Checks) UnmarshalJSON(data []byte) error {

@@ -17,6 +17,8 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
+		fmt.Println(settings.Attributes)
+
 		streamName := "results." + strconv.Itoa(settings.TeamNumber) + "." + checkName
 
 		var input map[string]interface{}

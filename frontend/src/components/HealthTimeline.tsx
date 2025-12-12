@@ -22,6 +22,7 @@ export interface ServiceGroup {
 
 interface HealthTimelineProps {
   checks: HealthCheck[]
+  timeRange: string
 }
 
 // Parse subject to extract team_id and service_name
@@ -37,8 +38,88 @@ const parseSubject = (subject: string): { teamId: string; serviceName: string } 
   return { teamId: 'unknown', serviceName: subject }
 }
 
-export default function HealthTimeline({ checks }: HealthTimelineProps) {
+// Get time range configuration
+const getTimeRangeConfig = (range: string) => {
+  switch (range) {
+    case '10m':
+      return { minutes: 10, intervalMinutes: 1, labelFormat: 'minute' as const }
+    case '30m':
+      return { minutes: 30, intervalMinutes: 5, labelFormat: 'minute' as const }
+    case '1h':
+      return { minutes: 60, intervalMinutes: 10, labelFormat: 'minute' as const }
+    case '3h':
+      return { minutes: 180, intervalMinutes: 30, labelFormat: 'hour' as const }
+    case 'all':
+      return { minutes: -1, intervalMinutes: 60, labelFormat: 'hour' as const }
+    default:
+      return { minutes: 60, intervalMinutes: 10, labelFormat: 'minute' as const }
+  }
+}
+
+export default function HealthTimeline({ checks, timeRange }: HealthTimelineProps) {
   const [selectedCheck, setSelectedCheck] = useState<HealthCheck | null>(null)
+
+  const rangeConfig = getTimeRangeConfig(timeRange)
+
+  // Calculate the time bounds for the timeline
+  const timeBounds = useMemo(() => {
+    const now = new Date()
+    
+    if (timeRange === 'all' && checks.length > 0) {
+      // For "all", use the actual data range
+      const timestamps = checks.map(c => c.timestamp.getTime())
+      const minTime = Math.min(...timestamps)
+      const maxTime = Math.max(...timestamps)
+      // Add some padding
+      const padding = (maxTime - minTime) * 0.05 || 60000
+      return {
+        start: new Date(minTime - padding),
+        end: new Date(maxTime + padding)
+      }
+    }
+    
+    // For fixed ranges, show from (now - range) to now
+    const rangeMs = rangeConfig.minutes * 60 * 1000
+    return {
+      start: new Date(now.getTime() - rangeMs),
+      end: now
+    }
+  }, [timeRange, checks, rangeConfig.minutes])
+
+  // Generate time markers for the timeline
+  const timeMarkers = useMemo(() => {
+    const markers: { position: number; label: string }[] = []
+    const totalMs = timeBounds.end.getTime() - timeBounds.start.getTime()
+    const intervalMs = rangeConfig.intervalMinutes * 60 * 1000
+    
+    // Round start time to the nearest interval
+    const startMs = timeBounds.start.getTime()
+    const firstMarkerMs = Math.ceil(startMs / intervalMs) * intervalMs
+    
+    for (let ms = firstMarkerMs; ms <= timeBounds.end.getTime(); ms += intervalMs) {
+      const position = ((ms - startMs) / totalMs) * 100
+      const date = new Date(ms)
+      
+      let label: string
+      if (rangeConfig.labelFormat === 'minute') {
+        label = date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        })
+      } else {
+        label = date.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        })
+      }
+      
+      markers.push({ position, label })
+    }
+    
+    return markers
+  }, [timeBounds, rangeConfig])
 
   // Group checks by service
   const serviceGroups = useMemo<ServiceGroup[]>(() => {
@@ -79,6 +160,14 @@ export default function HealthTimeline({ checks }: HealthTimelineProps) {
         return a.serviceName.localeCompare(b.serviceName)
       })
   }, [checks])
+
+  // Calculate position for a check on the timeline (0-100%)
+  const getCheckPosition = (check: HealthCheck): number => {
+    const totalMs = timeBounds.end.getTime() - timeBounds.start.getTime()
+    if (totalMs === 0) return 50
+    const checkMs = check.timestamp.getTime() - timeBounds.start.getTime()
+    return Math.max(0, Math.min(100, (checkMs / totalMs) * 100))
+  }
 
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString('en-US', {
@@ -152,6 +241,23 @@ export default function HealthTimeline({ checks }: HealthTimelineProps) {
           </div>
         ) : (
           <div className="services-list">
+            {/* Time axis header */}
+            <div className="timeline-header">
+              <div className="service-info-spacer"></div>
+              <div className="time-axis">
+                {timeMarkers.map((marker, idx) => (
+                  <div 
+                    key={idx} 
+                    className="time-marker"
+                    style={{ left: `${marker.position}%` }}
+                  >
+                    <div className="marker-line"></div>
+                    <span className="marker-label">{marker.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {serviceGroups.map(service => (
               <div key={service.key} className="service-row">
                 <div className="service-info">
@@ -173,18 +279,31 @@ export default function HealthTimeline({ checks }: HealthTimelineProps) {
                 </div>
                 
                 <div className="service-timeline">
-                  {service.checks.map(check => (
-                    <div
-                      key={check.id}
-                      className={`timeline-item ${check.passed ? 'passed' : 'failed'} ${
-                        selectedCheck?.id === check.id ? 'selected' : ''
-                      }`}
-                      title={`${check.passed ? 'Passed' : 'Failed'} - ${formatTime(check.timestamp)}`}
-                      onClick={() => handleSelectCheck(check)}
-                    >
-                      <div className="item-indicator"></div>
-                    </div>
-                  ))}
+                  <div className="timeline-track">
+                    {/* Grid lines aligned with time markers */}
+                    {timeMarkers.map((marker, idx) => (
+                      <div 
+                        key={idx}
+                        className="timeline-grid-line"
+                        style={{ left: `${marker.position}%` }}
+                      />
+                    ))}
+                    
+                    {/* Health check items */}
+                    {service.checks.map(check => (
+                      <div
+                        key={check.id}
+                        className={`timeline-item ${check.passed ? 'passed' : 'failed'} ${
+                          selectedCheck?.id === check.id ? 'selected' : ''
+                        }`}
+                        style={{ left: `${getCheckPosition(check)}%` }}
+                        title={`${check.passed ? 'Passed' : 'Failed'} - ${formatTime(check.timestamp)}`}
+                        onClick={() => handleSelectCheck(check)}
+                      >
+                        <div className="item-indicator"></div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             ))}

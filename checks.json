@@ -6,12 +6,14 @@
             "score_weight": 1
         },
         "icmp": {
+            "name": "Fancy ICMP",
             "type": "icmp",
             "description": "ICMP check",
             "score_weight": 1,
             "definition": {
                 "host": "1.1.1.1"
-            }
+            },
+            "mutable_fields": ["host"]
         },
         "http": {
             "type": "http",

@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import NavBar from './components/NavBar'
+import ToastContainer from './components/Toast'
 import './App.css'
 
 export default function App() {
@@ -9,6 +10,7 @@ export default function App() {
       <main className="app-content">
         <Outlet />
       </main>
+      <ToastContainer />
     </div>
   )
 }

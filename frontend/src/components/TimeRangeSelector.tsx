@@ -12,10 +12,10 @@ interface TimeRangeSelectorProps {
 }
 
 const presets: TimeRange[] = [
+  { label: '10m', value: '10m', hours: 10 / 60 },
+  { label: '30m', value: '30m', hours: 0.5 },
   { label: '1h', value: '1h', hours: 1 },
-  { label: '6h', value: '6h', hours: 6 },
-  { label: '24h', value: '24h', hours: 24 },
-  { label: '7d', value: '7d', hours: 168 },
+  { label: '3h', value: '3h', hours: 3 },
   { label: 'All', value: 'all', hours: -1 }
 ]
 
