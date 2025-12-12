@@ -24,6 +24,8 @@ interface NatsState {
   subscribeToStream: (subject: string) => Promise<void>
   clearMessages: () => void
   getSubscribedSubjects: () => string[]
+  getKvValue: (bucket: string, key: string) => Promise<string | null>
+  putKvValue: (bucket: string, key: string, value: string) => Promise<void>
 }
 
 // Store connection references outside of Zustand state (non-serializable)
@@ -171,5 +173,39 @@ export const useNatsStore = create<NatsState>((set, get) => ({
   getSubscribedSubjects: () => {
     const { subscribedSubject } = get()
     return subscribedSubject ? [subscribedSubject] : []
+  },
+
+  getKvValue: async (bucket: string, key: string): Promise<string | null> => {
+    if (!jetstream) {
+      throw new Error('Not connected to NATS')
+    }
+
+    try {
+      const kv = await jetstream.views.kv(bucket)
+      const entry = await kv.get(key)
+      
+      if (entry && entry.value) {
+        return sc.decode(entry.value)
+      }
+      return null
+    } catch (err) {
+      console.error(`Failed to get KV value ${bucket}/${key}:`, err)
+      throw err
+    }
+  },
+
+  putKvValue: async (bucket: string, key: string, value: string): Promise<void> => {
+    if (!jetstream) {
+      throw new Error('Not connected to NATS')
+    }
+
+    try {
+      const kv = await jetstream.views.kv(bucket)
+      await kv.put(key, sc.encode(value))
+      console.log(`Updated KV ${bucket}/${key}`)
+    } catch (err) {
+      console.error(`Failed to put KV value ${bucket}/${key}:`, err)
+      throw err
+    }
   }
 }))

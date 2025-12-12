@@ -25,6 +25,13 @@ export default function NavBar() {
           <span className="nav-icon">💚</span>
           Health Check
         </NavLink>
+        <NavLink 
+          to="/settings" 
+          className={`nav-link ${location.pathname === '/settings' ? 'active' : ''}`}
+        >
+          <span className="nav-icon">⚙️</span>
+          Settings
+        </NavLink>
       </div>
     </nav>
   )

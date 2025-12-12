@@ -24,7 +24,7 @@ func (d *Definition) Run(ctx context.Context, input map[string]interface{}) chec
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 
-	fmt.Printf("Running ICMP check for host: %s", d.Host)
+	fmt.Printf("Running ICMP check for host: %s\n", d.Host)
 
 	// Create pinger
 	pinger, err := probing.NewPinger(d.Host)

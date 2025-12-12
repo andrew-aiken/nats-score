@@ -23,6 +23,7 @@ export interface ServiceGroup {
 interface HealthTimelineProps {
   checks: HealthCheck[]
   timeRange: string
+  checkNames?: Record<string, string>
 }
 
 // Parse subject to extract team_id and service_name
@@ -56,8 +57,13 @@ const getTimeRangeConfig = (range: string) => {
   }
 }
 
-export default function HealthTimeline({ checks, timeRange }: HealthTimelineProps) {
+export default function HealthTimeline({ checks, timeRange, checkNames = {} }: HealthTimelineProps) {
   const [selectedCheck, setSelectedCheck] = useState<HealthCheck | null>(null)
+
+  // Get display name for a service (use name from settings if available, otherwise check key)
+  const getDisplayName = (serviceName: string): string => {
+    return checkNames[serviceName] || serviceName
+  }
 
   const rangeConfig = getTimeRangeConfig(timeRange)
 
@@ -265,8 +271,7 @@ export default function HealthTimeline({ checks, timeRange }: HealthTimelineProp
                     ●
                   </div>
                   <div className="service-meta">
-                    <span className="service-name">{service.serviceName}</span>
-                    <span className="service-team">Team {service.teamId}</span>
+                    <span className="service-name">{getDisplayName(service.serviceName)}</span>
                   </div>
                   <div className="service-stats">
                     <span className={`service-pass-rate ${
