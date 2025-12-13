@@ -2,14 +2,10 @@
 set -e
 
 NATS_URL="${NATS_URL:-nats://nats:4222}"
-NATS_USER="${NATS_USER:-admin}"
-NATS_PASSWORD="${NATS_PASSWORD:-adminpass}"
-
-# Build credentials flag
-CREDS="--user=${NATS_USER} --password=${NATS_PASSWORD}"
+NATS_CREDS="${NATS_CREDS:-/etc/nats/admin.creds}"
 
 echo "Waiting for NATS server..."
-until nats --server="$NATS_URL" $CREDS account info > /dev/null 2>&1; do
+until nats --creds="$NATS_CREDS" --server="$NATS_URL" account info > /dev/null 2>&1; do
   echo "NATS not ready, retrying in 1s..."
   sleep 1
 done
@@ -17,7 +13,7 @@ echo "NATS server is ready"
 
 echo "Creating KV bucket 'settings'..."
 nats kv add settings \
-  --server="$NATS_URL" $CREDS \
+  --creds="$NATS_CREDS" --server="$NATS_URL" \
   --description="Score data storage" \
   --history=5 \
   --ttl=0 \
@@ -27,7 +23,7 @@ nats kv add settings \
 
 echo "Creating stream 'results'..."
 nats stream add results \
-  --server="$NATS_URL" $CREDS \
+  --creds="$NATS_CREDS" --server="$NATS_URL" \
   --subjects="results.>" \
   --description="Stream of score update events" \
   --retention=limits \
@@ -46,5 +42,5 @@ nats stream add results \
   2>/dev/null || echo "Stream 'results' already exists"
 
 echo "NATS JetStream setup complete!"
-nats kv ls --server="$NATS_URL" $CREDS
-nats stream ls --server="$NATS_URL" $CREDS --all
+nats kv ls --creds="$NATS_CREDS" --server="$NATS_URL"
+nats stream ls --creds="$NATS_CREDS" --server="$NATS_URL" --all

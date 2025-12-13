@@ -1,0 +1,130 @@
+import type { NatsCredentials } from '../types'
+
+const STORAGE_KEY = 'nats_credentials'
+const AUTH_SERVER = 'http://localhost:3000'
+
+/**
+ * Redirect to backend OAuth2 login
+ */
+export function login(): void {
+  window.location.href = `${AUTH_SERVER}/login`
+}
+
+/**
+ * Login using a predefined access token
+ * Returns credentials on success, throws error on failure
+ */
+export async function loginWithToken(token: string): Promise<NatsCredentials> {
+  const response = await fetch(`${AUTH_SERVER}/auth/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ token }),
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Authentication failed' }))
+    throw new Error(error.error || 'Authentication failed')
+  }
+
+  const credentials: NatsCredentials = await response.json()
+  saveCredentials(credentials)
+  return credentials
+}
+
+/**
+ * Extract credentials from URL query params (called on /auth/callback)
+ */
+export function handleCallback(): NatsCredentials | null {
+  const params = new URLSearchParams(window.location.search)
+  const jwt = params.get('jwt')
+  const seed = params.get('seed')
+
+  if (!jwt || !seed) {
+    return null
+  }
+
+  const credentials: NatsCredentials = { jwt, seed }
+  saveCredentials(credentials)
+  return credentials
+}
+
+/**
+ * Get cached credentials from localStorage
+ * Returns null if no credentials or if expired
+ */
+export function getCredentials(): NatsCredentials | null {
+  const stored = localStorage.getItem(STORAGE_KEY)
+  if (!stored) {
+    return null
+  }
+
+  try {
+    const credentials: NatsCredentials = JSON.parse(stored)
+    if (isTokenExpired(credentials.jwt)) {
+      clearCredentials()
+      return null
+    }
+    return credentials
+  } catch {
+    clearCredentials()
+    return null
+  }
+}
+
+/**
+ * Decode JWT and check exp claim
+ * Returns true if token is expired or invalid
+ */
+export function isTokenExpired(jwt: string): boolean {
+  try {
+    // JWT format: header.payload.signature
+    const parts = jwt.split('.')
+    if (parts.length !== 3) {
+      return true
+    }
+
+    // Decode the payload (base64url)
+    const payload = parts[1]
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    const claims = JSON.parse(decoded)
+
+    // Check exp claim
+    if (!claims.exp) {
+      // No expiration claim - consider valid
+      return false
+    }
+
+    // exp is in seconds, Date.now() is in milliseconds
+    const expirationTime = claims.exp * 1000
+    const now = Date.now()
+
+    // Add a 30 second buffer to handle clock skew
+    return now >= expirationTime - 30000
+  } catch {
+    // If we can't decode the token, consider it expired
+    return true
+  }
+}
+
+/**
+ * Save credentials to localStorage
+ */
+export function saveCredentials(credentials: NatsCredentials): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(credentials))
+}
+
+/**
+ * Clear stored credentials from localStorage
+ */
+export function clearCredentials(): void {
+  localStorage.removeItem(STORAGE_KEY)
+}
+
+/**
+ * Check if user is authenticated (has valid credentials)
+ */
+export function isAuthenticated(): boolean {
+  return getCredentials() !== null
+}

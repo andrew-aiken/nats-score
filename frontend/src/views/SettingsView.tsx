@@ -1,90 +1,60 @@
 import { useState, useEffect } from 'react'
-import { useNatsStore } from '../services/nats'
+import { getMutableFields, getTeamSettings, updateTeamSettings } from '../services/api'
 import { toast } from '../services/toast'
-import ConnectionStatus from '../components/ConnectionStatus'
 import './SettingsView.css'
 
-// Check schema from settings.settings
-interface CheckConfig {
-  name?: string
-  type: string
-  description?: string
-  score_weight?: number
-  mutable_fields?: string[]
-}
+// Mutable fields map from the API
+type MutableFieldsMap = Record<string, string[]>
 
-interface Settings {
-  checks: Record<string, CheckConfig>
-}
-
-// User values from settings.1.settings
+// User values from team settings
 // Format: {"icmp":{"host":"10.9.9.9","username":"foobar"}}
 type UserSettings = Record<string, Record<string, string>>
 
 export default function SettingsView() {
-  const status = useNatsStore(state => state.status)
-  const error = useNatsStore(state => state.error)
-  const connect = useNatsStore(state => state.connect)
-  const getKvValue = useNatsStore(state => state.getKvValue)
-  const putKvValue = useNatsStore(state => state.putKvValue)
-
-  const [settings, setSettings] = useState<Settings | null>(null)
+  const [mutableFields, setMutableFields] = useState<MutableFieldsMap | null>(null)
   const [fieldValues, setFieldValues] = useState<UserSettings>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
 
-  // Connect to NATS if not already connected
+  // Fetch mutable fields and team settings from API on mount
   useEffect(() => {
-    if (status === 'disconnected') {
-      connect().catch(err => console.error('Connection failed:', err))
-    }
-  }, [status, connect])
-
-  // Fetch settings schema and user values when connected
-  useEffect(() => {
-    const fetchSettings = async () => {
-      if (status !== 'connected') return
-
+    const fetchData = async () => {
       setLoading(true)
       try {
-        // Fetch check schema from settings.settings
-        const schemaValue = await getKvValue('settings', 'settings')
-        if (schemaValue) {
-          const parsed = JSON.parse(schemaValue) as Settings
-          setSettings(parsed)
-          
-          // Fetch user values from settings.1.settings
-          try {
-            const userValue = await getKvValue('settings', '1.settings')
-            if (userValue) {
-              const userSettings = JSON.parse(userValue) as UserSettings
-              setFieldValues(userSettings)
-            } else {
-              // Initialize empty values for each check
-              const initialValues: UserSettings = {}
-              for (const [key, check] of Object.entries(parsed.checks)) {
-                if (check.mutable_fields && check.mutable_fields.length > 0) {
-                  initialValues[key] = {}
-                  for (const field of check.mutable_fields) {
-                    initialValues[key][field] = ''
-                  }
-                }
-              }
-              setFieldValues(initialValues)
-            }
-          } catch {
-            // If 1.settings doesn't exist yet, initialize empty values
+        // Fetch mutable fields schema
+        const fields = await getMutableFields()
+        setMutableFields(fields)
+
+        // Fetch current team settings
+        try {
+          const settings = await getTeamSettings()
+          if (settings && Object.keys(settings).length > 0) {
+            setFieldValues(settings)
+          } else {
+            // Initialize empty values for each check with mutable fields
             const initialValues: UserSettings = {}
-            for (const [key, check] of Object.entries(parsed.checks)) {
-              if (check.mutable_fields && check.mutable_fields.length > 0) {
+            for (const [key, fieldList] of Object.entries(fields)) {
+              if (fieldList.length > 0) {
                 initialValues[key] = {}
-                for (const field of check.mutable_fields) {
+                for (const field of fieldList) {
                   initialValues[key][field] = ''
                 }
               }
             }
             setFieldValues(initialValues)
           }
+        } catch {
+          // If settings fetch fails, initialize empty values
+          const initialValues: UserSettings = {}
+          for (const [key, fieldList] of Object.entries(fields)) {
+            if (fieldList.length > 0) {
+              initialValues[key] = {}
+              for (const field of fieldList) {
+                initialValues[key][field] = ''
+              }
+            }
+          }
+          setFieldValues(initialValues)
         }
       } catch (err) {
         console.error('Failed to fetch settings:', err)
@@ -94,8 +64,8 @@ export default function SettingsView() {
       }
     }
 
-    fetchSettings()
-  }, [status, getKvValue])
+    fetchData()
+  }, [])
 
   const handleFieldChange = (checkKey: string, field: string, value: string) => {
     setFieldValues(prev => ({
@@ -108,18 +78,18 @@ export default function SettingsView() {
   }
 
   const handleSaveCheck = async (checkKey: string) => {
-    if (!settings) return
+    if (!mutableFields) return
 
     setSaving(checkKey)
     try {
-      // Save to 1.settings with format: {"checkKey":{"field":"value"}}
+      // Save via API - team number is determined from JWT on server
       const updatedUserSettings: UserSettings = {
         ...fieldValues,
         [checkKey]: fieldValues[checkKey] || {}
       }
 
-      await putKvValue('settings', '1.settings', JSON.stringify(updatedUserSettings))
-      toast.success('Settings saved', `Updated ${settings.checks[checkKey].name || checkKey}`)
+      const result = await updateTeamSettings(updatedUserSettings)
+      toast.success('Settings saved', `Updated ${checkKey} for team ${result.team}`)
     } catch (err) {
       console.error('Failed to save settings:', err)
       toast.error('Failed to save settings', err instanceof Error ? err.message : 'Unknown error')
@@ -128,25 +98,18 @@ export default function SettingsView() {
     }
   }
 
-  const renderCheckCard = (checkKey: string, check: CheckConfig) => {
-    const displayName = check.name || checkKey
-    const mutableFields = check.mutable_fields || []
+  const renderCheckCard = (checkKey: string, fields: string[]) => {
     const checkValues = fieldValues[checkKey] || {}
 
     return (
       <div key={checkKey} className="check-card">
         <div className="check-header">
-          <h3 className="check-name">{displayName}</h3>
-          {check.type && <span className="check-type">{check.type}</span>}
+          <h3 className="check-name">{checkKey}</h3>
         </div>
-        
-        {check.description && (
-          <p className="check-description">{check.description}</p>
-        )}
 
-        {mutableFields.length > 0 ? (
+        {fields.length > 0 ? (
           <div className="check-fields">
-            {mutableFields.map(field => (
+            {fields.map(field => (
               <div key={field} className="field-group">
                 <label className="field-label" htmlFor={`${checkKey}-${field}`}>
                   {field}
@@ -180,9 +143,6 @@ export default function SettingsView() {
   return (
     <div className="settings-view">
       <div className="view-header">
-        <div className="header-left">
-          <ConnectionStatus status={status} error={error} />
-        </div>
         <div className="header-right">
           <h2 className="page-title">Settings</h2>
         </div>
@@ -194,16 +154,16 @@ export default function SettingsView() {
             <div className="loading-spinner"></div>
             <p>Loading settings...</p>
           </div>
-        ) : settings ? (
+        ) : mutableFields && Object.keys(mutableFields).length > 0 ? (
           <div className="checks-grid">
-            {Object.entries(settings.checks).map(([key, check]) => 
-              renderCheckCard(key, check)
+            {Object.entries(mutableFields).map(([key, fields]) => 
+              renderCheckCard(key, fields)
             )}
           </div>
         ) : (
           <div className="empty-state">
-            <p>No settings found</p>
-            <p className="empty-hint">Make sure the "settings" KV bucket exists with a "settings" key</p>
+            <p>No configurable checks found</p>
+            <p className="empty-hint">No checks have mutable fields defined</p>
           </div>
         )}
       </div>

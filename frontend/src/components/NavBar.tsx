@@ -1,8 +1,15 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { clearCredentials } from '../services/auth'
 import './NavBar.css'
 
 export default function NavBar() {
   const location = useLocation()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    clearCredentials()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <nav className="navbar">
@@ -33,6 +40,10 @@ export default function NavBar() {
           Settings
         </NavLink>
       </div>
+
+      <button className="logout-btn" onClick={handleLogout}>
+        Logout
+      </button>
     </nav>
   )
 }

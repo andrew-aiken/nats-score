@@ -23,8 +23,7 @@ func main() {
 		natsURL = nats.DefaultURL
 	}
 
-	natsUser := os.Getenv("NATS_USER")
-	natsPass := os.Getenv("NATS_PASSWORD")
+	natsCredsFile := os.Getenv("NATS_CREDS_FILE")
 	teamNumber := os.Getenv("TEAM_NUMBER")
 	if teamNumber == "" {
 		teamNumber = "0"
@@ -45,9 +44,11 @@ func main() {
 	opts := []nats.Option{
 		nats.Name(teamNumber + "-agent"),
 	}
-	if natsUser != "" && natsPass != "" {
-		opts = append(opts, nats.UserInfo(natsUser, natsPass))
-		log.Printf("Using credentials for user: %s", natsUser)
+
+	// Use credentials file for JWT + NKey authentication
+	if natsCredsFile != "" {
+		opts = append(opts, nats.UserCredentials(natsCredsFile))
+		log.Printf("Using credentials file: %s", natsCredsFile)
 	}
 
 	// Connect to NATS with retry

@@ -1,13 +1,11 @@
 import { create } from 'zustand'
-import { connect, StringCodec, consumerOpts, createInbox } from 'nats.ws'
+import { connect, StringCodec, consumerOpts, createInbox, jwtAuthenticator } from 'nats.ws'
 import type { NatsConnection, JetStreamClient, JetStreamSubscription } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
+import { getCredentials, login, clearCredentials, isTokenExpired } from './auth'
 
-// Hardcoded credentials
 const NATS_CONFIG = {
   servers: 'ws://localhost:8080',
-  user: 'admin',
-  pass: 'adminpass',
   streamName: 'RESULTS',
   subject: 'results.>'
 }
@@ -46,11 +44,27 @@ export const useNatsStore = create<NatsState>((set, get) => ({
 
     set({ status: 'connecting', error: null })
 
+    // Get credentials from auth service
+    const creds = getCredentials()
+    if (!creds) {
+      console.log('No credentials found, redirecting to login')
+      login()
+      return
+    }
+
+    // Check if JWT is expired
+    if (isTokenExpired(creds.jwt)) {
+      console.log('JWT expired, redirecting to login')
+      clearCredentials()
+      login()
+      return
+    }
+
     try {
+      const encoder = new TextEncoder()
       connection = await connect({
         servers: NATS_CONFIG.servers,
-        user: NATS_CONFIG.user,
-        pass: NATS_CONFIG.pass,
+        authenticator: jwtAuthenticator(creds.jwt, encoder.encode(creds.seed)),
       })
 
       set({ status: 'connected' })
@@ -62,19 +76,36 @@ export const useNatsStore = create<NatsState>((set, get) => ({
 
       // Monitor connection status
       const done = connection.closed()
-      done.then(() => {
+      done.then((err) => {
         set({ status: 'disconnected' })
         connection = null
         jetstream = null
         console.log('NATS connection closed')
+        
+        // If closed due to auth error, clear credentials and redirect to login
+        if (err && (err.message?.includes('authorization') || err.message?.includes('auth'))) {
+          console.log('Connection closed due to auth error, redirecting to login')
+          clearCredentials()
+          login()
+        }
       })
 
       // Auto-subscribe to stream with history
       await get().subscribeToStream(NATS_CONFIG.subject)
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect'
+      
+      // Check if this is an auth error
+      if (errorMessage.includes('authorization') || errorMessage.includes('auth')) {
+        console.log('Auth error during connect, clearing credentials and redirecting to login')
+        clearCredentials()
+        login()
+        return
+      }
+      
       set({ 
         status: 'error', 
-        error: err instanceof Error ? err.message : 'Failed to connect' 
+        error: errorMessage 
       })
       console.error('Failed to connect to NATS:', err)
       throw err

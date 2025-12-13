@@ -6,6 +6,16 @@ export interface NatsMessage {
   sequence?: number
 }
 
+export interface NatsCredentials {
+  jwt: string
+  seed: string
+}
+
+export interface NatsCredentials {
+  jwt: string
+  seed: string
+}
+
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'error'
 
 export interface Subscription {

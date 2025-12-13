@@ -7,6 +7,8 @@ services:
       - "8080:8080"
     volumes:
       - ./nats/nats-server.conf:/etc/nats/nats-server.conf:ro
+      # - ./nats/nsc/score/accounts/SYS/SYS.jwt:/etc/nats/SYS.jwt:ro
+      - ./nats/nsc/score/score.jwt:/etc/nats/operator.jwt:ro
     command: ["-c", "/etc/nats/nats-server.conf"]
 
   nats-setup:
@@ -14,8 +16,7 @@ services:
     container_name: nats-score-setup
     volumes:
       - ./nats/nats-setup.sh:/nats-setup.sh:ro
+      - /Users/aaiken/.local/share/nats/nsc/keys/creds/score/score/admin.creds:/etc/nats/admin.creds:ro
     environment:
       - NATS_URL=nats://nats:4222
-      - NATS_USER=admin
-      - NATS_PASSWORD=adminpass
     command: ["/bin/sh", "/nats-setup.sh"]
