@@ -12,32 +12,11 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// TODO
 // This is the state key used for security, sent in login, validated in callback.
 // For this example we keep it simple and hardcode a string
 // but in real apps you must provide a proper function that generates a state.
 const state = "random"
-
-// Target guild ID to check
-const targetGuildID = "833740335997124608"
-
-// Required roles map (role ID -> role name)
-var requiredRoles = map[string]string{
-	"833740336010100793":  "Admin",
-	"1065039522443833364": "Team1",
-}
-
-// Predefined access tokens map (token -> config)
-// These tokens bypass Discord OAuth and grant specific roles
-var accessTokens = map[string]*handlers.TokenConfig{
-	"admin": {
-		Role:     "833740336010100793", // Admin role
-		Username: "Admin Token User",
-	},
-	"team1": {
-		Role:     "1065039522443833364", // Team1 role
-		Username: "Team1 Token User",
-	},
-}
 
 func main() {
 	// Load configuration
@@ -83,13 +62,13 @@ func main() {
 	}
 
 	// Create handler
-	h := handlers.NewHandler(oauthConfig, natsAuthService, natsKVClient, targetGuildID, requiredRoles, accessTokens, state, cfg.FrontendURL)
+	h := handlers.NewHandler(oauthConfig, natsAuthService, natsKVClient, cfg.DiscordGuildID, cfg.DiscordRoleMap, cfg.StaticAuthMap, state, cfg.FrontendURL)
 
 	// Create CORS middleware (allow frontend origin)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
 
 	// Create auth middleware
-	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, requiredRoles)
+	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
 
 	// Register routes with CORS
 	http.HandleFunc("/login", h.Login)

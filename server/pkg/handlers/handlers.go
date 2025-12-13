@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"server/pkg/config"
 	"server/pkg/discord"
 	"server/pkg/middleware"
 	"server/pkg/nats"
@@ -28,20 +29,20 @@ type Handler struct {
 	natsAuthService *nats.NATSAuthService
 	natsKVClient    *nats.NATSKVClient
 	targetGuildID   string
-	requiredRoles   map[string]string       // role ID -> role name
-	accessTokens    map[string]*TokenConfig // access token -> config
+	roleMap         config.DiscordRoleMap // role ID -> role name
+	accessTokens    config.StaticAuthMap  // access token -> config
 	state           string
 	frontendURL     string
 }
 
 // NewHandler creates a new Handler with the given dependencies
-func NewHandler(oauthConfig *oauth2.Config, natsAuthService *nats.NATSAuthService, natsKVClient *nats.NATSKVClient, targetGuildID string, requiredRoles map[string]string, accessTokens map[string]*TokenConfig, state string, frontendURL string) *Handler {
+func NewHandler(oauthConfig *oauth2.Config, natsAuthService *nats.NATSAuthService, natsKVClient *nats.NATSKVClient, targetGuildID string, roleMap config.DiscordRoleMap, accessTokens config.StaticAuthMap, state string, frontendURL string) *Handler {
 	return &Handler{
 		oauthConfig:     oauthConfig,
 		natsAuthService: natsAuthService,
 		natsKVClient:    natsKVClient,
 		targetGuildID:   targetGuildID,
-		requiredRoles:   requiredRoles,
+		roleMap:         roleMap,
 		accessTokens:    accessTokens,
 		state:           state,
 		frontendURL:     frontendURL,
@@ -90,22 +91,42 @@ func (h *Handler) TokenLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Look up the token in the predefined map
-	tokenConfig, exists := h.accessTokens[req.Token]
-	if !exists {
-		log.Printf("Token login failed: invalid token attempted")
+	var userRole string
+
+	for name, token := range h.accessTokens {
+		if token == req.Token {
+			userRole = name
+			continue
+		}
+	}
+
+	if userRole == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid token"})
 		return
 	}
 
-	log.Printf("Token login: %s authenticated with role %s", tokenConfig.Username, tokenConfig.Role)
+	var userRoleID string
+
+	for roleID, roleName := range h.roleMap {
+		fmt.Println("RoleID:", roleID, "RoleName:", roleName)
+		if roleName == userRole {
+			userRoleID = roleID
+			continue
+		}
+	}
+
+	if userRoleID == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "No valid role found"})
+		return
+	}
 
 	// Generate NATS credentials with the token's role
-	roles := []string{tokenConfig.Role}
+	roles := []string{userRoleID}
 	creds, err := h.natsAuthService.GenerateCredentials(
-		fmt.Sprintf("token:%s", tokenConfig.Username), // Use token: prefix for user ID
-		tokenConfig.Username,
+		fmt.Sprintf("token:%s", userRole), // Use token: prefix for user ID
+		userRole,
 		roles,
 	)
 	if err != nil {

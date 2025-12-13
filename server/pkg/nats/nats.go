@@ -139,12 +139,22 @@ func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, roles []st
 	// Check for team roles
 	for _, role := range roles {
 		if role == Team1RoleID {
+			userClaim.Permissions.Pub.Allow.Add("_INBOX.>")
+			userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.NAMES")
+			userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.results")
+			userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.results.*.results.1.>")
+			userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.MSG.NEXT.results.*")
+			userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.results.*")
+			userClaim.Permissions.Pub.Allow.Add("$JS.ACK.results.>")
+
+			// userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.MSG.NEXT.results.1.*")
 			// userClaim.Permissions.Pub.Allow.Add("$JS.API.INFO")
-			// userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.NAMES")
 			// userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.KV_settings")
 			// userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.MSG.GET.KV_settings")
 			// userClaim.Permissions.Pub.Allow.Add("$JS.API.DIRECT.GET.KV_settings.>")
 			// userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.>")
+
+			// userClaim.Permissions.Pub.Deny.Add(">")
 
 			userClaim.Permissions.Sub.Allow.Add("results.1.>")
 			userClaim.Permissions.Sub.Allow.Add("_INBOX.>")

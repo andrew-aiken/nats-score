@@ -1,10 +1,20 @@
 {
-  "redirect_url":  "http://localhost:3000/auth/callback",
-  "frontend_url":  "http://localhost:5173",
-  "client_id":     "1448867532084871179",
+  "redirect_url": "http://localhost:3000/auth/callback",
+  "frontend_url": "http://localhost:5173",
+  "client_id": "1448867532084871179",
   "client_secret": "6fyCTmu4KsTPqx-cTTRbqk3K7X__snXK",
   "account_public_key": "ADR6JMYW2JCWMTLWKUKAIZS27XAPFRQMX4CENUM4XRXLWVGB3OTX2MNQ",
   "account_signing_seed": "SAAD5LLN5HXXCNJATN3EU7XMOP7W2B6T7GEFG434IU54AVYZBK6ZZUV5MU",
   "nats_url": "nats://localhost:4222",
-  "nats_creds_file": "/Users/aaiken/.local/share/nats/nsc/keys/creds/score/score/admin.creds"
+  "nats_creds_file": "/Users/aaiken/.local/share/nats/nsc/keys/creds/score/score/admin.creds",
+  "discord_guild_id": "833740335997124608",
+  "discord_role_map": {
+    "833740336010100793": "admin",
+    "1065039522443833364": "1"
+  },
+  "static_auth": {
+    "admin": "admin123",
+    "1": "team1",
+    "2": "team2"
+  }
 }

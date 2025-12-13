@@ -7,16 +7,6 @@ import HealthTimeline from '../components/HealthTimeline'
 import type { HealthCheck } from '../components/HealthTimeline'
 import './HealthCheckView.css'
 
-interface CheckConfig {
-  name?: string
-  type: string
-  description?: string
-  mutable_fields?: string[]
-}
-
-interface Settings {
-  checks: Record<string, CheckConfig>
-}
 
 // Parse subject to extract service key (team_id.service_name)
 const parseSubjectToKey = (subject: string): string => {
@@ -28,11 +18,11 @@ const parseSubjectToKey = (subject: string): string => {
 }
 
 // Get a friendly service name from subject, using checkNames lookup if available
-const getServiceName = (subject: string, checkNames?: Record<string, string>): string => {
+const getServiceName = (subject: string): string => {
   const parts = subject.split('.')
   if (parts.length >= 3 && parts[0] === 'results') {
     const checkKey = parts.slice(2).join('.')
-    return checkNames?.[checkKey] || checkKey
+    return checkKey
   }
   return subject
 }
@@ -42,9 +32,6 @@ export default function HealthCheckView() {
   const messages = useNatsStore(state => state.messages)
   const error = useNatsStore(state => state.error)
   const connect = useNatsStore(state => state.connect)
-  const getKvValue = useNatsStore(state => state.getKvValue)
-
-  const [checkNames, setCheckNames] = useState<Record<string, string>>({})
 
   const [timeRange, setTimeRange] = useState(() => {
     return localStorage.getItem('healthcheck-time-range') || '1h'
@@ -61,29 +48,6 @@ export default function HealthCheckView() {
   const processedCheckIdsRef = useRef<Set<string>>(new Set())
   // Track when page was loaded - only show toasts for checks after this time
   const pageLoadTimeRef = useRef<Date>(new Date())
-
-  // Fetch check names from settings
-  useEffect(() => {
-    const fetchCheckNames = async () => {
-      if (status !== 'connected') return
-
-      try {
-        const value = await getKvValue('settings', 'settings')
-        if (value) {
-          const settings = JSON.parse(value) as Settings
-          const names: Record<string, string> = {}
-          for (const [key, check] of Object.entries(settings.checks)) {
-            names[key] = check.name || key
-          }
-          setCheckNames(names)
-        }
-      } catch (err) {
-        console.error('Failed to fetch check names:', err)
-      }
-    }
-
-    fetchCheckNames()
-  }, [status, getKvValue])
 
   // Convert time range string to hours
   const getHoursFromRange = (range: string): number => {
@@ -154,14 +118,14 @@ export default function HealthCheckView() {
       if (isAfterPageLoad && previousStatus === true && check.passed === false) {
         toast.error(
           'Service Check Failed',
-          `${getServiceName(check.subject, checkNames)} is now failing`
+          `${getServiceName(check.subject)} is now failing`
         )
       }
       
       // Always update the tracked status (even for historical checks)
       serviceStatusRef.current.set(key, check.passed)
     }
-  }, [allHealthChecks, checkNames])
+  }, [allHealthChecks])
 
   const connectToNats = async () => {
     try {
@@ -190,7 +154,7 @@ export default function HealthCheckView() {
       </div>
 
       <div className="view-content">
-        <HealthTimeline checks={healthChecks} timeRange={timeRange} checkNames={checkNames} />
+        <HealthTimeline checks={healthChecks} timeRange={timeRange} />
       </div>
     </div>
   )

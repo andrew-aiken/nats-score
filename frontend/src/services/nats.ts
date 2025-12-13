@@ -3,11 +3,11 @@ import { connect, StringCodec, consumerOpts, createInbox, jwtAuthenticator } fro
 import type { NatsConnection, JetStreamClient, JetStreamSubscription } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
 import { getCredentials, login, clearCredentials, isTokenExpired } from './auth'
+import { v4 as uuid } from 'uuid'
 
 const NATS_CONFIG = {
   servers: 'ws://localhost:8080',
-  streamName: 'RESULTS',
-  subject: 'results.>'
+  subject: 'results.1.>'
 }
 
 const sc = StringCodec()
@@ -143,6 +143,8 @@ export const useNatsStore = create<NatsState>((set, get) => ({
       const opts = consumerOpts()
       opts.deliverAll() // Start from the first message in the stream
       opts.ackNone() // No acknowledgment needed (view only)
+      opts.consumerName(uuid())
+      opts.description("Dashboard consumer of " + subject)
       opts.deliverTo(createInbox()) // Required for push consumer
 
       console.log(`Subscribing to JetStream: ${subject} (with history)`)
