@@ -1,11 +1,13 @@
 {
     "checks": {
         "noop": {
+            "frequency": 15,
             "type": "noop",
             "description": "No operation check",
             "score_weight": 1
         },
         "icmp": {
+            "frequency": 30,
             "name": "Fancy ICMP",
             "type": "icmp",
             "description": "ICMP check",
@@ -16,6 +18,7 @@
             "mutable_fields": ["host"]
         },
         "http": {
+            "frequency": 90,
             "type": "http",
             "description": "HTTP Check",
             "score_weight": 2,

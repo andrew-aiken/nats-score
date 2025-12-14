@@ -42,6 +42,32 @@ type AuthResult struct {
 	Error        string            `json:"error,omitempty"`
 }
 
+// RequireAdminAuth is a middleware that checks if the request has an admin role
+func (m *AuthMiddleware) RequireAdminAuth(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		result, claim := m.authenticate(r)
+
+		if !result.Authorized {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(result)
+			return
+		}
+
+		for _, role := range claim.Roles {
+			if result.MatchedRoles[role] == "admin" {
+				next(w, r)
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		// TODO: Obfuscate results
+		json.NewEncoder(w).Encode(result)
+	}
+}
+
 // RequireAuth is middleware that requires a valid NATS JWT with at least one required role
 func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +109,7 @@ func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *nats.UserCl
 
 	tokenString := parts[1]
 	claims, err := m.natsAuthService.VerifyJWT(tokenString)
+
 	if err != nil {
 		return AuthResult{
 			Authorized: false,

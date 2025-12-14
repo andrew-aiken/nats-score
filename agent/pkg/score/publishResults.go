@@ -7,6 +7,11 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+type PublishedResults struct {
+	checks.Results
+	Points int8 `json:"points"`
+}
+
 func publishResults(streamName string, results checks.Results, scoreWeight int8, js nats.JetStreamContext) error {
 	// No points for failed check
 	scoredPoints := int8(0)
@@ -16,9 +21,12 @@ func publishResults(streamName string, results checks.Results, scoreWeight int8,
 		scoredPoints = scoreWeight
 	}
 
-	data := map[string]interface{}{"timestamp": results.Timestamp, "passed": results.Passed, "points": scoredPoints, "message": results.Message, "details": results.Details}
-	bytes, _ := json.Marshal(data)
+	publishedResults := PublishedResults{
+		Results: results,
+		Points:  scoredPoints,
+	}
 
+	bytes, _ := json.Marshal(publishedResults)
 	js.Publish(streamName, bytes)
 
 	return nil

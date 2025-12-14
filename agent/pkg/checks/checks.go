@@ -12,10 +12,10 @@ type Checker interface {
 }
 
 type Results struct {
-	Details   map[string]string
-	Message   string
-	Passed    bool
-	Timestamp time.Time
+	Details   map[string]string `json:"details"`
+	Message   string            `json:"message"`
+	Passed    bool              `json:"passed"`
+	Timestamp time.Time         `json:"timestamp"`
 }
 
 func ConvertInputType(input map[string]interface{}, output interface{}) error {

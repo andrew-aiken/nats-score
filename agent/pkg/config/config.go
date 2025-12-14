@@ -18,12 +18,6 @@ type Settings struct {
 	TeamNumber int
 }
 
-// type Attributes struct {
-// 	Username string `json:"username"`
-// 	Password string `json:"password"`
-// 	Token    string `json:"token"`
-// }
-
 type Checks struct {
 	Name          string      `json:"name"`
 	Definition    interface{} `json:"definition"`

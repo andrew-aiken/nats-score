@@ -1,16 +1,35 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"server/pkg/config"
 	"server/pkg/handlers"
 	"server/pkg/middleware"
 	"server/pkg/nats"
 
+	"github.com/go-co-op/gocron/v2"
 	"golang.org/x/oauth2"
 )
+
+type Settings struct {
+	Checks map[CheckID]Checks `json:"checks"`
+}
+
+type CheckID string
+
+type Checks struct {
+	// Name          string      `json:"name"`
+	Frequency int16 `json:"frequency"` // How often the check runs in seconds
+}
 
 // TODO
 // This is the state key used for security, sent in login, validated in callback.
@@ -25,6 +44,13 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
+	cronScheduler, err := gocron.NewScheduler()
+	if err != nil {
+		fmt.Printf("Failed to create cron scheduler: %v\n", err)
+	}
+
+	defer cronScheduler.Shutdown()
+
 	// Initialize NATS auth service
 	natsAuthService, err := nats.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
 	if err != nil {
@@ -32,17 +58,67 @@ func main() {
 	}
 
 	// Initialize NATS KV client (optional - only if NATS URL is configured)
+	// TODO: Change this logic
 	var natsKVClient *nats.NATSKVClient
-	if cfg.NATSUrl != "" {
-		natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
-		if err != nil {
-			log.Printf("Warning: Failed to initialize NATS KV client: %v", err)
-			log.Println("Mutable fields endpoint will be unavailable")
-		} else {
-			log.Println("Connected to NATS KV bucket 'settings'")
-			defer natsKVClient.Close()
-		}
+	natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
+	if err != nil {
+		log.Printf("Warning: Failed to initialize NATS KV client: %v", err)
+		log.Println("Mutable fields endpoint will be unavailable")
+	} else {
+		log.Println("Connected to NATS KV bucket 'settings'")
+		defer natsKVClient.Close()
 	}
+
+	// Test - Start KV watcher in background
+	kv := natsKVClient.GetKVClient()
+	watcher, err := kv.Watch("settings")
+	if err != nil {
+		log.Fatalf("Failed to start KV watcher: %v", err)
+	}
+	defer watcher.Stop()
+
+	// Watch for updates in background
+	go func() {
+		for entry := range watcher.Updates() {
+			if entry != nil {
+				var Settings Settings
+				if err := json.Unmarshal(entry.Value(), &Settings); err != nil {
+					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
+					return
+				}
+
+				log.Println("Removing all old checks")
+				cronScheduler.RemoveByTags("check")
+
+				log.Println("Adding new jobs")
+				for ruleID, check := range Settings.Checks {
+					log.Printf("Adding check: %s\n", ruleID)
+
+					// If the frequency flag is not defined default to 60 seconds
+					if check.Frequency == 0 {
+						check.Frequency = 60
+					}
+
+					cronScheduler.NewJob(
+						gocron.DurationJob(
+							time.Duration(check.Frequency)*time.Second,
+						),
+						gocron.NewTask(
+							func(a CheckID) {
+								// TODO: Have some debug message when check event is published
+								// fmt.Println(a)
+								natsKVClient.GetNATSClient().Publish("events.score."+string(a), []byte{})
+							},
+							ruleID,
+						),
+						gocron.WithTags("check"),
+					)
+				}
+			}
+		}
+	}()
+	log.Println("Started KV watcher for 'settings'")
+	// End Test
 
 	// Create OAuth2 config
 	oauthConfig := &oauth2.Config{
@@ -62,7 +138,17 @@ func main() {
 	}
 
 	// Create handler
-	h := handlers.NewHandler(oauthConfig, natsAuthService, natsKVClient, cfg.DiscordGuildID, cfg.DiscordRoleMap, cfg.StaticAuthMap, state, cfg.FrontendURL)
+	h := handlers.NewHandler(&handlers.Handler{
+		OauthConfig:     oauthConfig,
+		NatsAuthService: natsAuthService,
+		NatsKVClient:    natsKVClient,
+		TargetGuildID:   cfg.DiscordGuildID,
+		RoleMap:         cfg.DiscordRoleMap,
+		AccessTokens:    cfg.StaticAuthMap,
+		State:           state,
+		FrontendURL:     cfg.FrontendURL,
+		CronScheduler:   cronScheduler,
+	})
 
 	// Create CORS middleware (allow frontend origin)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
@@ -75,10 +161,51 @@ func main() {
 	http.HandleFunc("/auth/verify", corsMiddleware.Handler(h.Verify))
 	http.HandleFunc("/auth/callback", h.Callback)
 	http.HandleFunc("/auth/token", corsMiddleware.Handler(h.TokenLogin))
-	http.HandleFunc("/auth/test", corsMiddleware.Handler(authMiddleware.RequireAuth(h.TestAuth)))
 	http.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(h.GetMutableFields)))
 	http.HandleFunc("/api/settings", corsMiddleware.Handler(authMiddleware.RequireAuth(h.TeamSettings)))
 
-	log.Println("Listening on :3000")
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	http.HandleFunc("/api/admin/settings", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.GetGlobalSettings)))
+	http.HandleFunc("/api/admin/cron/start", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StartScoringCron)))
+	http.HandleFunc("/api/admin/cron/stop", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StopScoringCron)))
+
+	// Create HTTP server with proper configuration
+	server := &http.Server{
+		Addr:         ":3000",
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Println("Listening on :3000")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
+		}
+	}()
+
+	// Setup graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Wait for interrupt signal
+	sig := <-sigChan
+	log.Printf("Received signal: %v. Shutting down gracefully...", sig)
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	// Stop KV watcher if running
+	if watcher != nil {
+		log.Println("Stopping KV watcher...")
+		watcher.Stop()
+	}
+
+	// Shutdown HTTP server
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
+	}
+
+	log.Println("Server stopped")
 }

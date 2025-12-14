@@ -184,7 +184,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
                 return state
               }
               return {
-                messages: [...state.messages, natsMessage].slice(-500)
+                messages: [...state.messages, natsMessage].slice(-501) // TODO: Set the limit on how many results that can be shown
               }
             })
           } catch (err) {

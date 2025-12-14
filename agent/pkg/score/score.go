@@ -79,6 +79,7 @@ func allowedArgumentOverrides(allowedItems []string, attributes map[string]strin
 	}
 }
 
+// TODO: This code stuff can probably be refactored
 // applyOverrides uses reflection to set field values on the definition struct
 func applyOverrides(definition interface{}, overrides map[string]string) error {
 	if len(overrides) == 0 {
