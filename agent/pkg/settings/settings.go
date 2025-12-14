@@ -9,8 +9,8 @@ import (
 
 type StaticConf struct {
 	// Add fields for static configuration here
-	TeamNumber int    `json:"team_number"`
-	IPv6Bit    string `json:"ipv6_bit"`
+	TeamNumber int    // TeamNumber
+	IPv6Bit    string // IPv6Bit
 }
 
 func TemplateDefinition(def interface{}, static StaticConf) ([]byte, error) {

@@ -73,10 +73,15 @@ func allowedArgumentOverrides(allowedItems []string, attributes map[string]strin
 	for key, value := range attributes {
 		for _, allowed := range allowedItems {
 			if key == allowed {
-				(*override)[key] = value
+				(*override)[key] = cleanTemplateString(value)
 			}
 		}
 	}
+}
+
+// There has is probably a better way to do this but for now just strip the {{ }} from the string
+func cleanTemplateString(definition string) string {
+	return strings.ReplaceAll(strings.ReplaceAll(definition, "{{", ""), "}}", "")
 }
 
 // TODO: This code stuff can probably be refactored
