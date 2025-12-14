@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/pkg/settings"
 
 	"github.com/miekg/dns"
 )
@@ -25,7 +26,7 @@ type Input struct{}
 
 // Run a single instance of the check
 // For now we only support A record querries
-func (d *Definition) Run(ctx context.Context, input map[string]interface{}) checks.Results {
+func (d *Definition) Run(ctx context.Context, input map[string]interface{}, static settings.StaticConf) checks.Results {
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 

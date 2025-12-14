@@ -20,13 +20,20 @@ import (
 func main() {
 	natsURL := os.Getenv("NATS_URL")
 	if natsURL == "" {
+		fmt.Println("No nats url specified using default address")
 		natsURL = nats.DefaultURL
 	}
 
 	natsCredsFile := os.Getenv("NATS_CREDS_FILE")
+	if natsCredsFile == "" {
+		fmt.Println("No credentials file specified in env variable 'NATS_CREDS_FILE'")
+		return
+	}
+
 	teamNumber := os.Getenv("TEAM_NUMBER")
 	if teamNumber == "" {
-		teamNumber = "0"
+		fmt.Println("No team number specified in env variable 'TEAM_NUMBER'")
+		return
 	}
 
 	var agentSettings config.Settings
@@ -36,19 +43,15 @@ func main() {
 	if err != nil {
 		log.Fatalf("Invalid TEAM_NUMBER (%v) Must be an integer", err)
 	}
-	agentSettings.TeamNumber = teamNumberInt
+	agentSettings.StaticConf.TeamNumber = teamNumberInt
 
 	log.Printf("Connecting to NATS at %s...", natsURL)
 
 	// Build connection options
 	opts := []nats.Option{
 		nats.Name(teamNumber + "-agent"),
-	}
-
-	// Use credentials file for JWT + NKey authentication
-	if natsCredsFile != "" {
-		opts = append(opts, nats.UserCredentials(natsCredsFile))
-		log.Printf("Using credentials file: %s", natsCredsFile)
+		// Use credentials file for JWT + NKey authentication
+		nats.UserCredentials(natsCredsFile),
 	}
 
 	// Connect to NATS with retry
@@ -140,13 +143,18 @@ func main() {
 
 			switch key {
 			case "settings":
-				// TODO: If a key in the settings kv is removed the go struct will keep it in the config
-				fmt.Println("Global settings update")
+				// Print settings as json object
+				// json.NewEncoder(os.Stdout).Encode(agentSettings)
+
+				log.Println("Updating Global settings")
+
+				// Remove existing checks
+				// If an updated settings in kv renames or removes checks they would not be removed from the settings var
+				agentSettings.Checks = map[string]config.Checks{}
 
 				if err := json.Unmarshal(entry.Value(), &agentSettings); err != nil {
 					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
 				}
-
 			case teamNumber + ".settings":
 				fmt.Println("Team-specific settings update")
 
@@ -156,12 +164,9 @@ func main() {
 					continue
 				}
 
-				// Replace Attributes entirely with team-specific config (Checks remain untouched)
+				// Replace Attributes entirely with team-specific config
 				agentSettings.Attributes = teamSettings
-				fmt.Println(agentSettings.Attributes)
 			}
-
-			// fmt.Println(string(entry.Value()))
 		}
 	}
 }

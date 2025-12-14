@@ -10,12 +10,13 @@ import (
 	"github.com/aaiken/nats-score/pkg/checks/http"
 	"github.com/aaiken/nats-score/pkg/checks/icmp"
 	"github.com/aaiken/nats-score/pkg/checks/noop"
+	"github.com/aaiken/nats-score/pkg/settings"
 )
 
 type Settings struct {
 	Checks     map[string]Checks            `json:"checks"`
 	Attributes map[string]map[string]string `json:"attributes"`
-	TeamNumber int
+	StaticConf settings.StaticConf          `json:"static_conf"`
 }
 
 type Checks struct {

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/pkg/settings"
 )
 
 type Definition struct {
@@ -32,7 +33,7 @@ type Definition struct {
 
 type Input struct{}
 
-func (d *Definition) Run(ctx context.Context, input map[string]interface{}) checks.Results {
+func (d *Definition) Run(ctx context.Context, input map[string]interface{}, static settings.StaticConf) checks.Results {
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 

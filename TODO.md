@@ -2,8 +2,10 @@
 - [ ] HTTPS
 
 ## Agent
-- [ ] Dynamic Team resources (ip, team#, etc.)
-- [ ] Overhaul input instead of env vars (nats, team#)
+- [x] Dynamic Team resources (ip, team#, etc.)
+  - [ ] User input can contain templated values. This should be blocked
+- [x] Overhaul input instead of env vars (nats, team#)
+- [ ] Cleanup main cmd function
 
 ## Frontend
 - [ ] Admin dashboard

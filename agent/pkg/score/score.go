@@ -20,7 +20,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 
 		// fmt.Println(settings.Attributes)
 
-		streamName := "results." + strconv.Itoa(settings.TeamNumber) + "." + checkName
+		streamName := "results." + strconv.Itoa(settings.StaticConf.TeamNumber) + "." + checkName
 
 		var input map[string]interface{}
 
@@ -55,7 +55,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 		}
 
 		ctx := context.Background()
-		result := checker.Run(ctx, input)
+		result := checker.Run(ctx, input, settings.StaticConf)
 
 		if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
 			log.Printf("Failed to publish results: %v", err)
