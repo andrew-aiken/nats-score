@@ -56,7 +56,7 @@ func (h *Handler) TokenLogin(w http.ResponseWriter, r *http.Request) {
 	var userRoleID string
 
 	for roleID, roleName := range h.RoleMap {
-		fmt.Println("RoleID:", roleID, "RoleName:", roleName)
+		// fmt.Println("RoleID:", roleID, "RoleName:", roleName)
 		if roleName == userRole {
 			userRoleID = roleID
 			continue

@@ -2,12 +2,11 @@ import { create } from 'zustand'
 import { connect, StringCodec, consumerOpts, createInbox, jwtAuthenticator } from 'nats.ws'
 import type { NatsConnection, JetStreamClient, JetStreamSubscription } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
-import { getCredentials, login, clearCredentials, isTokenExpired } from './auth'
+import { getCredentials, login, clearCredentials, isTokenExpired, getTeamIdFromJwt } from './auth'
 import { v4 as uuid } from 'uuid'
 
 const NATS_CONFIG = {
   servers: 'ws://localhost:8080',
-  subject: 'results.1.>'
 }
 
 const sc = StringCodec()
@@ -60,6 +59,16 @@ export const useNatsStore = create<NatsState>((set, get) => ({
       return
     }
 
+    // Get team ID from JWT
+    const teamId = getTeamIdFromJwt(creds.jwt)
+    if (!teamId) {
+      console.log('No team ID in JWT, redirecting to login')
+      clearCredentials()
+      login()
+      return
+    }
+    const subject = `results.${teamId}.>`
+
     try {
       const encoder = new TextEncoder()
       connection = await connect({
@@ -91,7 +100,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
       })
 
       // Auto-subscribe to stream with history
-      await get().subscribeToStream(NATS_CONFIG.subject)
+      await get().subscribeToStream(subject)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to connect'
       

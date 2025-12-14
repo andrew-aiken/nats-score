@@ -1,10 +1,14 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { clearCredentials } from '../services/auth'
+import { clearCredentials, getCredentials, getTeamIdFromJwt } from '../services/auth'
 import './NavBar.css'
 
 export default function NavBar() {
   const location = useLocation()
   const navigate = useNavigate()
+
+  // Get team ID from JWT
+  const creds = getCredentials()
+  const teamId = creds ? getTeamIdFromJwt(creds.jwt) : null
 
   const handleLogout = () => {
     clearCredentials()
@@ -41,9 +45,12 @@ export default function NavBar() {
         </NavLink>
       </div>
 
-      <button className="logout-btn" onClick={handleLogout}>
-        Logout
-      </button>
+      <div className="nav-user">
+        {teamId && <span className="team-id">Team {teamId}</span>}
+        <button className="logout-btn" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
     </nav>
   )
 }

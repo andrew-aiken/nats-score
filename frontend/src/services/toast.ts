@@ -101,3 +101,4 @@ export const toast = {
   info: (title: string, message?: string) => 
     useToastStore.getState().addToast({ type: 'info', title, message }),
 }
+

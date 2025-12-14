@@ -141,12 +141,20 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 			log.Printf("  %d. Role ID: %s\n", i+1, roleID)
 		}
 	}
-	if member.Nick != "" {
-		log.Printf("  Nickname: %s\n", member.Nick)
+	// if member.Nick != "" {
+	// 	log.Printf("  Nickname: %s\n", member.Nick)
+	// }
+
+	team, err := validateRoles(h.RoleMap, member.Roles)
+
+	if err != nil {
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte(err.Error()))
+		return
 	}
 
 	// Generate NATS credentials for authorized user
-	creds, err := h.NatsAuthService.GenerateCredentials(user.ID, user.Username, member.Roles)
+	creds, err := h.NatsAuthService.GenerateCredentials(user.ID, team, member.Roles)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Error generating NATS credentials: " + err.Error()))
@@ -204,14 +212,15 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	teamNumber := claims.TeamID
 	// Extract team number from roles
-	teamNumber, ok := nats.GetTeamNumberFromRoles(claims.Roles)
-	if !ok {
-		log.Printf("User %s has no team role", claims.Username)
-		w.WriteHeader(http.StatusForbidden)
-		json.NewEncoder(w).Encode(map[string]string{"error": "No team role found"})
-		return
-	}
+	// teamNumber, ok := nats.GetTeamNumberFromRoles(claims.Roles)
+	// if !ok {
+	// 	log.Printf("User %s has no team role", claims.Username)
+	// 	w.WriteHeader(http.StatusForbidden)
+	// 	json.NewEncoder(w).Encode(map[string]string{"error": "No team role found"})
+	// 	return
+	// }
 
 	switch r.Method {
 	case http.MethodGet:
@@ -242,7 +251,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Printf("Team %s settings updated by %s", teamNumber, claims.Username)
+		log.Printf("Team %s settings updated by %s", teamNumber, claims.UserID)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": true,
 			"team":    teamNumber,
@@ -251,5 +260,25 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+	}
+}
+
+func validateRoles(roleMap config.DiscordRoleMap, userRoles []string) (teamID string, error error) {
+	var userValidRoles []string
+
+	for k := range userRoles {
+		if teamID, ok := roleMap[userRoles[k]]; ok {
+			fmt.Println("Role found: " + teamID)
+			userValidRoles = append(userValidRoles, teamID)
+		}
+	}
+
+	switch len(userValidRoles) {
+	case 0:
+		return "", fmt.Errorf("user has no valid roles")
+	case 1:
+		return userValidRoles[0], nil
+	default:
+		return "", fmt.Errorf("user is assigned to many roles")
 	}
 }

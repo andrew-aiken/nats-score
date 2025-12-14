@@ -9,31 +9,31 @@ import (
 )
 
 // Role IDs for permission mapping
-const (
-	AdminRoleID = "833740336010100793"
-	Team1RoleID = "1065039522443833364"
-)
+// const (
+// 	AdminRoleID = "833740336010100793"
+// 	Team1RoleID = "1065039522443833364"
+// )
 
-// RoleToTeamNumber maps role IDs to team numbers
-var RoleToTeamNumber = map[string]string{
-	Team1RoleID: "1",
-	// Add more team mappings here as needed
-}
+// // RoleToTeamNumber maps role IDs to team numbers
+// var RoleToTeamNumber = map[string]string{
+// 	Team1RoleID: "1",
+// 	// Add more team mappings here as needed
+// }
 
 // GetTeamNumberFromRoles extracts the team number from a list of role IDs
 // Returns the team number and true if found, or empty string and false if not found
 // Admin role returns "admin" as a special case
-func GetTeamNumberFromRoles(roles []string) (string, bool) {
-	for _, role := range roles {
-		if role == AdminRoleID {
-			return "admin", true
-		}
-		if teamNum, ok := RoleToTeamNumber[role]; ok {
-			return teamNum, true
-		}
-	}
-	return "", false
-}
+// func GetTeamNumberFromRoles(roles []string) (string, bool) {
+// 	for _, role := range roles {
+// 		if role == AdminRoleID {
+// 			return "admin", true
+// 		}
+// 		if teamNum, ok := RoleToTeamNumber[role]; ok {
+// 			return teamNum, true
+// 		}
+// 	}
+// 	return "", false
+// }
 
 // Credentials holds the NATS JWT and seed for authentication
 type Credentials struct {
@@ -44,7 +44,7 @@ type Credentials struct {
 // UserClaims represents the extracted claims from a NATS JWT
 type UserClaims struct {
 	UserID        string
-	Username      string
+	TeamID        string
 	Roles         []string
 	PubAllow      []string
 	SubAllow      []string
@@ -74,7 +74,7 @@ func NewNATSAuthService(accountSeed, accountPubKey string) (*NATSAuthService, er
 }
 
 // GenerateCredentials creates NATS credentials for a user with role-based permissions
-func (s *NATSAuthService) GenerateCredentials(userID, username string, roles []string) (*Credentials, error) {
+func (s *NATSAuthService) GenerateCredentials(userID string, team string, roles []string) (*Credentials, error) {
 	// Create a new user keypair
 	userKP, err := nkeys.CreateUser()
 	if err != nil {
@@ -88,7 +88,7 @@ func (s *NATSAuthService) GenerateCredentials(userID, username string, roles []s
 
 	// Create user claims
 	userClaim := jwt.NewUserClaims(userPub)
-	userClaim.Name = username
+	userClaim.Name = team
 	userClaim.IssuedAt = time.Now().Unix()
 	userClaim.Expires = time.Now().Add(24 * time.Hour).Unix()
 	userClaim.IssuerAccount = s.accountPubKey
@@ -100,7 +100,7 @@ func (s *NATSAuthService) GenerateCredentials(userID, username string, roles []s
 	}
 
 	// Apply role-based permissions
-	s.applyPermissions(userClaim, roles)
+	s.applyPermissions(userClaim, roles, team)
 
 	// Sign with account key
 	accountKP, err := nkeys.FromSeed(s.accountSeed)
@@ -126,31 +126,30 @@ func (s *NATSAuthService) GenerateCredentials(userID, username string, roles []s
 }
 
 // applyPermissions sets NATS pub/sub permissions based on Discord roles
-func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, roles []string) {
+func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, roles []string, team string) {
 	// Check for admin role - full access
-	for _, role := range roles {
-		if role == AdminRoleID {
-			userClaim.Permissions.Pub.Allow.Add(">")
-			userClaim.Permissions.Sub.Allow.Add(">")
-			return
-		}
+	if team == "admin" {
+		userClaim.Permissions.Pub.Allow.Add(">")
+		userClaim.Permissions.Sub.Allow.Add(">")
+		return
 	}
 
-	// Check for team roles
-	for _, role := range roles {
-		if role == Team1RoleID {
-			userClaim.Permissions.Pub.Allow.Add("_INBOX.>")
-			userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.NAMES")
-			userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.results")
-			userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.results.*.results.1.>")
-			userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.MSG.NEXT.results.*")
-			userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.results.*")
-			userClaim.Permissions.Pub.Allow.Add("$JS.ACK.results.>")
+	teamSubject := "results." + team + ".>"
 
-			userClaim.Permissions.Sub.Allow.Add("results.1.>")
-			userClaim.Permissions.Sub.Allow.Add("_INBOX.>")
-		}
+	if team == "observer" {
+		teamSubject = "results.*.>"
 	}
+
+	userClaim.Permissions.Pub.Allow.Add("_INBOX.>")
+	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.NAMES")
+	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.results")
+	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.results.*." + teamSubject)
+	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.MSG.NEXT.results.*")
+	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.results.*")
+	userClaim.Permissions.Pub.Allow.Add("$JS.ACK.results.>")
+
+	userClaim.Permissions.Sub.Allow.Add(teamSubject)
+	userClaim.Permissions.Sub.Allow.Add("_INBOX.>")
 }
 
 // VerifyJWT validates a NATS JWT and returns the user claims
@@ -201,7 +200,7 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 
 	return &UserClaims{
 		UserID:        userID,
-		Username:      claim.Name,
+		TeamID:        claim.Name,
 		Roles:         roles,
 		PubAllow:      pubAllow,
 		SubAllow:      subAllow,

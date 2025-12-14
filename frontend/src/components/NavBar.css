@@ -8,8 +8,20 @@
   border-bottom: 1px solid var(--color-border);
 }
 
-.logout-btn {
+.nav-user {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.team-id {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.logout-btn {
   padding: 0.5rem 1rem;
   font-size: 0.875rem;
   font-weight: 500;

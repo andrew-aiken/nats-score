@@ -62,6 +62,7 @@ export function getCredentials(): NatsCredentials | null {
 
   try {
     const credentials: NatsCredentials = JSON.parse(stored)
+    // console.log(foo(credentials.jwt))
     if (isTokenExpired(credentials.jwt)) {
       clearCredentials()
       return null
@@ -69,6 +70,23 @@ export function getCredentials(): NatsCredentials | null {
     return credentials
   } catch {
     clearCredentials()
+    return null
+  }
+}
+
+/**
+ * Extract team ID from JWT's name claim
+ * Returns null if token is invalid or name claim is missing
+ */
+export function getTeamIdFromJwt(jwt: string): string | null {
+  try {
+    const parts = jwt.split('.')
+    if (parts.length !== 3) return null
+    const payload = parts[1]
+    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+    const claims = JSON.parse(decoded)
+    return claims.name || null
+  } catch {
     return null
   }
 }

@@ -37,7 +37,7 @@ func NewAuthMiddleware(natsAuthService *nats.NATSAuthService, requiredRoles map[
 type AuthResult struct {
 	Authorized   bool              `json:"authorized"`
 	UserID       string            `json:"user_id,omitempty"`
-	Username     string            `json:"username,omitempty"`
+	TeamID       string            `json:"team_id,omitempty"`
 	MatchedRoles map[string]string `json:"matched_roles,omitempty"`
 	Error        string            `json:"error,omitempty"`
 }
@@ -129,7 +129,7 @@ func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *nats.UserCl
 		return AuthResult{
 			Authorized: false,
 			UserID:     claims.UserID,
-			Username:   claims.Username,
+			TeamID:     claims.TeamID,
 			Error:      "user does not have any required roles",
 		}, claims
 	}
@@ -137,7 +137,7 @@ func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *nats.UserCl
 	return AuthResult{
 		Authorized:   true,
 		UserID:       claims.UserID,
-		Username:     claims.Username,
+		TeamID:       claims.TeamID,
 		MatchedRoles: matchedRoles,
 	}, claims
 }
