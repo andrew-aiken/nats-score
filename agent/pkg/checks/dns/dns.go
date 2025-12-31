@@ -18,8 +18,9 @@ type Definition struct {
 	Server         string `json:"server"`                  // The IP of the DNS server to query
 	Fqdn           string `json:"fqdn"`                    // The FQDN of the host you are looking up
 	ExpectedResult string `json:"expected_result"`         // The expected IP of the host you are looking up
-	Port           string `json:"port" default:"53"`       // The port of the DNS server
+	Port           int16  `json:"port" default:"53"`       // The port of the DNS server
 	RecordType     string `json:"record_type" default:"A"` // The type of DNS record to query
+	timeout        int8   `default:"20"`                   // Timeout for the dns query in seconds
 }
 
 type Input struct{}
@@ -41,12 +42,11 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 	msg.SetQuestion(fqdn, recordType)
 
 	// Make it obey timeout via deadline
-	// TODO: change this to be relative to the parent context's timeout
-	deadctx, cancel := context.WithDeadline(ctx, time.Now().Add(20*time.Second))
+	deadctx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Duration(d.timeout)*time.Second))
 	defer cancel()
 
 	// Send the query
-	in, err := dns.ExchangeContext(deadctx, &msg, fmt.Sprintf("%s:%s", d.Server, d.Port))
+	in, err := dns.ExchangeContext(deadctx, &msg, fmt.Sprintf("%s:%d", d.Server, d.Port))
 	if err != nil {
 		result.Message = fmt.Sprintf("Problem sending query to %s : %s", d.Server, err)
 		return result

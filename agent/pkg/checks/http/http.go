@@ -29,6 +29,7 @@ type Definition struct {
 	MatchContent bool              // whether the response body must match a defined regex for the check to pass
 	Redirect     bool              // whether to follow http redirects
 	VerifyCert   bool              // whether to verify the server's TLS certificate
+	timeout      int8              `default:"20"` // Timeout for the http query in seconds
 }
 
 type Input struct{}
@@ -53,8 +54,6 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 		}
 	}
 
-	// TODO: change http.Client.Timeout to be relative to the parent context's
-	// timeout
 	client := &http.Client{
 		Jar: cookieJar,
 		Transport: &http.Transport{
@@ -64,7 +63,7 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 			},
 		},
 		CheckRedirect: redirect,
-		Timeout:       time.Duration(30) * time.Second, // TODO configurable
+		Timeout:       time.Duration(d.timeout) * time.Second,
 	}
 
 	// TODO: create child context with deadline less than the parent context

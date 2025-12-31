@@ -10,7 +10,6 @@ import (
 	"github.com/aaiken/nats-score/pkg/run"
 )
 
-// TODO: Add log level global flag
 func main() {
 	cmd := &cli.Command{
 		Name:  "agent",
@@ -35,9 +34,16 @@ func main() {
 				Value:   "nats://127.0.0.1:4222",
 				Sources: cli.EnvVars("SCORE_NATS_URL"),
 			},
+			&cli.StringFlag{
+				Name:    "log-level",
+				Aliases: []string{"l"},
+				Usage:   "Sets the program log level",
+				Value:   "info",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return run.Run(run.RunArgs{
+				LogLevel:      cmd.String("log-level"),
 				NatsUrl:       cmd.String("nats-address"),
 				NatsCredsFile: cmd.String("nats-creds"),
 				TeamNumber:    cmd.Int16("team"),

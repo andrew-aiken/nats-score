@@ -23,6 +23,7 @@ type Definition struct {
 	Username     string `optiontype:"required"`
 	Password     string // User password
 	MatchContent bool   // Whether the response must match a defined regex for the check to pass
+	timeout      int8   `default:"20"` // Timeout for the ssh client connection in seconds
 }
 
 type Input struct{}
@@ -46,7 +47,7 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 	sshConfig := &ssh.ClientConfig{
 		User:            definition.Username,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
-		Timeout:         10 * time.Second,
+		Timeout:         time.Duration(d.timeout) * time.Second,
 	}
 
 	sshConfig.Auth, err = d.generateAuth()
