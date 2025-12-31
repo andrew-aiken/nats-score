@@ -38,6 +38,9 @@ type Checks struct {
 const state = "random"
 
 func main() {
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {

@@ -1,5 +1,6 @@
 # TODO
 - [ ] HTTPS
+- [ ] Dynamic Timeout per check?
 
 ## Agent
 - [x] Dynamic Team resources (ip, team#, etc.)
@@ -10,8 +11,8 @@
 ## Frontend
 - [ ] Admin dashboard
 - [ ] Admin settings
-  - [ ] Start/Stop scoring buttons
-  - [ ] View global settings
+  - [x] Start/Stop scoring buttons
+  - [x] View global settings
 - [ ] Observer dashboard
 - [ ] Grouping NATS data points. Must be a better way
 - [x] Team ID from JWT
@@ -20,3 +21,4 @@
 - [ ] Additional Admin routes
   - Update settings?
 - [x] Get team ID during auth
+- [ ] Flip static_auth to be token:role (would allow multiple of the same account with different tokens)

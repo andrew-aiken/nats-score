@@ -1,0 +1,255 @@
+.admin-view {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.admin-header {
+  margin-bottom: 2rem;
+}
+
+.admin-header h2 {
+  font-size: 2rem;
+  color: var(--primary-color, #333);
+  margin: 0;
+}
+
+.admin-controls {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-controls h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-start {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-start:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.btn-stop {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-stop:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.admin-settings {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-settings h3 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.settings-display {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 1rem;
+  overflow-x: auto;
+}
+
+.settings-display pre {
+  margin: 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.loading,
+.no-settings,
+.no-stats {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Team Statistics Section */
+.admin-stats {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.admin-stats h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.stats-info {
+  margin: 0 0 1rem 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.team-stats-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.team-stat-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.team-stat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.team-stat-header:hover {
+  background: #f3f4f6;
+}
+
+.team-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+.expand-icon {
+  color: #6b7280;
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+}
+
+.team-overall {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.percentage-badge {
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  min-width: 4.5rem;
+  text-align: center;
+}
+
+.check-count {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.team-checks {
+  border-top: 1px solid #e5e7eb;
+  padding: 0.75rem 1.25rem;
+  background: white;
+}
+
+.check-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.check-row:last-child {
+  border-bottom: none;
+}
+
+.check-name {
+  font-size: 0.875rem;
+  color: #374151;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check-stats {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.progress-bar {
+  width: 100px;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.check-percentage {
+  font-weight: 600;
+  font-size: 0.875rem;
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+.check-count-small {
+  color: #9ca3af;
+  font-size: 0.75rem;
+  min-width: 3.5rem;
+}

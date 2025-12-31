@@ -82,3 +82,79 @@ export async function updateTeamSettings(settings: Record<string, Record<string,
   return response.json()
 }
 
+/**
+ * Start scoring (admin only)
+ */
+export async function startScoring(): Promise<{ success: boolean }> {
+  const creds = getCredentials()
+  if (!creds) {
+    throw new Error('Not authenticated')
+  }
+
+  const response = await fetch(`${API_SERVER}/api/admin/cron/start`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${creds.jwt}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to start scoring' }))
+    throw new Error(error.error || 'Failed to start scoring')
+  }
+
+  return response.json()
+}
+
+/**
+ * Stop scoring (admin only)
+ */
+export async function stopScoring(): Promise<{ success: boolean }> {
+  const creds = getCredentials()
+  if (!creds) {
+    throw new Error('Not authenticated')
+  }
+
+  const response = await fetch(`${API_SERVER}/api/admin/cron/stop`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${creds.jwt}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to stop scoring' }))
+    throw new Error(error.error || 'Failed to stop scoring')
+  }
+
+  return response.json()
+}
+
+/**
+ * Get global settings (admin only)
+ */
+export async function getGlobalSettings(): Promise<any> {
+  const creds = getCredentials()
+  if (!creds) {
+    throw new Error('Not authenticated')
+  }
+
+  const response = await fetch(`${API_SERVER}/api/admin/settings`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${creds.jwt}`,
+      'Content-Type': 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch global settings' }))
+    throw new Error(error.error || 'Failed to fetch global settings')
+  }
+
+  return response.json()
+}
+
+

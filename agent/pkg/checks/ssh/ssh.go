@@ -1,0 +1,133 @@
+package ssh
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+	"regexp"
+	"time"
+
+	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/pkg/settings"
+
+	"golang.org/x/crypto/ssh"
+)
+
+type Definition struct {
+	Command      string `optiontype:"required"`
+	ContentRegex string `default:".*"`          // regex for the response to match
+	Host         string `optiontype:"required"` // IP or hostname of the host to run the SSH check against
+	KeyFile      string // Path to local ssh key
+	Port         int16  `default:"22"` // SSH port
+	Username     string `optiontype:"required"`
+	Password     string // User password
+	MatchContent bool   // Whether the response must match a defined regex for the check to pass
+}
+
+type Input struct{}
+
+func (d *Definition) Run(ctx context.Context, input map[string]any, static settings.StaticConf) checks.Results {
+	result := checks.Results{Timestamp: time.Now()}
+
+	definitionBytes, err := settings.TemplateDefinition(d, static)
+	if err != nil {
+		result.Message = fmt.Sprintf("internal error templating definition: %s", err)
+		log.Println(result.Message)
+		return result
+	}
+
+	var definition Definition
+	err = json.Unmarshal(definitionBytes, &definition)
+	if err != nil {
+		result.Message = fmt.Sprintf("internal error unmarshaling templated definition: %s", err)
+		log.Println(result.Message)
+		return result
+	}
+
+	sshConfig := &ssh.ClientConfig{
+		User:            definition.Username,
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Timeout:         10 * time.Second,
+	}
+
+	sshConfig.Auth, err = d.generateAuth()
+	if err != nil {
+		result.Message = fmt.Sprintf("Error when generating ssh auth: %s", err)
+		return result
+	}
+
+	// if len(sshConfig.Auth) == 0 {
+	// 	result.Message = "foo"
+	// }
+
+	sshAddress := fmt.Sprintf("%s:%d", definition.Host, definition.Port)
+
+	// Connect with SSh
+	sshClient, err := ssh.Dial("tcp", sshAddress, sshConfig)
+	if err != nil {
+		result.Message = fmt.Sprintf("Failed to connect to %s: %s", sshAddress, err)
+		return result
+	}
+	defer sshClient.Close()
+
+	// Create SSH session
+	sshSession, err := sshClient.NewSession()
+	if err != nil {
+		result.Message = fmt.Sprintf("Failed to create ssh session: %s", err)
+		return result
+	}
+	defer sshSession.Close()
+
+	output, err := sshSession.CombinedOutput(definition.Command)
+	if err != nil {
+		result.Message = fmt.Sprintf("Error executing command: %s", err)
+		return result
+	}
+	fmt.Printf("%s", output)
+
+	if definition.MatchContent {
+		// Match some content
+		regex, err := regexp.Compile(d.ContentRegex)
+		if err != nil {
+			result.Message = fmt.Sprintf("Error compiling regex string %s : %s", d.ContentRegex, err)
+			return result
+		}
+
+		// Check if the content matches
+		if !regex.Match(output) {
+			result.Message = "Matching content not found"
+			return result
+		}
+	}
+
+	result.Passed = true
+
+	return result
+}
+
+func (d *Definition) generateAuth() ([]ssh.AuthMethod, error) {
+	var authMethods []ssh.AuthMethod
+
+	if d.Password != "" {
+		authMethods = append(authMethods, ssh.Password(d.Password))
+	}
+
+	if d.KeyFile != "" {
+		key, err := os.ReadFile(d.KeyFile)
+		if err != nil {
+			return authMethods, fmt.Errorf("unable to read private key: %v", err)
+		}
+
+		// Create the Signer for this private key.
+		signer, err := ssh.ParsePrivateKey(key)
+		if err != nil {
+			return authMethods, fmt.Errorf("unable to parse private key: %v", err)
+		}
+
+		authMethods = append(authMethods, ssh.PublicKeys(signer))
+	}
+
+	return authMethods, nil
+}

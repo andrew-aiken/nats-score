@@ -5,6 +5,7 @@ import PublicRoute from '../components/PublicRoute'
 import DashboardView from '../views/DashboardView'
 import HealthCheckView from '../views/HealthCheckView'
 import SettingsView from '../views/SettingsView'
+import AdminView from '../views/AdminView'
 import AuthCallbackView from '../views/AuthCallbackView'
 import LoginView from '../views/LoginView'
 
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
           {
             path: 'settings',
             element: <SettingsView />
+          },
+          {
+            path: 'admin',
+            element: <AdminView />
           }
         ]
       }

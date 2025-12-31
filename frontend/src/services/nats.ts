@@ -1,9 +1,8 @@
 import { create } from 'zustand'
-import { connect, StringCodec, consumerOpts, createInbox, jwtAuthenticator } from 'nats.ws'
-import type { NatsConnection, JetStreamClient, JetStreamSubscription } from 'nats.ws'
+import { connect, StringCodec, jwtAuthenticator } from 'nats.ws'
+import type { NatsConnection, JetStreamClient, ConsumerMessages } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
 import { getCredentials, login, clearCredentials, isTokenExpired, getTeamIdFromJwt } from './auth'
-import { v4 as uuid } from 'uuid'
 
 const NATS_CONFIG = {
   servers: 'ws://localhost:8080',
@@ -28,7 +27,7 @@ interface NatsState {
 // Store connection references outside of Zustand state (non-serializable)
 let connection: NatsConnection | null = null
 let jetstream: JetStreamClient | null = null
-let jsSubscription: JetStreamSubscription | null = null
+let consumerMessages: ConsumerMessages | null = null
 
 export const useNatsStore = create<NatsState>((set, get) => ({
   status: 'disconnected',
@@ -72,8 +71,9 @@ export const useNatsStore = create<NatsState>((set, get) => ({
     try {
       const encoder = new TextEncoder()
       connection = await connect({
-        servers: NATS_CONFIG.servers,
         authenticator: jwtAuthenticator(creds.jwt, encoder.encode(creds.seed)),
+        inboxPrefix: '_INBOX.' + teamId + "." + crypto.randomUUID(),
+        servers: NATS_CONFIG.servers,
       })
 
       set({ status: 'connected' })
@@ -124,10 +124,10 @@ export const useNatsStore = create<NatsState>((set, get) => ({
   disconnect: async () => {
     if (!connection) return
 
-    // Unsubscribe from JetStream
-    if (jsSubscription) {
-      jsSubscription.unsubscribe()
-      jsSubscription = null
+    // Stop consuming messages from JetStream
+    if (consumerMessages) {
+      consumerMessages.stop()
+      consumerMessages = null
       set({ subscribedSubject: null })
     }
 
@@ -142,50 +142,50 @@ export const useNatsStore = create<NatsState>((set, get) => ({
       throw new Error('Not connected to NATS')
     }
 
-    if (jsSubscription) {
-      console.log('Already subscribed, unsubscribing first...')
-      jsSubscription.unsubscribe()
+    if (consumerMessages) {
+      console.log('Already subscribed, stopping first...')
+      consumerMessages.stop()
     }
 
     try {
-      // Create consumer options - deliver all messages from the beginning
-      const opts = consumerOpts()
-      opts.deliverAll() // Start from the first message in the stream
-      opts.ackNone() // No acknowledgment needed (view only)
-      opts.consumerName(uuid())
-      opts.description("Dashboard consumer of " + subject)
-      opts.deliverTo(createInbox()) // Required for push consumer
-
       console.log(`Subscribing to JetStream: ${subject} (with history)`)
-      
-      jsSubscription = await jetstream.subscribe(subject, opts)
+
+      // Find the stream that contains this subject
+      const jsm = await connection.jetstreamManager()
+      const streamName = await jsm.streams.find(subject)
+
+      // Create an ordered consumer - ephemeral, delivers all messages in order, no acks needed
+      const consumer = await jetstream.consumers.get(streamName, {
+        filterSubjects: [subject],
+      })
+
+      // Start consuming messages
+      consumerMessages = await consumer.consume()
       set({ subscribedSubject: subject })
-      
+
       console.log(`Subscribed to ${subject} - loading historical messages...`)
 
       // Process messages (both historical and new)
-      const sub = jsSubscription
+      const messages = consumerMessages
       ;(async () => {
-        for await (const msg of sub) {
+        for await (const msg of messages) {
           try {
             const payload = sc.decode(msg.data)
-            
             // Get message timestamp from JetStream metadata if available
-            const info = msg.info
-            const timestamp = info?.timestampNanos 
-              ? new Date(Number(info.timestampNanos) / 1_000_000)
+            const timestamp = msg.info.timestampNanos
+              ? new Date(Number(msg.info.timestampNanos) / 1_000_000)
               : new Date()
-            
-            console.log(`[JetStream] ${msg.subject} (seq: ${info?.streamSequence}):`, payload)
-            
+
+            console.log(`[JetStream] ${msg.subject} (seq: ${msg.seq}):`, payload)
+
             const natsMessage: NatsMessage = {
-              id: `${info?.streamSequence || crypto.randomUUID()}`,
+              id: `${msg.seq || crypto.randomUUID()}`,
               subject: msg.subject,
               payload,
               timestamp,
-              sequence: info?.streamSequence
+              sequence: msg.seq
             }
-            
+
             // Add messages - deduplicate by ID to prevent duplicates
             set(state => {
               // Check if message already exists

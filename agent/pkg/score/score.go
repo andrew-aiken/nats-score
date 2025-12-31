@@ -20,9 +20,9 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 
 		// fmt.Println(settings.Attributes)
 
-		streamName := "results." + strconv.Itoa(settings.StaticConf.TeamNumber) + "." + checkName
+		streamName := fmt.Sprintf("results.%d.%s", settings.StaticConf.TeamNumber, checkName)
 
-		var input map[string]interface{}
+		var input map[string]any
 
 		if string(msg.Data) != "" {
 			if err := json.Unmarshal(msg.Data, &input); err != nil {
@@ -86,7 +86,7 @@ func cleanTemplateString(definition string) string {
 
 // TODO: This code stuff can probably be refactored
 // applyOverrides uses reflection to set field values on the definition struct
-func applyOverrides(definition interface{}, overrides map[string]string) error {
+func applyOverrides(definition any, overrides map[string]string) error {
 	if len(overrides) == 0 {
 		return nil
 	}

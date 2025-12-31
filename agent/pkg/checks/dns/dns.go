@@ -25,8 +25,7 @@ type Definition struct {
 type Input struct{}
 
 // Run a single instance of the check
-// For now we only support A record querries
-func (d *Definition) Run(ctx context.Context, input map[string]interface{}, static settings.StaticConf) checks.Results {
+func (d *Definition) Run(ctx context.Context, input map[string]any, static settings.StaticConf) checks.Results {
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 

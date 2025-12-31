@@ -7,7 +7,6 @@ services:
       - "8080:8080"
     volumes:
       - ./nats/nats-server.conf:/etc/nats/nats-server.conf:ro
-      # - ./nats/nsc/score/accounts/SYS/SYS.jwt:/etc/nats/SYS.jwt:ro
       - ./nats/nsc/score/score.jwt:/etc/nats/operator.jwt:ro
     command: ["-c", "/etc/nats/nats-server.conf"]
 
@@ -20,3 +19,15 @@ services:
     environment:
       - NATS_URL=nats://nats:4222
     command: ["/bin/sh", "/nats-setup.sh"]
+
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts

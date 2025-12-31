@@ -10,7 +10,7 @@ import (
 
 // Checker is the interface that all check types must implement
 type Checker interface {
-	Run(ctx context.Context, input map[string]interface{}, static settings.StaticConf) Results
+	Run(ctx context.Context, input map[string]any, static settings.StaticConf) Results
 }
 
 type Results struct {
@@ -20,7 +20,7 @@ type Results struct {
 	Timestamp time.Time         `json:"timestamp"`
 }
 
-func ConvertInputType(input map[string]interface{}, output interface{}) error {
+func ConvertInputType(input map[string]any, output any) error {
 	data, err := json.Marshal(input)
 	if err != nil {
 		return err

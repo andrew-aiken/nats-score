@@ -14,7 +14,7 @@ type Input struct {
 	Pass bool `json:"pass"`
 }
 
-func (d *Definition) Run(ctx context.Context, input map[string]interface{}, static settings.StaticConf) checks.Results {
+func (d *Definition) Run(ctx context.Context, input map[string]any, static settings.StaticConf) checks.Results {
 	result := checks.Results{
 		Timestamp: time.Now(),
 		Passed:    true,

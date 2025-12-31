@@ -141,6 +141,7 @@ func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, roles []st
 	}
 
 	userClaim.Permissions.Pub.Allow.Add("_INBOX.>")
+	userClaim.Permissions.Pub.Allow.Add("$JS.API.INFO")
 	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.NAMES")
 	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.results")
 	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.results.*." + teamSubject)
@@ -149,7 +150,7 @@ func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, roles []st
 	userClaim.Permissions.Pub.Allow.Add("$JS.ACK.results.>")
 
 	userClaim.Permissions.Sub.Allow.Add(teamSubject)
-	userClaim.Permissions.Sub.Allow.Add("_INBOX.>")
+	userClaim.Permissions.Sub.Allow.Add("_INBOX." + team + ".>")
 }
 
 // VerifyJWT validates a NATS JWT and returns the user claims

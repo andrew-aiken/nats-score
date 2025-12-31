@@ -146,3 +146,16 @@ export function clearCredentials(): void {
 export function isAuthenticated(): boolean {
   return getCredentials() !== null
 }
+
+/**
+ * Check if the current user is an admin based on JWT name claim
+ * Admin users have the name claim set to "admin"
+ */
+export function isAdmin(): boolean {
+  const creds = getCredentials()
+  if (!creds) {
+    return false
+  }
+  const teamId = getTeamIdFromJwt(creds.jwt)
+  return teamId === 'admin'
+}
