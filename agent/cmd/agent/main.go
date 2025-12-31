@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 
-	"github.com/aaiken/nats-score/pkg/run"
 	"github.com/urfave/cli/v3"
+
+	"github.com/aaiken/nats-score/pkg/run"
 )
 
+// TODO: Add log level global flag
 func main() {
 	cmd := &cli.Command{
 		Name:  "agent",
@@ -35,12 +37,11 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			run.Run(run.RunArgs{
+			return run.Run(run.RunArgs{
 				NatsUrl:       cmd.String("nats-address"),
 				NatsCredsFile: cmd.String("nats-creds"),
 				TeamNumber:    cmd.Int16("team"),
 			})
-			return nil
 		},
 	}
 

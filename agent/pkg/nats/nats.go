@@ -2,11 +2,12 @@ package nats
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/aaiken/nats-score/pkg/config"
 	"github.com/aaiken/nats-score/pkg/score"
+
 	"github.com/nats-io/nats.go"
 )
 
@@ -44,7 +45,7 @@ func (n *NatsConnection) natsConnect() error {
 	var err error
 	var natsRetry int8 = 30
 
-	log.Printf("Connecting to NATS at %s...", n.NatsUrl)
+	slog.Debug("Connecting to NATS at %s..." + n.NatsUrl)
 
 	// Build connection options
 	opts := []nats.Option{
@@ -59,13 +60,13 @@ func (n *NatsConnection) natsConnect() error {
 		if err == nil {
 			break
 		}
-		log.Printf("Failed to connect to NATS (attempt %d/%d): %v", i+1, natsRetry, err)
+		slog.Warn(fmt.Sprintf("Failed to connect to NATS (attempt %d/%d): %v", i+1, natsRetry, err))
 		time.Sleep(time.Second)
 	}
 	if err != nil {
 		return fmt.Errorf("failed to connect to NATS after %d attempts: %v", natsRetry, err)
 	}
-	log.Println("Connected to NATS")
+	slog.Info("Connected to NATS")
 
 	n.NatsConn = nc
 
@@ -92,7 +93,7 @@ func (n *NatsConnection) keyValueConnect() error {
 
 	n.NatsKV = kv
 
-	log.Println("Connected to KV bucket 'settings'")
+	slog.Debug("Connected to KV bucket 'settings'")
 
 	// Verify the "settings" key exists on startup
 	if _, err := kv.Get("settings"); err != nil {
@@ -124,7 +125,7 @@ func (n *NatsConnection) SubjectSubscribe(settings *config.Settings) error {
 		return fmt.Errorf("Failed to subscribe to ephemeral events: %v", err)
 	}
 
-	log.Println("Subscribed to ephemeral events on 'events.>'")
+	slog.Debug("Subscribed to ephemeral events on 'events.>'")
 
 	return nil
 }

@@ -3,8 +3,9 @@ package score
 import (
 	"encoding/json"
 
-	"github.com/aaiken/nats-score/pkg/checks"
 	"github.com/nats-io/nats.go"
+
+	"github.com/aaiken/nats-score/pkg/checks"
 )
 
 type PublishedResults struct {

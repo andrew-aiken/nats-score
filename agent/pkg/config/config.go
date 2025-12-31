@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/creasty/defaults"
 	"github.com/nats-io/nats.go"
@@ -97,12 +97,12 @@ func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsK
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("Context cancelled, stopping watcher")
+			slog.Debug("Context cancelled, stopping watcher")
 			return
 		case entry := <-natsKVWatcher.Updates():
 			if entry == nil {
 				// Initial sync complete
-				log.Println("Initial KV sync complete, watching for updates...")
+				slog.Info("Initial KV sync complete, watching for updates...")
 				continue
 			}
 
@@ -118,7 +118,7 @@ func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsK
 				// Print settings as json object
 				// json.NewEncoder(os.Stdout).Encode(s)
 
-				log.Println("Updating Global settings")
+				slog.Info("Updating Global settings")
 
 				// This removes existing checks
 				// If an updated settings in kv renames or removes checks they would not be removed from the settings var
@@ -126,14 +126,14 @@ func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsK
 				s.Checks = map[string]Checks{}
 
 				if err := json.Unmarshal(entry.Value(), &s); err != nil {
-					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
+					slog.Warn("Failed to unmarshal settings for key %s: %v", entry.Key(), err)
 				}
 			case teamSettingKey:
-				log.Println("Team-specific settings update")
+				slog.Info("Team settings update")
 
 				var teamSettings map[string]map[string]string
 				if err := json.Unmarshal(entry.Value(), &teamSettings); err != nil {
-					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
+					slog.Warn("Failed to unmarshal settings for key %s: %v", entry.Key(), err)
 					continue
 				}
 

@@ -3,9 +3,11 @@ package run
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/aaiken/nats-score/pkg/config"
@@ -13,14 +15,14 @@ import (
 )
 
 type RunArgs struct {
+	LogLevel      string
 	NatsUrl       string
 	NatsCredsFile string
 	TeamNumber    int16
 }
 
-func Run(args RunArgs) {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+func Run(args RunArgs) error {
+	setupLogging(args.LogLevel)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -33,20 +35,20 @@ func Run(args RunArgs) {
 
 	err := natsCon.SetupConnection()
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	// Watch global settings and team-specific settings
 	watchList := []string{"settings", fmt.Sprintf("%d.settings", args.TeamNumber)}
 	if err = natsCon.SetupKVWatcher(watchList); err != nil {
-		log.Fatalf("Failed to start KV watcher: %v", err)
+		return fmt.Errorf("Failed to start KV watcher: %v", err)
 	}
 
 	var agentSettings config.Settings
 	agentSettings.StaticConf.TeamNumber = args.TeamNumber
 
 	if err = natsCon.SubjectSubscribe(&agentSettings); err != nil {
-		log.Fatalf("%v", err)
+		return err
 	}
 
 	// Handle graceful shutdown
@@ -55,11 +57,44 @@ func Run(args RunArgs) {
 
 	go func() {
 		<-sigChan
-		log.Println("Shutting down...")
+		slog.Info("Shutting down...")
 		cancel()
 		natsCon.Close()
 	}()
 
 	// Process KV settings updates
 	agentSettings.MonitorSettings(ctx, fmt.Sprint(args.TeamNumber), natsCon.NatsKVWatcher)
+
+	return nil
+}
+
+func setupLogging(logLevel string) {
+	var slogLevel slog.Level
+
+	switch strings.ToLower(logLevel) {
+	case "debug":
+		slogLevel = slog.LevelDebug
+	case "warn":
+		slogLevel = slog.LevelWarn
+	case "error":
+		slogLevel = slog.LevelError
+	default:
+		slogLevel = slog.LevelInfo
+	}
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		AddSource: true,
+		Level:     slogLevel,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.SourceKey {
+				source, _ := a.Value.Any().(*slog.Source)
+				if source != nil {
+					source.File = filepath.Base(source.File)
+				}
+			}
+			return a
+		},
+	}))
+
+	slog.SetDefault(logger)
 }

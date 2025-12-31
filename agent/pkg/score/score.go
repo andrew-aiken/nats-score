@@ -4,14 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
 
+	"github.com/nats-io/nats.go"
+
 	"github.com/aaiken/nats-score/pkg/checks"
 	"github.com/aaiken/nats-score/pkg/config"
-	"github.com/nats-io/nats.go"
 )
 
 func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.MsgHandler {
@@ -26,7 +27,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 
 		if string(msg.Data) != "" {
 			if err := json.Unmarshal(msg.Data, &input); err != nil {
-				log.Printf("Failed to unmarshal check arguments: %v", err)
+				slog.Error(fmt.Sprintf("Failed to unmarshal check arguments: %s", err))
 				return
 			}
 		}
@@ -34,14 +35,14 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 		value, ok := settings.Checks[checkName]
 
 		if !ok {
-			fmt.Printf("Check %s not found\n", checkName)
+			slog.Error(fmt.Sprintf("Check %s not found", checkName))
 			return
 		}
 
 		// Type assert the definition to the Checker interface and call Run
 		checker, ok := value.Definition.(checks.Checker)
 		if !ok {
-			fmt.Printf("Check %s definition does not implement Checker interface\n", checkName)
+			slog.Error(fmt.Sprintf("Check %s definition does not implement Checker interface", checkName))
 			return
 		}
 
@@ -51,20 +52,20 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 
 		// Apply overrides to the check definition
 		if err := applyOverrides(value.Definition, override); err != nil {
-			log.Printf("Failed to apply overrides for check %s: %v", checkName, err)
+			slog.Warn(fmt.Sprintf("Failed to apply overrides for check %s: %v", checkName, err))
 		}
 
 		ctx := context.Background()
 		result := checker.Run(ctx, input, settings.StaticConf)
 
 		if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
-			log.Printf("Failed to publish results: %v", err)
+			slog.Error(fmt.Sprintf("Failed to publish results: %v", err))
 		}
 
-		log.Printf("Check %s result: %v", checkName, result.Passed)
-		for key, value := range result.Details {
-			log.Printf("Check %s detail: %s = %s", checkName, key, value)
-		}
+		slog.Info(fmt.Sprintf("Check %s result: %v", checkName, result.Passed))
+		// for key, value := range result.Details {
+		// 	log.Printf("Check %s detail: %s = %s", checkName, key, value)
+		// }
 	}
 }
 
@@ -116,12 +117,12 @@ func applyOverrides(definition any, overrides map[string]string) error {
 		}
 
 		if !found {
-			log.Printf("Field %s not found in definition", key)
+			slog.Warn(fmt.Sprintf("Field %s not found in definition", key))
 			continue
 		}
 
 		if !field.CanSet() {
-			log.Printf("Field %s cannot be set", key)
+			slog.Warn(fmt.Sprintf("Field %s cannot be set", key))
 			continue
 		}
 

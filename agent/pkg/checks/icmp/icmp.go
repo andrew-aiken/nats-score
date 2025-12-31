@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -30,7 +29,6 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 	definitionBytes, err := settings.TemplateDefinition(d, static)
 	if err != nil {
 		result.Message = fmt.Sprintf("internal error templating definition: %s", err)
-		log.Println(result.Message)
 		return result
 	}
 
@@ -38,7 +36,6 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 	err = json.Unmarshal(definitionBytes, &definition)
 	if err != nil {
 		result.Message = fmt.Sprintf("internal error unmarshaling templated definition: %s", err)
-		log.Println(result.Message)
 		return result
 	}
 
