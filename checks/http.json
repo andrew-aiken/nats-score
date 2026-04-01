@@ -1,0 +1,14 @@
+{
+  "frequency": 90,
+  "type": "http",
+  "description": "HTTP Check",
+  "score_weight": 2,
+  "definition": {
+    "host": "ifconfig.me",
+    "path": "/ip",
+    "MatchCode": true,
+    "MatchContent": true,
+    "ContentRegex": "97.89.244.253",
+    "VerifyCert": true
+  }
+}

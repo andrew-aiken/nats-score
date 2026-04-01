@@ -9,6 +9,7 @@ require (
 	github.com/nats-io/jwt/v2 v2.8.0
 	github.com/nats-io/nats.go v1.47.0
 	github.com/nats-io/nkeys v0.4.12
+	github.com/urfave/cli/v3 v3.8.0
 )
 
 require (

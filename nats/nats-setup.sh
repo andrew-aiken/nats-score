@@ -27,7 +27,7 @@ nats stream add results \
   --subjects="results.>" \
   --description="Stream of score update events" \
   --retention=limits \
-  --max-age=24h \
+  --max-age=30d \
   --storage=file \
   --replicas=1 \
   --discard=old \

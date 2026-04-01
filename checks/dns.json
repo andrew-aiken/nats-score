@@ -1,0 +1,11 @@
+{
+  "type": "dns",
+  "description": "DNS Check",
+  "score_weight": 1,
+  "definition": {
+    "server": "1.1.1.1",
+    "fqdn": "machinemetrics.ai",
+    "expected_result": "v=spf1 include:spf.efwd.registrar-servers.com ~all",
+    "record_type": "TXT"
+  }
+}
