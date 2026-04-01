@@ -10,15 +10,15 @@ services:
       - ./nats/nsc/score/score.jwt:/etc/nats/operator.jwt:ro
     command: ["-c", "/etc/nats/nats-server.conf"]
 
-  nats-setup:
-    image: natsio/nats-box:latest
-    container_name: nats-score-setup
-    volumes:
-      - ./nats/nats-setup.sh:/nats-setup.sh:ro
-      - /Users/aaiken/.local/share/nats/nsc/keys/creds/score/score/admin.creds:/etc/nats/admin.creds:ro
-    environment:
-      - NATS_URL=nats://nats:4222
-    command: ["/bin/sh", "/nats-setup.sh"]
+  # nats-setup:
+  #   image: natsio/nats-box:latest
+  #   container_name: nats-score-setup
+  #   volumes:
+  #     - ./nats/nats-setup.sh:/nats-setup.sh:ro
+  #     - /Users/aaiken/.local/share/nats/nsc/keys/creds/score/score/admin.creds:/etc/nats/admin.creds:ro
+  #   environment:
+  #     - NATS_URL=nats://nats:4222
+  #   command: ["/bin/sh", "/nats-setup.sh"]
 
   # frontend:
   #   build:

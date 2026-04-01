@@ -23,14 +23,16 @@ func Remove(checkName string) error {
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		log.Fatalf("Failed to load config")
+		return err
 	}
 
 	// Connect to NATS settings KV
 	var natsKVClient *nats.NATSKVClient
 	natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client: %v", err)
+		log.Printf("Warning: Failed to initialize NATS KV client")
+		return err
 	} else {
 		log.Println("Connected to NATS KV bucket 'settings'")
 		defer natsKVClient.Close()

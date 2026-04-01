@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"server/cmd/checks"
+	"server/cmd/initialize"
 
 	"github.com/urfave/cli/v3"
 )
@@ -97,7 +98,7 @@ func main() {
 				Aliases: []string{"init"},
 				Usage:   "Initialize storage",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return nil
+					return initialize.Initialize()
 				},
 			},
 		},
