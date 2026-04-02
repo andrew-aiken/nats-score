@@ -9,8 +9,8 @@ import (
 
 type StaticConf struct {
 	// Add fields for static configuration here
-	TeamNumber int16  // TeamNumber
-	IPv6Bit    string // IPv6Bit
+	TeamNumber    int16  // TeamNumber
+	TeamNumberHex string // TeamNumberHex
 }
 
 func TemplateDefinition(def any, static StaticConf) ([]byte, error) {

@@ -16,20 +16,20 @@ import (
 )
 
 type Definition struct {
-	Host         string            // IP or FQDN of the HTTP server
-	Path         string            `default:"/"`     // Path to request - see RFC3986, section 3.3
-	HTTPS        bool              `default:"false"` // if HTTPS is to be used
-	Port         uint16            `default:"80"`    // TCP port number the HTTP server is listening on
-	Method       string            `default:"GET"`   // HTTP method to use
-	Code         int               `default:"200"`   // the response status code to match
-	ContentRegex string            `default:".*"`    // regex for the response body to match
-	Headers      map[string]string // name-value pairs of header fields to add/override
-	Body         string            // the request body
-	MatchCode    bool              // whether the response code must match a defined value for the check to pass
-	MatchContent bool              // whether the response body must match a defined regex for the check to pass
-	Redirect     bool              // whether to follow http redirects
-	VerifyCert   bool              // whether to verify the server's TLS certificate
-	Timeout      int8              `default:"20"` // Timeout for the http query in seconds
+	Host         string            `json:"host"` // IP or FQDN of the HTTP server
+	Path         string            `json:"path" default:"/"`     // Path to request - see RFC3986, section 3.3
+	HTTPS        bool              `json:"https" default:"false"` // if HTTPS is to be used
+	Port         uint16            `json:"port" default:"80"`    // TCP port number the HTTP server is listening on
+	Method       string            `json:"method" default:"GET"`   // HTTP method to use
+	Code         int               `json:"code" default:"200"`   // the response status code to match
+	ContentRegex string            `json:"contentRegex" default:".*"`    // regex for the response body to match
+	Headers      map[string]string `json:"headers"` // name-value pairs of header fields to add/override
+	Body         string            `json:"body"`// the request body
+	MatchCode    bool              `json:"matchCode"`// whether the response code must match a defined value for the check to pass
+	MatchContent bool              `json:"matchContent"`// whether the response body must match a defined regex for the check to pass
+	Redirect     bool              `json:"redirect"`// whether to follow http redirects
+	VerifyCert   bool              `json:"verifyCert"`// whether to verify the server's TLS certificate
+	Timeout      int8              `json:"timeout" default:"20"` // Timeout for the http query in seconds
 }
 
 type Input struct{}

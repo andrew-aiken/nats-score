@@ -27,7 +27,7 @@ type Check struct {
 	Frequency   int16  `json:"frequency"`   // How often the check runs in seconds
 	Type        string `json:"type"`        // Type of check
 	Description string `json:"description"` // Additional information about the check
-	ScoreWeight int8   `json:"score_weight"` // How many points to assign the check
+	ScoreWeight int8   `json:"scoreWeight"` // How many points to assign the check
 }
 
 // TODO

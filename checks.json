@@ -4,14 +4,14 @@
       "frequency": 15,
       "type": "noop",
       "description": "No operation check",
-      "score_weight": 1
+      "scoreWeight": 1
     },
     "ssh": {
       "frequency": 30,
       "name": "SSH Check",
       "type": "ssh",
       "description": "ICMP check",
-      "score_weight": 1,
+      "scoreWeight": 1,
       "definition": {
         "command": "whoami",
         "ContentRegex": "pi",
@@ -21,24 +21,24 @@
         "username": "pi",
         "password": "raspberry123"
       },
-      "mutable_fields": ["password"]
+      "mutableFields": ["password"]
     },
     "icmp": {
       "frequency": 30,
       "name": "Fancy ICMP",
       "type": "icmp",
       "description": "ICMP check",
-      "score_weight": 1,
+      "scoreWeight": 1,
       "definition": {
         "host": "1.1.{{.TeamNumber}}.1"
       },
-      "mutable_fields": ["host"]
+      "mutableFields": ["host"]
     },
     "http": {
       "frequency": 90,
       "type": "http",
       "description": "HTTP Check",
-      "score_weight": 2,
+      "scoreWeight": 2,
       "definition": {
         "host": "ifconfig.me",
         "path": "/ip",
@@ -51,7 +51,7 @@
     "dns": {
       "type": "dns",
       "description": "DNS Check",
-      "score_weight": 1,
+      "scoreWeight": 1,
       "definition": {
         "server": "1.1.1.1",
         "fqdn": "machinemetrics.ai",

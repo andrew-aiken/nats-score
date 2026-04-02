@@ -3,9 +3,9 @@
   "name": "Fancy ICMP",
   "type": "icmp",
   "description": "ICMP check",
-  "score_weight": 1,
+  "scoreWeight": 1,
   "definition": {
     "host": "1.1.{{.TeamNumber}}.1"
   },
-  "mutable_fields": ["host"]
+  "mutableFields": ["host"]
 }

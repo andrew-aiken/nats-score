@@ -17,9 +17,9 @@ import (
 type Definition struct {
 	Server         string `json:"server"`                  // The IP of the DNS server to query
 	Fqdn           string `json:"fqdn"`                    // The FQDN of the host you are looking up
-	ExpectedResult string `json:"expected_result"`         // The expected IP of the host you are looking up
+	ExpectedResult string `json:"expectedResult"`         // The expected IP of the host you are looking up
 	Port           int16  `json:"port" default:"53"`       // The port of the DNS server
-	RecordType     string `json:"record_type" default:"A"` // The type of DNS record to query
+	RecordType     string `json:"recordType" default:"A"` // The type of DNS record to query
 	Timeout        int8   `json:"timeout" default:"20"`    // Timeout for the dns query in seconds
 }
 

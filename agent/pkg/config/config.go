@@ -28,8 +28,8 @@ type Check struct {
 	Name          string   `json:"name"`
 	Definition    any      `json:"definition"`
 	Description   string   `json:"description"`
-	MutableFields []string `json:"mutable_fields"`
-	ScoreWeight   int8     `json:"score_weight"`
+	MutableFields []string `json:"mutableFields"`
+	ScoreWeight   int8     `json:"scoreWeight"`
 	Type          string   `json:"type"`
 }
 
@@ -39,8 +39,8 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 		Name          string          `json:"name"`
 		Description   string          `json:"description"`
 		Type          string          `json:"type"`
-		MutableFields []string        `json:"mutable_fields"`
-		ScoreWeight   int8            `json:"score_weight"`
+		MutableFields []string        `json:"mutableFields"`
+		ScoreWeight   int8            `json:"scoreWeight"`
 		Definition    json.RawMessage `json:"definition"`
 	}
 

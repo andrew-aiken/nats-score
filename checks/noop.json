@@ -2,5 +2,5 @@
   "frequency": 15,
   "type": "noop",
   "description": "No operation check",
-  "score_weight": 1
+  "scoreWeight": 1
 }

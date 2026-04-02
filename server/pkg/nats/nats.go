@@ -19,8 +19,8 @@ type CheckConfig struct {
 	Name          string   `json:"name"`
 	Type          string   `json:"type"`
 	Description   string   `json:"description"`
-	ScoreWeight   int      `json:"score_weight"`
-	MutableFields []string `json:"mutable_fields"`
+	ScoreWeight   int      `json:"scoreWeight"`
+	MutableFields []string `json:"mutableFields"`
 }
 
 // Settings represents the structure stored in the KV bucket
@@ -89,7 +89,7 @@ func (c *NATSKVClient) GetSettings() (*Settings, error) {
 }
 
 // GetMutableFields returns a map of check names to their mutable fields
-// Only includes checks that have mutable_fields defined
+// Only includes checks that have mutableFields defined
 func (c *NATSKVClient) GetMutableFields() (map[string][]string, error) {
 	settings, err := c.GetSettings()
 	if err != nil {

@@ -3,15 +3,15 @@
   "name": "SSH Check",
   "type": "ssh",
   "description": "ICMP check",
-  "score_weight": 1,
+  "scoreWeight": 1,
   "definition": {
     "command": "whoami",
-    "ContentRegex": "pi",
-    "MatchContent": true,
+    "contentRegex": "pi",
+    "matchContent": true,
     "host": "192.168.0.31",
     "port": 22,
     "username": "pi",
     "password": "raspberry123"
   },
-  "mutable_fields": ["password"]
+  "mutableFields": ["password"]
 }
