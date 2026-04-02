@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -8,27 +8,26 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"server/pkg/config"
-	"server/pkg/handlers"
-	"server/pkg/middleware"
+	"server/pkg/cron"
+
+	// "server/pkg/handlers"
+	// "server/pkg/middleware"
 	"server/pkg/nats"
 
 	"github.com/go-co-op/gocron/v2"
-	"golang.org/x/oauth2"
+	// "golang.org/x/oauth2"
 )
 
-type Settings struct {
-	Checks map[CheckID]Checks `json:"checks"`
-}
-
-type CheckID string
-
-type Checks struct {
-	// Name          string      `json:"name"`
-	Frequency int16 `json:"frequency"` // How often the check runs in seconds
+type Check struct {
+	Frequency   int16  `json:"frequency"`   // How often the check runs in seconds
+	Type        string `json:"type"`        // Type of check
+	Description string `json:"description"` // Additional information about the check
+	ScoreWeight int8   `json:"score_weight"` // How many points to assign the check
 }
 
 // TODO
@@ -37,7 +36,7 @@ type Checks struct {
 // but in real apps you must provide a proper function that generates a state.
 const state = "random"
 
-func main() {
+func Server() error {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
@@ -55,125 +54,128 @@ func main() {
 	defer cronScheduler.Shutdown()
 
 	// Initialize NATS auth service
-	natsAuthService, err := nats.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
-	if err != nil {
-		log.Fatalf("Failed to initialize NATS auth service: %v", err)
-	}
+	// natsAuthService, err := nats.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
+	// if err != nil {
+	// 	log.Fatalf("Failed to initialize NATS auth service: %v", err)
+	// }
 
 	// Initialize NATS KV client (optional - only if NATS URL is configured)
 	// TODO: Change this logic
 	var natsKVClient *nats.NATSKVClient
 	natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client: %v", err)
-		log.Println("Mutable fields endpoint will be unavailable")
+		log.Printf("Warning: Failed to initialize NATS KV client\nMutable fields endpoint will be unavailable")
+		return err
 	} else {
 		log.Println("Connected to NATS KV bucket 'settings'")
 		defer natsKVClient.Close()
 	}
 
-	// Test - Start KV watcher in background
 	kv := natsKVClient.GetKVClient()
-	watcher, err := kv.Watch("settings")
+	watcher, err := kv.Watch("check.*")
 	if err != nil {
 		log.Fatalf("Failed to start KV watcher: %v", err)
 	}
 	defer watcher.Stop()
 
-	// Watch for updates in background
+	// Watch for check updates in background
 	go func() {
+		initialized := false
 		for entry := range watcher.Updates() {
-			if entry != nil {
-				var Settings Settings
-				if err := json.Unmarshal(entry.Value(), &Settings); err != nil {
+			if entry == nil {
+				initialized = true
+				continue
+			}
+
+			// Remove the prefix from the nats KV
+			checkName := strings.TrimPrefix(entry.Key(), "check.")
+
+			// Filter based on event type
+			switch entry.Operation().String() {
+			case "KeyValuePutOp":
+				var check Check
+
+				if err := json.Unmarshal(entry.Value(), &check); err != nil {
 					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
 					return
 				}
 
-				log.Println("Removing all old checks")
-				cronScheduler.RemoveByTags("check")
-
-				log.Println("Adding new jobs")
-				for ruleID, check := range Settings.Checks {
-					log.Printf("Adding check: %s\n", ruleID)
-
-					// If the frequency flag is not defined default to 60 seconds
-					if check.Frequency == 0 {
-						check.Frequency = 60
-					}
-
-					cronScheduler.NewJob(
-						gocron.DurationJob(
-							time.Duration(check.Frequency)*time.Second,
-						),
-						gocron.NewTask(
-							func(a CheckID) {
-								// TODO: Have some debug message when check event is published
-								// fmt.Println(a)
-								natsKVClient.GetNATSClient().Publish("events.score."+string(a), []byte{})
-							},
-							ruleID,
-						),
-						gocron.WithTags("check"),
-					)
+				// Default check frequency is 60 seconds
+				if check.Frequency == 0 {
+					check.Frequency = 60
 				}
+
+				cron.AddCheckCron(cronScheduler, natsKVClient, checkName, check.Frequency)
+				log.Printf("Check %s added", checkName)
+
+			case "KeyValuePurgeOp":
+			case "KeyValueDeleteOp":
+				if !initialized {
+					continue
+				}
+				cron.RemoveCheckCron(cronScheduler, checkName)
+				log.Printf("Check %s removed", checkName)
+			default:
+				return
 			}
 		}
 	}()
-	log.Println("Started KV watcher for 'settings'")
-	// End Test
+	log.Println("Watching KV for check changes")
 
-	// Create OAuth2 config
-	oauthConfig := &oauth2.Config{
-		RedirectURL:  cfg.RedirectURL,
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-		Scopes: []string{
-			"guilds",
-			"guilds.members.read",
-			"identify",
-		},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:   "https://discord.com/api/oauth2/authorize",
-			TokenURL:  "https://discord.com/api/oauth2/token",
-			AuthStyle: oauth2.AuthStyleInParams,
-		},
-	}
+	// NOTICE: Starting by default
+	cronScheduler.Start()
 
-	// Create handler
-	h := handlers.NewHandler(&handlers.Handler{
-		OauthConfig:     oauthConfig,
-		NatsAuthService: natsAuthService,
-		NatsKVClient:    natsKVClient,
-		TargetGuildID:   cfg.DiscordGuildID,
-		RoleMap:         cfg.DiscordRoleMap,
-		AccessTokens:    cfg.StaticAuthMap,
-		State:           state,
-		FrontendURL:     cfg.FrontendURL,
-		CronScheduler:   cronScheduler,
-	})
+	// // Create OAuth2 config
+	// oauthConfig := &oauth2.Config{
+	// 	RedirectURL:  cfg.RedirectURL,
+	// 	ClientID:     cfg.ClientID,
+	// 	ClientSecret: cfg.ClientSecret,
+	// 	Scopes: []string{
+	// 		"guilds",
+	// 		"guilds.members.read",
+	// 		"identify",
+	// 	},
+	// 	Endpoint: oauth2.Endpoint{
+	// 		AuthURL:   "https://discord.com/api/oauth2/authorize",
+	// 		TokenURL:  "https://discord.com/api/oauth2/token",
+	// 		AuthStyle: oauth2.AuthStyleInParams,
+	// 	},
+	// }
 
-	// Create CORS middleware (allow frontend origin)
-	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
+	// // Create handler
+	// h := handlers.NewHandler(&handlers.Handler{
+	// 	OauthConfig:     oauthConfig,
+	// 	NatsAuthService: natsAuthService,
+	// 	NatsKVClient:    natsKVClient,
+	// 	TargetGuildID:   cfg.DiscordGuildID,
+	// 	RoleMap:         cfg.DiscordRoleMap,
+	// 	AccessTokens:    cfg.StaticAuthMap,
+	// 	State:           state,
+	// 	FrontendURL:     cfg.FrontendURL,
+	// 	CronScheduler:   cronScheduler,
+	// })
 
-	// Create auth middleware
-	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
+	// // Create CORS middleware (allow frontend origin)
+	// corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
 
-	// Register routes with CORS
-	http.HandleFunc("/login", h.Login)
-	http.HandleFunc("/auth/verify", corsMiddleware.Handler(h.Verify))
-	http.HandleFunc("/auth/callback", h.Callback)
-	http.HandleFunc("/auth/token", corsMiddleware.Handler(h.TokenLogin))
-	http.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(h.GetMutableFields)))
-	http.HandleFunc("/api/settings", corsMiddleware.Handler(authMiddleware.RequireAuth(h.TeamSettings)))
+	// // Create auth middleware
+	// authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
 
-	http.HandleFunc("/api/admin/settings", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.GetGlobalSettings)))
-	http.HandleFunc("/api/admin/cron/start", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StartScoringCron)))
-	http.HandleFunc("/api/admin/cron/stop", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StopScoringCron)))
+	// // Register routes with CORS
+	// http.HandleFunc("/login", h.Login)
+	// http.HandleFunc("/auth/verify", corsMiddleware.Handler(h.Verify))
+	// http.HandleFunc("/auth/callback", h.Callback)
+	// http.HandleFunc("/auth/token", corsMiddleware.Handler(h.TokenLogin))
+	// http.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(h.GetMutableFields)))
+	// http.HandleFunc("/api/settings", corsMiddleware.Handler(authMiddleware.RequireAuth(h.TeamSettings)))
+
+	// http.HandleFunc("/api/admin/settings", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.GetGlobalSettings)))
+	// http.HandleFunc("/api/admin/cron/start", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StartScoringCron)))
+	// http.HandleFunc("/api/admin/cron/stop", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StopScoringCron)))
 
 	// Create HTTP server with proper configuration
 	server := &http.Server{
-		Addr:         ":3000",
+		Addr:         "0.0.0.0:3000",
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -211,4 +213,6 @@ func main() {
 	}
 
 	log.Println("Server stopped")
+
+	return nil
 }

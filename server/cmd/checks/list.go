@@ -47,14 +47,14 @@ func listChecks(deleteKeys bool) error {
 
 	// Read keys from channel
 	for key := range keys.Keys() {
-		if strings.HasPrefix(key, "check.") {
+		if checkName, prefix := strings.CutPrefix(key, "check."); prefix {
 
 			// Delete the check key if enabled
 			if deleteKeys {
-				log.Printf("Removing key - %s", key)
+				log.Printf("Removing key - %s", checkName)
 				kv.Delete(key)
 			} else {
-				log.Printf("%s", key)
+				log.Printf("%s", checkName)
 			}
 		}
 	}

@@ -7,6 +7,7 @@ import (
 
 	"server/cmd/checks"
 	"server/cmd/initialize"
+	"server/cmd/server"
 
 	"github.com/urfave/cli/v3"
 )
@@ -96,9 +97,16 @@ func main() {
 			{
 				Name:    "initialize",
 				Aliases: []string{"init"},
-				Usage:   "Initialize storage",
+				Usage:   "Initialize NATS KV and streams",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					return initialize.Initialize()
+				},
+			},
+			{
+				Name:  "server",
+				Usage: "Run the scoring controller",
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return server.Server()
 				},
 			},
 		},
