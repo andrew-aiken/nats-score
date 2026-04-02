@@ -93,12 +93,6 @@ func (n *NatsConnection) keyValueConnect() error {
 
 	n.NatsKV = kv
 
-	slog.Debug("Connected to KV bucket 'settings'")
-
-	// Verify the "settings" key exists on startup
-	if _, err := kv.Get("settings"); err != nil {
-		return fmt.Errorf("required 'settings' key not found in KV bucket: %v", err)
-	}
 	return nil
 }
 

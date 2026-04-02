@@ -20,7 +20,7 @@ type Definition struct {
 	ExpectedResult string `json:"expected_result"`         // The expected IP of the host you are looking up
 	Port           int16  `json:"port" default:"53"`       // The port of the DNS server
 	RecordType     string `json:"record_type" default:"A"` // The type of DNS record to query
-	timeout        int8   `default:"20"`                   // Timeout for the dns query in seconds
+	Timeout        int8   `json:"timeout" default:"20"`    // Timeout for the dns query in seconds
 }
 
 type Input struct{}
@@ -38,11 +38,10 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 
 	// Setup for dns query
 	var msg dns.Msg
-	fqdn := dns.Fqdn(d.Fqdn)
-	msg.SetQuestion(fqdn, recordType)
+	msg.SetQuestion(dns.Fqdn(d.Fqdn), recordType)
 
 	// Make it obey timeout via deadline
-	deadctx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Duration(d.timeout)*time.Second))
+	deadctx, cancel := context.WithDeadline(ctx, time.Now().Add(time.Duration(d.Timeout)*time.Second))
 	defer cancel()
 
 	// Send the query

@@ -29,7 +29,7 @@ type Definition struct {
 	MatchContent bool              // whether the response body must match a defined regex for the check to pass
 	Redirect     bool              // whether to follow http redirects
 	VerifyCert   bool              // whether to verify the server's TLS certificate
-	timeout      int8              `default:"20"` // Timeout for the http query in seconds
+	Timeout      int8              `default:"20"` // Timeout for the http query in seconds
 }
 
 type Input struct{}
@@ -63,7 +63,7 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 			},
 		},
 		CheckRedirect: redirect,
-		Timeout:       time.Duration(d.timeout) * time.Second,
+		Timeout:       time.Duration(d.Timeout) * time.Second,
 	}
 
 	// TODO: create child context with deadline less than the parent context
@@ -118,7 +118,7 @@ func request(ctx context.Context, client *http.Client, d Definition) (bool, *str
 
 	// Check status code
 	if d.MatchCode && resp.StatusCode != d.Code {
-		return false, nil, fmt.Errorf("Recieved bad status code: %d", resp.StatusCode)
+		return false, nil, fmt.Errorf("Received bad status code: %d", resp.StatusCode)
 	}
 
 	// Check body content
@@ -127,7 +127,7 @@ func request(ctx context.Context, client *http.Client, d Definition) (bool, *str
 		// Read response body
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			return false, nil, fmt.Errorf("Recieved error when reading response body: %s", err)
+			return false, nil, fmt.Errorf("Received error when reading response body: %s", err)
 		}
 
 		// Check if body matches regex
@@ -136,7 +136,7 @@ func request(ctx context.Context, client *http.Client, d Definition) (bool, *str
 			return false, nil, fmt.Errorf("Error compiling regex string %s : %s", d.ContentRegex, err)
 		}
 		if !regex.Match(body) {
-			return false, nil, fmt.Errorf("recieved bad response body")
+			return false, nil, fmt.Errorf("Received bad response body")
 		}
 		matches := regex.FindSubmatch(body)
 		matchStr = string(matches[len(matches)-1])

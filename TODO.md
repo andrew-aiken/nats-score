@@ -2,7 +2,7 @@
 - [ ] HTTPS
 - [ ] Dynamic Timeout per check?
 - [x] Checks are not a central file, individual kv per check
-- [ ] Results have pass/fail in stream name
+- [x] Results have pass/fail in stream name
 
 
 ## Agent

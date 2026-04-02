@@ -19,10 +19,6 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
-		// fmt.Println(settings.Attributes)
-
-		streamName := fmt.Sprintf("results.%d.%s", settings.StaticConf.TeamNumber, checkName)
-
 		var input map[string]any
 
 		if string(msg.Data) != "" {
@@ -57,6 +53,8 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 
 		ctx := context.Background()
 		result := checker.Run(ctx, input, settings.StaticConf)
+
+		streamName := fmt.Sprintf("results.%d.%s", settings.StaticConf.TeamNumber, checkName)
 
 		if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
 			slog.Error(fmt.Sprintf("Failed to publish results: %v", err))

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/creasty/defaults"
 	"github.com/nats-io/nats.go"
@@ -18,12 +19,12 @@ import (
 )
 
 type Settings struct {
-	Checks     map[string]Checks            `json:"checks"`
+	Checks     map[string]Check             `json:"checks"`
 	Attributes map[string]map[string]string `json:"attributes"`
 	StaticConf settings.StaticConf          `json:"static_conf"`
 }
 
-type Checks struct {
+type Check struct {
 	Name          string   `json:"name"`
 	Definition    any      `json:"definition"`
 	Description   string   `json:"description"`
@@ -32,7 +33,7 @@ type Checks struct {
 	Type          string   `json:"type"`
 }
 
-func (c *Checks) UnmarshalJSON(data []byte) error {
+func (c *Check) UnmarshalJSON(data []byte) error {
 	// First, unmarshal into a temporary struct to get the type
 	type ChecksRaw struct {
 		Name          string          `json:"name"`
@@ -94,6 +95,10 @@ func (c *Checks) UnmarshalJSON(data []byte) error {
 func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsKVWatcher nats.KeyWatcher) {
 	var teamSettingKey string = teamNumber + ".settings"
 
+	if s.Checks == nil {
+		s.Checks = make(map[string]Check)
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -112,33 +117,30 @@ func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsK
 			}
 
 			key := entry.Key()
-
-			switch key {
-			case "settings":
-				// Print settings as json object
-				// json.NewEncoder(os.Stdout).Encode(s)
-
-				slog.Info("Updating Global settings")
-
-				// This removes existing checks
-				// If an updated settings in kv renames or removes checks they would not be removed from the settings var
-				// In theory their could be a race condition here, but its a pretty low risk
-				s.Checks = map[string]Checks{}
-
-				if err := json.Unmarshal(entry.Value(), &s); err != nil {
-					slog.Warn("Failed to unmarshal settings for key %s: %v", entry.Key(), err)
-				}
-			case teamSettingKey:
+			checkName, isCheck := strings.CutPrefix(key, "check.")
+			value := entry.Value()
+			switch {
+			case key == teamSettingKey:
 				slog.Info("Team settings update")
 
 				var teamSettings map[string]map[string]string
 				if err := json.Unmarshal(entry.Value(), &teamSettings); err != nil {
-					slog.Warn("Failed to unmarshal settings for key %s: %v", entry.Key(), err)
+					slog.Warn("Failed to unmarshal settings for setting %s: %v", key, err)
 					continue
 				}
 
 				// Replace Attributes entirely with team-specific config
 				s.Attributes = teamSettings
+			case isCheck:
+				slog.Info(fmt.Sprintf("Updating check %s", checkName))
+
+				check := Check{}
+
+				if err := json.Unmarshal(value, &check); err != nil {
+					slog.Warn("Failed to unmarshal settings for check %s: %v", checkName, err)
+				}
+
+				s.Checks[checkName] = check
 			}
 		}
 	}

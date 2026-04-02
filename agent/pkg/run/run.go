@@ -39,7 +39,11 @@ func Run(args RunArgs) error {
 	}
 
 	// Watch global settings and team-specific settings
-	watchList := []string{"settings", fmt.Sprintf("%d.settings", args.TeamNumber)}
+	watchList := []string{
+		"check.*",
+		fmt.Sprintf("%d.settings", args.TeamNumber), // TODO change to settings.X
+	}
+
 	if err = natsCon.SetupKVWatcher(watchList); err != nil {
 		return fmt.Errorf("Failed to start KV watcher: %v", err)
 	}
