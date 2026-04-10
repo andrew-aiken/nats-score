@@ -16,13 +16,13 @@ import (
 
 type Definition struct {
 	Command      string `json:"command" optiontype:"required"`
-	ContentRegex string `json:"contentRegex" default:".*"`          // regex for the response to match
+	ContentRegex string `json:"contentRegex" default:".*"`  // regex for the response to match
 	Host         string `json:"host" optiontype:"required"` // IP or hostname of the host to run the SSH check against
-	KeyFile      string `json:"keyFile"`                      // Path to local ssh key
+	KeyFile      string `json:"keyFile"`                    // Path to local ssh key
 	Port         int16  `json:"port" default:"22"`          // SSH port
 	Username     string `json:"username" optiontype:"required"`
 	Password     string `json:"password"`             // User password
-	MatchContent bool   `json:"matchContent"`             // Whether the response must match a defined regex for the check to pass
+	MatchContent bool   `json:"matchContent"`         // Whether the response must match a defined regex for the check to pass
 	Timeout      int8   `json:"timeout" default:"20"` // Timeout for the ssh client connection in seconds
 }
 

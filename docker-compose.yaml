@@ -20,14 +20,14 @@ services:
   #     - NATS_URL=nats://nats:4222
   #   command: ["/bin/sh", "/nats-setup.sh"]
 
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     target: development
-  #   ports:
-  #     - "5173:5173"
-  #   volumes:
-  #     - ./frontend/src:/app/src
-  #     - ./frontend/public:/app/public
-  #     - ./frontend/index.html:/app/index.html
-  #     - ./frontend/vite.config.ts:/app/vite.config.ts
+  frontend:
+    build:
+      context: ./frontend
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts

@@ -3,6 +3,7 @@ package nats
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/nats-io/nats.go"
 )
@@ -16,7 +17,7 @@ type NATSKVClient struct {
 
 // CheckConfig represents the structure of a check in the settings
 type CheckConfig struct {
-	Name          string   `json:"name"`
+	// Name          string   `json:"name"`
 	Type          string   `json:"type"`
 	Description   string   `json:"description"`
 	ScoreWeight   int      `json:"scoreWeight"`
@@ -73,31 +74,47 @@ func (c *NATSKVClient) Close() {
 	}
 }
 
-// GetSettings retrieves and parses the settings from the KV bucket
-func (c *NATSKVClient) GetSettings() (*Settings, error) {
-	entry, err := c.kv.Get("settings")
+// GetChecks retrieves and parses the checks from the settings KV bucket
+func (c *NATSKVClient) GetChecks() (map[string]CheckConfig, error) {
+	checks := map[string]CheckConfig{}
+
+	keys, err := c.kv.ListKeys()
+	defer keys.Stop()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get 'settings' key: %w", err)
+		return checks, nil
 	}
 
-	var settings Settings
-	if err := json.Unmarshal(entry.Value(), &settings); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal settings: %w", err)
+	// Read keys from channel
+	for key := range keys.Keys() {
+		if checkName, prefix := strings.CutPrefix(key, "check."); prefix {
+			key, err := c.kv.Get(key)
+			if err != nil {
+				continue
+			}
+
+			checkValue := CheckConfig{}
+
+			if err := json.Unmarshal(key.Value(), &checkValue); err != nil {
+				return checks, fmt.Errorf("failed to unmarshal settings: %w", err)
+			}
+
+			checks[checkName] = checkValue
+		}
 	}
 
-	return &settings, nil
+	return checks, nil
 }
 
 // GetMutableFields returns a map of check names to their mutable fields
 // Only includes checks that have mutableFields defined
 func (c *NATSKVClient) GetMutableFields() (map[string][]string, error) {
-	settings, err := c.GetSettings()
+	checks, err := c.GetChecks()
 	if err != nil {
 		return nil, err
 	}
 
 	result := make(map[string][]string)
-	for checkName, check := range settings.Checks {
+	for checkName, check := range checks {
 		if len(check.MutableFields) > 0 {
 			result[checkName] = check.MutableFields
 		}

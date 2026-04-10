@@ -20,8 +20,9 @@ func (d *Definition) Run(ctx context.Context, input map[string]any, static setti
 		Passed:    true,
 	}
 
-	var userInput Input
-	userInput.Pass = true
+	var userInput = Input{
+		Pass: true,
+	}
 
 	if err := checks.ConvertInputType(input, &userInput); err != nil {
 		result.Message = err.Error()
