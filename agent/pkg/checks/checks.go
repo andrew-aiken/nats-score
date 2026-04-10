@@ -4,13 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"time"
-
-	"github.com/aaiken/nats-score/pkg/settings"
 )
 
 // Checker is the interface that all check types must implement
 type Checker interface {
-	Run(ctx context.Context, input map[string]any, static settings.StaticConf) Results
+	Run(ctx context.Context, static StaticConf) Results
 }
 
 type Results struct {

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/aaiken/nats-score/pkg/checks"
-	"github.com/aaiken/nats-score/pkg/settings"
 )
 
 type Definition struct {
@@ -32,9 +31,7 @@ type Definition struct {
 	Timeout      int8              `json:"timeout" default:"20"` // Timeout for the http query in seconds
 }
 
-type Input struct{}
-
-func (d *Definition) Run(ctx context.Context, input map[string]any, static settings.StaticConf) checks.Results {
+func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.Results {
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 

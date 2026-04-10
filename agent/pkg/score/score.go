@@ -2,7 +2,6 @@ package score
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"reflect"
@@ -19,14 +18,14 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
-		var input map[string]any
+		// var input map[string]any
 
-		if string(msg.Data) != "" {
-			if err := json.Unmarshal(msg.Data, &input); err != nil {
-				slog.Error(fmt.Sprintf("Failed to unmarshal check arguments: %s", err))
-				return
-			}
-		}
+		// if string(msg.Data) != "" {
+		// 	if err := json.Unmarshal(msg.Data, &input); err != nil {
+		// 		slog.Error(fmt.Sprintf("Failed to unmarshal check arguments: %s", err))
+		// 		return
+		// 	}
+		// }
 
 		value, ok := settings.Checks[checkName]
 
@@ -52,7 +51,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 		}
 
 		ctx := context.Background()
-		result := checker.Run(ctx, input, settings.StaticConf)
+		result := checker.Run(ctx, settings.StaticConf)
 
 		streamName := fmt.Sprintf("results.%d.%s", settings.StaticConf.TeamNumber, checkName)
 

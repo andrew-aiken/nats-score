@@ -45,7 +45,7 @@ func (n *NatsConnection) natsConnect() error {
 	var err error
 	var natsRetry int8 = 30
 
-	slog.Debug("Connecting to NATS at %s..." + n.NatsUrl)
+	slog.Debug("Connecting to NATS " + n.NatsUrl)
 
 	// Build connection options
 	opts := []nats.Option{

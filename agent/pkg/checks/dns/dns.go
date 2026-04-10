@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aaiken/nats-score/pkg/checks"
-	"github.com/aaiken/nats-score/pkg/settings"
 
 	"github.com/miekg/dns"
 )
@@ -23,10 +22,8 @@ type Definition struct {
 	Timeout        int8   `json:"timeout" default:"20"`    // Timeout for the dns query in seconds
 }
 
-type Input struct{}
-
 // Run a single instance of the check
-func (d *Definition) Run(ctx context.Context, input map[string]any, static settings.StaticConf) checks.Results {
+func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.Results {
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 

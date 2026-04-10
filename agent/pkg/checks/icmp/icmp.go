@@ -8,26 +8,23 @@ import (
 	"time"
 
 	"github.com/aaiken/nats-score/pkg/checks"
-	"github.com/aaiken/nats-score/pkg/settings"
 
 	probing "github.com/prometheus-community/pro-bing"
 )
 
 type Definition struct {
-	AllowPacketLoss bool   `json:"allowPacketLoss" default:"true"`        // Pass check based on received pings matching Count; if false, will use percent packet loss
-	Count           int    `json:"count" default:"1"`           // The number of ICMP requests to send per check
-	Host            string `json:"host" optiontype:"required"` // IP or hostname of the host to run the ICMP check against
-	Percent         int    `json:"percent" default:"100"`         // Percent of packets needed to come back to pass the check
-	Timeout         int8   `json:"timeout" default:"10"`          // Timeout for the icmp query in seconds
+	AllowPacketLoss bool   `json:"allowPacketLoss" default:"true"` // Pass check based on received pings matching Count; if false, will use percent packet loss
+	Count           int    `json:"count" default:"1"`              // The number of ICMP requests to send per check
+	Host            string `json:"host" optiontype:"required"`     // IP or hostname of the host to run the ICMP check against
+	Percent         int    `json:"percent" default:"100"`          // Percent of packets needed to come back to pass the check
+	Timeout         int8   `json:"timeout" default:"10"`           // Timeout for the icmp query in seconds
 }
 
-type Input struct{}
-
-func (d *Definition) Run(ctx context.Context, input map[string]any, static settings.StaticConf) checks.Results {
+func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.Results {
 	// Initialize empty result
 	result := checks.Results{Timestamp: time.Now()}
 
-	definitionBytes, err := settings.TemplateDefinition(d, static)
+	definitionBytes, err := checks.TemplateDefinition(d, static)
 	if err != nil {
 		result.Message = fmt.Sprintf("internal error templating definition: %s", err)
 		return result

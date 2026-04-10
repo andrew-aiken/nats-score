@@ -1,10 +1,10 @@
-package settings
+package checks
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
+	"text/template"
 )
 
 type StaticConf struct {
@@ -13,6 +13,7 @@ type StaticConf struct {
 	TeamNumberHex string // TeamNumberHex
 }
 
+// Templates the check object with team specific information
 func TemplateDefinition(def any, static StaticConf) ([]byte, error) {
 	definitionJSON, err := json.Marshal(def)
 	if err != nil {
