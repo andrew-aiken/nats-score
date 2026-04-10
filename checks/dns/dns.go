@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/checks"
 
 	"github.com/miekg/dns"
 )

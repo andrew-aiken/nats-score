@@ -10,12 +10,12 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/nats-io/nats.go"
 
-	"github.com/aaiken/nats-score/pkg/checks/dns"
-	"github.com/aaiken/nats-score/pkg/checks/http"
-	"github.com/aaiken/nats-score/pkg/checks/icmp"
-	"github.com/aaiken/nats-score/pkg/checks/noop"
-	"github.com/aaiken/nats-score/pkg/checks/ssh"
-	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/checks/dns"
+	"github.com/aaiken/nats-score/checks/http"
+	"github.com/aaiken/nats-score/checks/icmp"
+	"github.com/aaiken/nats-score/checks/noop"
+	"github.com/aaiken/nats-score/checks/ssh"
+	"github.com/aaiken/nats-score/checks"
 )
 
 type Settings struct {

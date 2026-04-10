@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/checks"
 
 	"golang.org/x/crypto/ssh"
 )

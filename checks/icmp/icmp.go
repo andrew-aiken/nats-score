@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aaiken/nats-score/pkg/checks"
+	"github.com/aaiken/nats-score/checks"
 
 	probing "github.com/prometheus-community/pro-bing"
 )
