@@ -15,20 +15,20 @@ import (
 )
 
 type Definition struct {
-	Host         string            `json:"host"` // IP or FQDN of the HTTP server
-	Path         string            `json:"path" default:"/"`     // Path to request - see RFC3986, section 3.3
-	HTTPS        bool              `json:"https" default:"false"` // if HTTPS is to be used
-	Port         uint16            `json:"port" default:"80"`    // TCP port number the HTTP server is listening on
-	Method       string            `json:"method" default:"GET"`   // HTTP method to use
-	Code         int               `json:"code" default:"200"`   // the response status code to match
-	ContentRegex string            `json:"contentRegex" default:".*"`    // regex for the response body to match
-	Headers      map[string]string `json:"headers"` // name-value pairs of header fields to add/override
-	Body         string            `json:"body"`// the request body
-	MatchCode    bool              `json:"matchCode"`// whether the response code must match a defined value for the check to pass
-	MatchContent bool              `json:"matchContent"`// whether the response body must match a defined regex for the check to pass
-	Redirect     bool              `json:"redirect"`// whether to follow http redirects
-	VerifyCert   bool              `json:"verifyCert"`// whether to verify the server's TLS certificate
-	Timeout      int8              `json:"timeout" default:"20"` // Timeout for the http query in seconds
+	Host         string            `json:"host" optiontype:"required"` // IP or FQDN of the HTTP server
+	Path         string            `json:"path" default:"/"`           // Path to request - see RFC3986, section 3.3
+	HTTPS        bool              `json:"https" default:"false"`      // if HTTPS is to be used
+	Port         uint16            `json:"port" default:"80"`          // TCP port number the HTTP server is listening on
+	Method       string            `json:"method" default:"GET"`       // HTTP method to use
+	Code         uint16            `json:"code" default:"200"`         // the response status code to match
+	ContentRegex string            `json:"contentRegex" default:".*"`  // regex for the response body to match
+	Headers      map[string]string `json:"headers"`                    // name-value pairs of header fields to add/override
+	Body         string            `json:"body"`                       // the request body
+	MatchCode    bool              `json:"matchCode"`                  // whether the response code must match a defined value for the check to pass
+	MatchContent bool              `json:"matchContent"`               // whether the response body must match a defined regex for the check to pass
+	Redirect     bool              `json:"redirect"`                   // whether to follow http redirects
+	VerifyCert   bool              `json:"verifyCert"`                 // whether to verify the server's TLS certificate
+	Timeout      uint8             `json:"timeout" default:"20"`       // Timeout for the http query in seconds
 }
 
 func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.Results {
@@ -114,7 +114,7 @@ func request(ctx context.Context, client *http.Client, d Definition) (bool, *str
 	defer resp.Body.Close()
 
 	// Check status code
-	if d.MatchCode && resp.StatusCode != d.Code {
+	if d.MatchCode && uint16(resp.StatusCode) != d.Code {
 		return false, nil, fmt.Errorf("Received bad status code: %d", resp.StatusCode)
 	}
 
@@ -141,4 +141,13 @@ func request(ctx context.Context, client *http.Client, d Definition) (bool, *str
 
 	// If we've reached this point, then the check succeeded
 	return true, &matchStr, nil
+}
+
+// Validats the http definition is valid
+func (d *Definition) Validate() (passed bool, message string) {
+	if d.Host == "" {
+		return false, "Host needs to be defined"
+	}
+
+	return true, ""
 }

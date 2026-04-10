@@ -2,7 +2,7 @@
   "frequency": 30,
   "name": "SSH Check",
   "type": "ssh",
-  "description": "ICMP check",
+  "description": "SSH check",
   "scoreWeight": 1,
   "definition": {
     "command": "whoami",

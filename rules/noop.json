@@ -2,5 +2,8 @@
   "frequency": 15,
   "type": "noop",
   "description": "No operation check",
+  "definition": {
+    "pass": true
+  },
   "scoreWeight": 1
 }

@@ -29,7 +29,7 @@ type Check struct {
 	Definition    any      `json:"definition"`
 	Description   string   `json:"description"`
 	MutableFields []string `json:"mutableFields"`
-	ScoreWeight   int8     `json:"scoreWeight"`
+	ScoreWeight   uint8     `json:"scoreWeight"`
 	Type          string   `json:"type"`
 }
 
@@ -40,7 +40,7 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 		Description   string          `json:"description"`
 		Type          string          `json:"type"`
 		MutableFields []string        `json:"mutableFields"`
-		ScoreWeight   int8            `json:"scoreWeight"`
+		ScoreWeight   uint8            `json:"scoreWeight"`
 		Definition    json.RawMessage `json:"definition"`
 	}
 

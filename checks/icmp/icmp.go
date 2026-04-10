@@ -16,8 +16,8 @@ type Definition struct {
 	AllowPacketLoss bool   `json:"allowPacketLoss" default:"true"` // Pass check based on received pings matching Count; if false, will use percent packet loss
 	Count           int    `json:"count" default:"1"`              // The number of ICMP requests to send per check
 	Host            string `json:"host" optiontype:"required"`     // IP or hostname of the host to run the ICMP check against
-	Percent         int    `json:"percent" default:"100"`          // Percent of packets needed to come back to pass the check
-	Timeout         int8   `json:"timeout" default:"10"`           // Timeout for the icmp query in seconds
+	Percent         int8   `json:"percent" default:"100"`          // Percent of packets needed to come back to pass the check
+	Timeout         uint8  `json:"timeout" default:"10"`           // Timeout for the icmp query in seconds
 }
 
 func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.Results {
@@ -79,4 +79,21 @@ func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.R
 	result.Passed = true
 
 	return result
+}
+
+// Validats the icmp definition is valid
+func (d *Definition) Validate() (passed bool, message string) {
+	if d.Host == "" {
+		return false, "Host needs to be defined"
+	}
+
+	if d.Count <= 0 {
+		return false, "Count must be larger then 0"
+	}
+
+	if d.Percent <= 0 || d.Percent > 100 {
+		return false, "Percent must be between 0 and 100"
+	}
+
+	return true, ""
 }

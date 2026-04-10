@@ -19,3 +19,8 @@ func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.R
 
 	return result
 }
+
+// Validats the noop definition is valid
+func (d *Definition) Validate() (passed bool, message string) {
+	return true, ""
+}

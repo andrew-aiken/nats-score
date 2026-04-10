@@ -14,12 +14,12 @@ import (
 // The Definition configures the behavior of the DNS check
 // it implements the "check" interface
 type Definition struct {
-	Server         string `json:"server"`                  // The IP of the DNS server to query
-	Fqdn           string `json:"fqdn"`                    // The FQDN of the host you are looking up
-	ExpectedResult string `json:"expectedResult"`         // The expected IP of the host you are looking up
-	Port           int16  `json:"port" default:"53"`       // The port of the DNS server
-	RecordType     string `json:"recordType" default:"A"` // The type of DNS record to query
-	Timeout        int8   `json:"timeout" default:"20"`    // Timeout for the dns query in seconds
+	Server         string `json:"server" optiontype:"required"`         // The IP of the DNS server to query
+	Fqdn           string `json:"fqdn" optiontype:"required"`           // The FQDN of the host you are looking up
+	ExpectedResult string `json:"expectedResult" optiontype:"required"` // The expected IP of the host you are looking up
+	Port           uint16 `json:"port" default:"53"`                    // The port of the DNS server
+	RecordType     string `json:"recordType" default:"A"`               // The type of DNS record to query
+	Timeout        uint8  `json:"timeout" default:"20"`                 // Timeout for the dns query in seconds
 }
 
 // Run a single instance of the check
@@ -72,4 +72,21 @@ func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.R
 	// If we reach here no records matched expected IP and check fails
 	result.Message = "Incorrect Records Returned"
 	return result
+}
+
+// Validats the dns definition is valid
+func (d *Definition) Validate() (passed bool, message string) {
+	if d.Server == "" {
+		return false, "Server needs to be defined"
+	}
+
+	if d.Fqdn == "" {
+		return false, "FQDN needs to be defined"
+	}
+
+	if d.ExpectedResult == "" {
+		return false, "Expected result needs to be defined"
+	}
+
+	return true, ""
 }

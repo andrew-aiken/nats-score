@@ -92,6 +92,14 @@ func main() {
 							return checks.Describe(cmd.Args().First())
 						},
 					},
+					{
+						Name:      "validate",
+						Usage:     "Validate a check",
+						ArgsUsage: "check",
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							return checks.Validate(cmd.Args().First())
+						},
+					},
 				},
 			},
 			{

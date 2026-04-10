@@ -3,6 +3,7 @@
 - [ ] Dynamic Timeout per check?
 - [x] Checks are not a central file, individual kv per check
 - [x] Results have pass/fail in stream name
+- [ ] Move agent config "Check" into check package
 
 ## Agent
 - [x] Dynamic Team resources (ip, team#, etc.)
@@ -26,3 +27,6 @@
 - [x] Get team ID during auth
 - [ ] Flip static_auth to be token:role (would allow multiple of the same account with different tokens)
 - [ ] User custom setting changes triggers server checks to reload
+
+## Checks
+- SSH Command should be optional. If not defined just verify that it can connect (or have default to id/whoami)

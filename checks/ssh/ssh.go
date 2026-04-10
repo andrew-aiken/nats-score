@@ -14,15 +14,15 @@ import (
 )
 
 type Definition struct {
-	Command      string `json:"command" optiontype:"required"`  // Command to run if successfully connected with ssh
+	Command      string `json:"command" optiontype:"required"`  // Command to run if successfully connected with SSH
 	ContentRegex string `json:"contentRegex" default:".*"`      // regex for the response to match
 	Host         string `json:"host" optiontype:"required"`     // IP or hostname of the host to run the SSH check against
-	KeyFile      string `json:"keyFile"`                        // Path to local ssh key
-	Port         int16  `json:"port" default:"22"`              // SSH port
-	Username     string `json:"username" optiontype:"required"` // User to ssh with
+	KeyFile      string `json:"keyFile"`                        // Path to local SSH key
+	Port         uint16  `json:"port" default:"22"`              // SSH port
+	Username     string `json:"username" optiontype:"required"` // User to SSH with
 	Password     string `json:"password"`                       // User password
 	MatchContent bool   `json:"matchContent"`                   // Whether the response must match a defined regex for the check to pass
-	Timeout      int8   `json:"timeout" default:"20"`           // Timeout for the ssh client connection in seconds
+	Timeout      uint8   `json:"timeout" default:"20"`           // Timeout for the SSH client connection in seconds
 }
 
 func (d *Definition) Run(ctx context.Context, static checks.StaticConf) checks.Results {
@@ -120,4 +120,25 @@ func (d *Definition) generateAuth() ([]ssh.AuthMethod, error) {
 	}
 
 	return authMethods, nil
+}
+
+// Validats the SSH definition is valid
+func (d *Definition) Validate() (passed bool, message string) {
+	if d.Command == "" {
+		return false, "Command needs to be defined"
+	}
+
+	if d.Host == "" {
+		return false, "Host needs to be defined"
+	}
+
+	if d.Username == "" {
+		return false, "Username needs to be defined"
+	}
+
+	if d.KeyFile == "" && d.Password == "" {
+		fmt.Println("Warning | Both ssh keyfile and password are not defined")
+	}
+
+	return true, ""
 }
