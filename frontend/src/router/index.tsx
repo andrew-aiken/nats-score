@@ -6,6 +6,7 @@ import DashboardView from '../views/DashboardView'
 import HealthCheckView from '../views/HealthCheckView'
 import SettingsView from '../views/SettingsView'
 import AdminView from '../views/AdminView'
+import AdminScoringOverviewView from '../views/AdminScoringOverviewView'
 import AuthCallbackView from '../views/AuthCallbackView'
 import LoginView from '../views/LoginView'
 
@@ -44,6 +45,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin',
             element: <AdminView />
+          },
+          {
+            path: 'admin/scores',
+            element: <AdminScoringOverviewView />
           }
         ]
       }

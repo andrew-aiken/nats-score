@@ -24,13 +24,23 @@ export default function NavBar() {
       
       <div className="nav-links">
         {userIsAdmin ? (
-          <NavLink 
-            to="/admin" 
-            className={`nav-link ${location.pathname === '/admin' ? 'active' : ''}`}
-          >
-            <span className="nav-icon">🔧</span>
-            Admin
-          </NavLink>
+          <>
+            <NavLink
+              to="/admin/scores"
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="nav-icon">📈</span>
+              Scores
+            </NavLink>
+            <NavLink
+              to="/admin"
+              end
+              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            >
+              <span className="nav-icon">🔧</span>
+              Admin
+            </NavLink>
+          </>
         ) : (
           <>
             <NavLink 

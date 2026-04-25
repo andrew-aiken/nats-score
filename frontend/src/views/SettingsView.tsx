@@ -10,6 +10,22 @@ type MutableFieldsMap = Record<string, string[]>
 // Format: {"icmp":{"host":"10.9.9.9","username":"foobar"}}
 type UserSettings = Record<string, Record<string, string>>
 
+const getSanitizedSettingsPayload = (settings: UserSettings): UserSettings => {
+  const sanitizedSettings: UserSettings = {}
+
+  for (const [checkKey, fields] of Object.entries(settings)) {
+    const sanitizedFields = Object.fromEntries(
+      Object.entries(fields).filter(([, value]) => value.trim() !== '')
+    )
+
+    if (Object.keys(sanitizedFields).length > 0) {
+      sanitizedSettings[checkKey] = sanitizedFields
+    }
+  }
+
+  return sanitizedSettings
+}
+
 export default function SettingsView() {
   const [mutableFields, setMutableFields] = useState<MutableFieldsMap | null>(null)
   const [fieldValues, setFieldValues] = useState<UserSettings>({})
@@ -83,10 +99,10 @@ export default function SettingsView() {
     setSaving(checkKey)
     try {
       // Save via API - team number is determined from JWT on server
-      const updatedUserSettings: UserSettings = {
+      const updatedUserSettings = getSanitizedSettingsPayload({
         ...fieldValues,
         [checkKey]: fieldValues[checkKey] || {}
-      }
+      })
 
       const result = await updateTeamSettings(updatedUserSettings)
       toast.success('Settings saved', `Updated ${checkKey} for team ${result.team}`)

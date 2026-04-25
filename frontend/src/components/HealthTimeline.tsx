@@ -24,16 +24,25 @@ interface HealthTimelineProps {
   checks: HealthCheck[]
   timeRange: string
   checkNames?: Record<string, string>
+  /** Check names from GET /api/checks — show a row per check before any NATS results */
+  initialCheckNames?: string[]
+  /** JWT team id; used with initialCheckNames to build group keys */
+  teamId?: string | null
 }
 
 // Parse subject to extract team_id and service_name
 // Format: results.<team_id>.<service_name>
+const normalizeServiceName = (serviceName: string): string => {
+  // Health check subjects end with ".0"/".1" to indicate result status.
+  return serviceName.replace(/\.(0|1)$/, '')
+}
+
 const parseSubject = (subject: string): { teamId: string; serviceName: string } => {
   const parts = subject.split('.')
   if (parts.length >= 3 && parts[0] === 'results') {
     return {
       teamId: parts[1] ?? 'unknown',
-      serviceName: parts.slice(2).join('.')
+      serviceName: normalizeServiceName(parts.slice(2).join('.'))
     }
   }
   return { teamId: 'unknown', serviceName: subject }
@@ -57,7 +66,15 @@ const getTimeRangeConfig = (range: string) => {
   }
 }
 
-export default function HealthTimeline({ checks, timeRange, checkNames = {} }: HealthTimelineProps) {
+const GROUP_KEY_SEP = '\x1f'
+
+export default function HealthTimeline({
+  checks,
+  timeRange,
+  checkNames = {},
+  initialCheckNames = [],
+  teamId = null
+}: HealthTimelineProps) {
   const [selectedCheck, setSelectedCheck] = useState<HealthCheck | null>(null)
 
   // Get display name for a service (use name from settings if available, otherwise check key)
@@ -127,45 +144,60 @@ export default function HealthTimeline({ checks, timeRange, checkNames = {} }: H
     return markers
   }, [timeBounds, rangeConfig])
 
-  // Group checks by service
+  // Group checks by service; seed rows from API check list for this team
   const serviceGroups = useMemo<ServiceGroup[]>(() => {
     const groups = new Map<string, HealthCheck[]>()
-    
+
+    if (teamId && initialCheckNames.length > 0) {
+      for (const rawName of initialCheckNames) {
+        const serviceName = normalizeServiceName(rawName)
+        const key = `${teamId}${GROUP_KEY_SEP}${serviceName}`
+        if (!groups.has(key)) {
+          groups.set(key, [])
+        }
+      }
+    }
+
     for (const check of checks) {
-      const { teamId, serviceName } = parseSubject(check.subject)
-      const key = `${teamId}.${serviceName}`
-      
+      const { teamId: tid, serviceName } = parseSubject(check.subject)
+      const key = `${tid}${GROUP_KEY_SEP}${serviceName}`
+
       if (!groups.has(key)) {
         groups.set(key, [])
       }
       groups.get(key)!.push(check)
     }
-    
-    // Convert to array and sort by service name
+
     return Array.from(groups.entries())
-      .map(([key, checks]) => {
-        const firstCheck = checks[0]
-        if (!firstCheck) return null
-        const { teamId, serviceName } = parseSubject(firstCheck.subject)
-        const passed = checks.filter(c => c.passed).length
-        const sortedChecks = [...checks].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
-        
+      .map(([key, svcChecks]) => {
+        const sepIdx = key.indexOf(GROUP_KEY_SEP)
+        const teamIdFromKey = sepIdx >= 0 ? key.slice(0, sepIdx) : 'unknown'
+        const serviceNameFromKey = sepIdx >= 0 ? key.slice(sepIdx + GROUP_KEY_SEP.length) : key
+
+        const firstCheck = svcChecks[0]
+        const resolvedTeamId = firstCheck ? parseSubject(firstCheck.subject).teamId : teamIdFromKey
+        const resolvedServiceName = firstCheck
+          ? parseSubject(firstCheck.subject).serviceName
+          : serviceNameFromKey
+
+        const passed = svcChecks.filter(c => c.passed).length
+        const sortedChecks = [...svcChecks].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+
         return {
           key,
-          teamId,
-          serviceName,
+          teamId: resolvedTeamId,
+          serviceName: resolvedServiceName,
           checks: sortedChecks,
-          passRate: Math.round((passed / checks.length) * 100),
+          passRate:
+            svcChecks.length > 0 ? Math.round((passed / svcChecks.length) * 100) : 0,
           lastStatus: sortedChecks[sortedChecks.length - 1]?.passed ?? false
         }
       })
-      .filter((g): g is ServiceGroup => g !== null)
       .sort((a, b) => {
-        // Sort by team, then by service name
         if (a.teamId !== b.teamId) return a.teamId.localeCompare(b.teamId)
         return a.serviceName.localeCompare(b.serviceName)
       })
-  }, [checks])
+  }, [checks, teamId, initialCheckNames])
 
   // Calculate position for a check on the timeline (0-100%)
   const getCheckPosition = (check: HealthCheck): number => {
@@ -241,7 +273,7 @@ export default function HealthTimeline({ checks, timeRange, checkNames = {} }: H
 
       {/* Services Grid */}
       <div className="services-container">
-        {checks.length === 0 ? (
+        {serviceGroups.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">🔍</div>
             <p>No health checks in selected time range</p>

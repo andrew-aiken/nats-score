@@ -3,6 +3,32 @@ import { getCredentials } from './auth'
 const API_SERVER = 'http://localhost:3000'
 
 /**
+ * Fetch all configured check names from the server (NATS KV `check.*` keys).
+ * GET /api/checks — public; sends Authorization when credentials exist.
+ */
+export async function getChecks(): Promise<string[]> {
+  const creds = getCredentials()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (creds) {
+    headers.Authorization = `Bearer ${creds.jwt}`
+  }
+
+  const response = await fetch(`${API_SERVER}/api/checks`, {
+    method: 'GET',
+    headers,
+  })
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch checks' }))
+    throw new Error(error.error || 'Failed to fetch checks')
+  }
+
+  return response.json()
+}
+
+/**
  * Fetch mutable fields for all checks from the server
  * Returns a map of check names to their mutable field arrays
  */

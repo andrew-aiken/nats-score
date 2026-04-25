@@ -9,16 +9,15 @@ export default function ProtectedRoute() {
   }
 
   const userIsAdmin = isAdmin()
-  const isAdminRoute = location.pathname === '/admin'
-  // const isRootRoute = location.pathname === '/'
+  const isAdminSection = location.pathname.startsWith('/admin')
 
   // Redirect admin users to /admin if they try to access non-admin pages
-  if (userIsAdmin && !isAdminRoute) {
+  if (userIsAdmin && !isAdminSection) {
     return <Navigate to="/admin" replace />
   }
 
   // Redirect non-admin users away from admin route
-  if (!userIsAdmin && isAdminRoute) {
+  if (!userIsAdmin && isAdminSection) {
     return <Navigate to="/" replace />
   }
 

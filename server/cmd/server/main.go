@@ -122,9 +122,6 @@ func Server() error {
 	}()
 	log.Println("Watching KV for check changes")
 
-	// NOTICE: Starting by default
-	cronScheduler.Start()
-
 	// Create OAuth2 config
 	oauthConfig := &oauth2.Config{
 		RedirectURL:  cfg.RedirectURL,
@@ -167,6 +164,7 @@ func Server() error {
 	http.HandleFunc("/auth/callback", h.Callback)
 	http.HandleFunc("/auth/token", corsMiddleware.Handler(h.TokenLogin))
 	http.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(h.GetMutableFields)))
+	http.HandleFunc("/api/checks", corsMiddleware.Handler(h.Checks))
 	http.HandleFunc("/api/settings", corsMiddleware.Handler(authMiddleware.RequireAuth(h.TeamSettings)))
 
 	http.HandleFunc("/api/admin/settings", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.GetChecks)))

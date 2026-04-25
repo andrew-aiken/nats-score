@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNatsStore } from '../services/nats'
+import { getChecks } from '../services/api'
+import { getCredentials, getTeamIdFromJwt } from '../services/auth'
 import { toast } from '../services/toast'
 import ConnectionStatus from '../components/ConnectionStatus'
 import TimeRangeSelector from '../components/TimeRangeSelector'
@@ -8,11 +10,16 @@ import type { HealthCheck } from '../components/HealthTimeline'
 import './HealthCheckView.css'
 
 
+const normalizeServiceName = (serviceName: string): string => {
+  // Health check subjects end with ".0"/".1" to indicate result status.
+  return serviceName.replace(/\.(0|1)$/, '')
+}
+
 // Parse subject to extract service key (team_id.service_name)
 const parseSubjectToKey = (subject: string): string => {
   const parts = subject.split('.')
   if (parts.length >= 3 && parts[0] === 'results') {
-    return `${parts[1]}.${parts.slice(2).join('.')}`
+    return `${parts[1]}.${normalizeServiceName(parts.slice(2).join('.'))}`
   }
   return subject
 }
@@ -21,8 +28,7 @@ const parseSubjectToKey = (subject: string): string => {
 const getServiceName = (subject: string): string => {
   const parts = subject.split('.')
   if (parts.length >= 3 && parts[0] === 'results') {
-    const checkKey = parts.slice(2).join('.')
-    return checkKey
+    return normalizeServiceName(parts.slice(2).join('.'))
   }
   return subject
 }
@@ -36,11 +42,29 @@ export default function HealthCheckView() {
   const [timeRange, setTimeRange] = useState(() => {
     return localStorage.getItem('healthcheck-time-range') || '1h'
   })
+  const [initialCheckNames, setInitialCheckNames] = useState<string[]>([])
+
+  const teamId = useMemo(() => {
+    const creds = getCredentials()
+    return creds ? getTeamIdFromJwt(creds.jwt) : null
+  }, [])
   
   // Persist time range selection to localStorage
   useEffect(() => {
     localStorage.setItem('healthcheck-time-range', timeRange)
   }, [timeRange])
+
+  useEffect(() => {
+    const loadChecks = async () => {
+      try {
+        const names = await getChecks()
+        setInitialCheckNames(names)
+      } catch (err) {
+        console.error('Failed to load checks list:', err)
+      }
+    }
+    loadChecks()
+  }, [])
   
   // Track last known status for each service to detect state transitions
   const serviceStatusRef = useRef<Map<string, boolean>>(new Map())
@@ -154,7 +178,12 @@ export default function HealthCheckView() {
       </div>
 
       <div className="view-content">
-        <HealthTimeline checks={healthChecks} timeRange={timeRange} />
+        <HealthTimeline
+          checks={healthChecks}
+          timeRange={timeRange}
+          initialCheckNames={initialCheckNames}
+          teamId={teamId}
+        />
       </div>
     </div>
   )

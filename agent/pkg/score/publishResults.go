@@ -11,12 +11,12 @@ import (
 
 type PublishedResults struct {
 	checks.Results
-	Points int8 `json:"points"`
+	Points uint8 `json:"points"`
 }
 
-func publishResults(streamName string, results checks.Results, scoreWeight int8, js nats.JetStreamContext) error {
+func publishResults(streamName string, results checks.Results, scoreWeight uint8, js nats.JetStreamContext) error {
 	// No points for failed check
-	scoredPoints := int8(0)
+	scoredPoints := uint8(0)
 	passedSubject := 0
 
 	// If the check passed, award the weighter point value

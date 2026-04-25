@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { connect, StringCodec, jwtAuthenticator } from 'nats.ws'
+import { connect, StringCodec, jwtAuthenticator, DeliverPolicy } from 'nats.ws'
 import type { NatsConnection, JetStreamClient, ConsumerMessages } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
 import { getCredentials, login, clearCredentials, isTokenExpired, getTeamIdFromJwt } from './auth'
@@ -17,7 +17,10 @@ interface NatsState {
   subscribedSubject: string | null
   connect: () => Promise<void>
   disconnect: () => Promise<void>
-  subscribeToStream: (subject: string) => Promise<void>
+  subscribeToStream: (
+    subject: string,
+    opts?: { deliverPolicy?: DeliverPolicy }
+  ) => Promise<void>
   clearMessages: () => void
   getSubscribedSubjects: () => string[]
   getKvValue: (bucket: string, key: string) => Promise<string | null>
@@ -137,7 +140,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
     set({ status: 'disconnected' })
   },
 
-  subscribeToStream: async (subject: string) => {
+  subscribeToStream: async (subject: string, opts?: { deliverPolicy?: DeliverPolicy }) => {
     if (!connection || !jetstream) {
       throw new Error('Not connected to NATS')
     }
@@ -148,24 +151,38 @@ export const useNatsStore = create<NatsState>((set, get) => ({
     }
 
     try {
-      console.log(`Subscribing to JetStream: ${subject} (with history)`)
+      const deliverPolicy = opts?.deliverPolicy
+      const replayLabel =
+        deliverPolicy === DeliverPolicy.LastPerSubject
+          ? 'last message per subject only'
+          : deliverPolicy === DeliverPolicy.New
+            ? 'new messages only'
+            : deliverPolicy === DeliverPolicy.Last
+              ? 'from last stream message'
+              : 'with history'
+      console.log(`Subscribing to JetStream: ${subject} (${replayLabel})`)
 
       // Find the stream that contains this subject
       const jsm = await connection.jetstreamManager()
       const streamName = await jsm.streams.find(subject)
 
-      // Create an ordered consumer - ephemeral, delivers all messages in order, no acks needed
+      // Ordered consumer: use a string filter (filter_subject) so the client uses the
+      // new CONSUMER.CREATE API ($JS.API.CONSUMER.CREATE.<stream>.<name>.<filter>), which
+      // matches team JWT pub allow ($JS.API.CONSUMER.CREATE.results.*.results.<team>.>).
+      // An array here becomes filter_subjects and disables that API, publishing only to
+      // $JS.API.CONSUMER.CREATE.<stream> and causing a permissions violation.
       const consumer = await jetstream.consumers.get(streamName, {
-        filterSubjects: [subject],
+        filterSubjects: subject,
+        ...(deliverPolicy !== undefined ? { deliver_policy: deliverPolicy } : {}),
       })
 
       // Start consuming messages
       consumerMessages = await consumer.consume()
       set({ subscribedSubject: subject })
 
-      console.log(`Subscribed to ${subject} - loading historical messages...`)
+      console.log(`Subscribed to ${subject} - consuming...`)
 
-      // Process messages (both historical and new)
+      // Process messages from the consumer (replay depends on deliver_policy)
       const messages = consumerMessages
       ;(async () => {
         for await (const msg of messages) {

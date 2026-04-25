@@ -1,0 +1,180 @@
+.admin-scoring-overview {
+  padding: 1.5rem 1.5rem 2.5rem;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.aso-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.aso-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 0.35rem;
+  color: var(--color-text);
+}
+
+.aso-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  max-width: 42rem;
+}
+
+.aso-header-right {
+  flex-shrink: 0;
+}
+
+.aso-live-hint {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+.aso-live-hint-err {
+  color: var(--color-error);
+}
+
+.aso-matrix-shell {
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.aso-matrix-scroll {
+  overflow: auto;
+  max-height: min(70vh, 720px);
+}
+
+.aso-matrix {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8125rem;
+}
+
+.aso-matrix-corner {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.aso-matrix thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.aso-matrix-colhead {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+  font-weight: 600;
+  color: var(--color-text);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  text-align: center;
+  vertical-align: bottom;
+  max-width: 7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: var(--color-surface);
+}
+
+.aso-matrix-rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.aso-matrix-cell {
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.35rem 0.45rem;
+  text-align: center;
+  vertical-align: middle;
+  background: var(--color-surface);
+}
+
+.aso-matrix-cell--empty {
+  background: var(--color-bg);
+}
+
+.aso-matrix-cell-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.25rem;
+  min-width: 3.5rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.aso-matrix-cell-inner--pass {
+  border-color: var(--color-success);
+}
+
+.aso-matrix-cell-inner--fail {
+  border-color: var(--color-error);
+}
+
+.aso-matrix-status {
+  font-weight: 600;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.aso-matrix-cell-inner--pass .aso-matrix-status {
+  color: var(--color-success);
+}
+
+.aso-matrix-cell-inner--fail .aso-matrix-status {
+  color: var(--color-error);
+}
+
+.aso-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--color-text-muted);
+}
+
+.aso-empty--in-shell {
+  border: none;
+}
+
+.aso-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8em;
+  color: var(--color-text-secondary);
+}

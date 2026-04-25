@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"server/pkg/config"
@@ -261,6 +262,34 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
 	}
+}
+
+// Checks returns a sorted list of all check names from the NATS KV settings bucket
+func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if h.NatsKVClient == nil {
+		log.Printf("NATS KV client not initialized")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
+		return
+	}
+
+	checks, err := h.NatsKVClient.GetChecks()
+	if err != nil {
+		log.Printf("Failed to get checks: %v", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve checks"})
+		return
+	}
+
+	names := make([]string, 0, len(checks))
+	for name := range checks {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	json.NewEncoder(w).Encode(names)
 }
 
 func validateRoles(roleMap config.DiscordRoleMap, userRoles []string) (teamID string, error error) {
