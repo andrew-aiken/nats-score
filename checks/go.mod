@@ -1,4 +1,4 @@
-module github.com/aaiken/nats-score/checks
+module github.com/andrew-aiken/nats-score/checks
 
 go 1.25
 

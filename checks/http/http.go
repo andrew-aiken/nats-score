@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aaiken/nats-score/checks"
+	"github.com/andrew-aiken/nats-score/checks"
 )
 
 type Definition struct {
