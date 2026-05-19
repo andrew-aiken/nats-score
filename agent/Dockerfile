@@ -1,30 +1,23 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
-
+FROM public.ecr.aws/docker/library/golang:1.26.2 AS builder
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod go.sum* ./
+COPY go.mod go.sum /app/
 
-# Download dependencies
 RUN go mod download
 
-# Copy source code
-COPY . .
+COPY pkg/ /app/pkg/
+COPY cmd/ /app/cmd/
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o /agent ./cmd/agent
+RUN CGO_ENABLED=0 GOOS=linux go build -o /agent /app/cmd/agent
 
-# Runtime stage
-FROM alpine:3.22
 
-# Install ca-certificates for HTTPS connections
-RUN apk --no-cache add ca-certificates
+# https://github.com/GoogleContainerTools/distroless
+FROM gcr.io/distroless/static-debian13
 
-WORKDIR /app
+WORKDIR /
 
-# Copy the binary from builder
-COPY --from=builder /agent .
+COPY --chown=root:nonroot --chmod=050 --from=builder /agent /agent
 
-# Run the application
-CMD ["./agent"]
+USER nonroot:nonroot
+
+ENTRYPOINT ["/agent"]

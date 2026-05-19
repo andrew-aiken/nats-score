@@ -9,11 +9,11 @@ import (
 	"server/pkg/config"
 	"server/pkg/nats"
 
-	"github.com/aaiken/nats-score/checks/dns"
-	"github.com/aaiken/nats-score/checks/http"
-	"github.com/aaiken/nats-score/checks/icmp"
-	"github.com/aaiken/nats-score/checks/noop"
-	"github.com/aaiken/nats-score/checks/ssh"
+	"github.com/andrew-aiken/checks/dns"
+	"github.com/andrew-aiken/checks/http"
+	"github.com/andrew-aiken/checks/icmp"
+	"github.com/andrew-aiken/checks/noop"
+	"github.com/andrew-aiken/checks/ssh"
 
 	"github.com/creasty/defaults"
 	natsnats "github.com/nats-io/nats.go"

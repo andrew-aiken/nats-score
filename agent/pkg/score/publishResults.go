@@ -6,7 +6,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/aaiken/nats-score/checks"
+	"github.com/andrew-aiken/checks"
 )
 
 type PublishedResults struct {

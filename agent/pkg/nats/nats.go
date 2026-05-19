@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/aaiken/nats-score/pkg/config"
-	"github.com/aaiken/nats-score/pkg/score"
+	"github.com/andrew-aiken/nats-score/agent/pkg/config"
+	"github.com/andrew-aiken/nats-score/agent/pkg/score"
 
 	"github.com/nats-io/nats.go"
 )

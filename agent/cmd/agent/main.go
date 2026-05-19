@@ -7,7 +7,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
-	"github.com/aaiken/nats-score/pkg/run"
+	"github.com/andrew-aiken/nats-score/agent/pkg/run"
 )
 
 func main() {

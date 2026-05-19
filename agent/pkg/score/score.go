@@ -10,8 +10,8 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/aaiken/nats-score/checks"
-	"github.com/aaiken/nats-score/pkg/config"
+	"github.com/andrew-aiken/checks"
+	"github.com/andrew-aiken/nats-score/agent/pkg/config"
 )
 
 func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.MsgHandler {

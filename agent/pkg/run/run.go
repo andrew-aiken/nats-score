@@ -10,8 +10,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/aaiken/nats-score/pkg/config"
-	"github.com/aaiken/nats-score/pkg/nats"
+	"github.com/andrew-aiken/nats-score/agent/pkg/config"
+	"github.com/andrew-aiken/nats-score/agent/pkg/nats"
 )
 
 type RunArgs struct {
