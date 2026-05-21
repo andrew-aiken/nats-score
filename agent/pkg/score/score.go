@@ -22,7 +22,7 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
-		value, ok := settings.Checks[checkName]
+		value, ok := settings.GetCheck(checkName)
 		if !ok {
 			slog.Error(fmt.Sprintf("Check %s not found", checkName))
 			return
@@ -73,7 +73,7 @@ func runTeamCheck(teamNum uint16, teamState *config.TeamState, checkName string,
 
 	// Apply team-specific attribute overrides
 	var override map[string]string
-	allowedArgumentOverrides(value.MutableFields, teamState.Attributes[checkName], &override)
+	allowedArgumentOverrides(value.MutableFields, teamState.GetAttributes(checkName), &override)
 	if err := applyOverrides(defCopy, override); err != nil {
 		slog.Warn(fmt.Sprintf("Failed to apply overrides for check %s team %d: %v", checkName, teamNum, err))
 	}

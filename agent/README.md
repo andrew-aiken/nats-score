@@ -2,6 +2,15 @@
 
 A distributed scoring agent that executes checks against one or more teams and publishes results to NATS JetStream.
 
+
+## Testing
+```bash
+go test -race ./...
+```
+
+
+Below is mostly AI slop output
+
 ## Usage
 
 ```

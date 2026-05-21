@@ -22,10 +22,10 @@ func newMockWatcher() *mockKeyWatcher {
 	}
 }
 
-func (m *mockKeyWatcher) Context() context.Context        { return context.Background() }
+func (m *mockKeyWatcher) Context() context.Context           { return context.Background() }
 func (m *mockKeyWatcher) Updates() <-chan nats.KeyValueEntry { return m.ch }
-func (m *mockKeyWatcher) Stop() error                     { return nil }
-func (m *mockKeyWatcher) Error() <-chan error              { return m.errCh }
+func (m *mockKeyWatcher) Stop() error                        { return nil }
+func (m *mockKeyWatcher) Error() <-chan error                { return m.errCh }
 
 // mockKVEntry implements nats.KeyValueEntry
 type mockKVEntry struct {
@@ -166,6 +166,60 @@ func TestMonitorSettings_NilEntryHandled(t *testing.T) {
 
 	// A nil entry (initial sync marker) should not panic
 	runWithEvents(settings, nil, []nats.KeyValueEntry{nil})
+}
+
+// TestMonitorSettings_DataRace reproduces the race between MonitorSettings (writer)
+// and concurrent map reads that mirror what HandleScoreEvent does on each NATS message.
+// Run with: go test -race -run TestMonitorSettings_DataRace ./pkg/config/
+func TestMonitorSettings_DataRace(t *testing.T) {
+	checkJSON := `{
+		"name": "noop-race",
+		"type": "noop",
+		"description": "race test",
+		"mutableFields": [],
+		"scoreWeight": 1,
+		"definition": {"pass": true}
+	}`
+
+	settings := &Settings{
+		Checks: make(map[string]Check),
+		Teams:  make(map[uint16]*TeamState),
+	}
+
+	watcher := newMockWatcher()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// MonitorSettings runs in the background, continuously writing to settings.Checks
+	go settings.MonitorSettings(ctx, nil, watcher)
+
+	// Feed a steady stream of KV updates to drive concurrent writes
+	go func() {
+		entry := &mockKVEntry{
+			key:   "check.noop-race",
+			value: []byte(checkJSON),
+			op:    nats.KeyValuePut,
+		}
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case watcher.ch <- entry:
+			}
+		}
+	}()
+
+	// Simulate HandleScoreEvent: read settings concurrently with the writes above.
+	// Uses the accessor so both sides go through the mutex — this should not race.
+	deadline := time.After(100 * time.Millisecond)
+	for {
+		select {
+		case <-deadline:
+			return
+		default:
+			_, _ = settings.GetCheck("noop-race")
+		}
+	}
 }
 
 func TestCheckUnmarshalJSON(t *testing.T) {
