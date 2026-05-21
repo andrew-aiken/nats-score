@@ -86,7 +86,7 @@ func main() {
 					},
 					{
 						Name:      "describe",
-						Usage:     "Describe a check",
+						Usage:     "Prints out a checks definition",
 						ArgsUsage: "check",
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							return checks.Describe(cmd.Args().First())
@@ -94,7 +94,7 @@ func main() {
 					},
 					{
 						Name:      "validate",
-						Usage:     "Validate a check",
+						Usage:     "Validates that a check if formatted correctly",
 						ArgsUsage: "check",
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							return checks.Validate(cmd.Args().First())

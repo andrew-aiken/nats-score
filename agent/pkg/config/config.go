@@ -10,11 +10,7 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/nats-io/nats.go"
 
-	"github.com/andrew-aiken/checks/dns"
-	"github.com/andrew-aiken/checks/http"
-	"github.com/andrew-aiken/checks/icmp"
-	"github.com/andrew-aiken/checks/noop"
-	"github.com/andrew-aiken/checks/ssh"
+	"github.com/andrew-aiken/checks/helper"
 	"github.com/andrew-aiken/checks"
 )
 
@@ -55,29 +51,13 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 	c.MutableFields = raw.MutableFields
 	c.ScoreWeight = raw.ScoreWeight
 
-	var def any
-
-	// Skip unmarshalling if definition is empty or null
 	if len(raw.Definition) == 0 || string(raw.Definition) == "null" {
-		c.Definition = &noop.Definition{}
-		return nil
+		return fmt.Errorf("definition not defined for check %q", raw.Name)
 	}
 
-	// Unmarshal Definition based on Type
-	switch raw.Type {
-	case "dns":
-		def = &dns.Definition{}
-	case "http":
-		def = &http.Definition{}
-	case "icmp":
-		def = &icmp.Definition{}
-	case "noop":
-		def = &noop.Definition{}
-	case "ssh":
-		def = &ssh.Definition{}
-	default:
-		// For unknown types, keep as raw JSON map
-		def = &noop.Definition{}
+	def, err := helper.NewDefinition(raw.Type)
+	if err != nil {
+		return err
 	}
 
 	// Set default values

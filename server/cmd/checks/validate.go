@@ -9,11 +9,7 @@ import (
 	"server/pkg/config"
 	"server/pkg/nats"
 
-	"github.com/andrew-aiken/checks/dns"
-	"github.com/andrew-aiken/checks/http"
-	"github.com/andrew-aiken/checks/icmp"
-	"github.com/andrew-aiken/checks/noop"
-	"github.com/andrew-aiken/checks/ssh"
+	"github.com/andrew-aiken/checks/helper"
 
 	"github.com/creasty/defaults"
 	natsnats "github.com/nats-io/nats.go"
@@ -79,28 +75,14 @@ func Validate(checkName string) error {
 		return err
 	}
 
-	var checkDefinition any
-
 	// Skip unmarshalling if definition is empty or null
 	if len(check.Definition) == 0 || string(check.Definition) == "null" {
 		return fmt.Errorf("Definition not defined")
 	}
 
-	// Unmarshal Definition based on Type
-	switch check.Type {
-	case "dns":
-		checkDefinition = &dns.Definition{}
-	case "http":
-		checkDefinition = &http.Definition{}
-	case "icmp":
-		checkDefinition = &icmp.Definition{}
-	case "noop":
-		checkDefinition = &noop.Definition{}
-	case "ssh":
-		checkDefinition = &ssh.Definition{}
-	default:
-		// For unknown types, keep as check JSON map
-		checkDefinition = &noop.Definition{}
+	checkDefinition, err := helper.NewDefinition(check.Type)
+	if err != nil {
+		return err
 	}
 
 	if err := json.Unmarshal(check.Definition, checkDefinition); err != nil {
