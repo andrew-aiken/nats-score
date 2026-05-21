@@ -18,15 +18,6 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
-		// var input map[string]any
-
-		// if string(msg.Data) != "" {
-		// 	if err := json.Unmarshal(msg.Data, &input); err != nil {
-		// 		slog.Error(fmt.Sprintf("Failed to unmarshal check arguments: %s", err))
-		// 		return
-		// 	}
-		// }
-
 		value, ok := settings.Checks[checkName]
 
 		if !ok {
@@ -51,18 +42,19 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 		}
 
 		ctx := context.Background()
+
+		slog.Debug(fmt.Sprintf("Starting check: %s", checkName))
+
 		result := checker.Run(ctx, settings.StaticConf)
 
 		streamName := fmt.Sprintf("results.%d.%s", settings.StaticConf.TeamNumber, checkName)
 
+		// Publish the results of the check to NATS
 		if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
 			slog.Error(fmt.Sprintf("Failed to publish results: %v", err))
 		}
 
 		slog.Info(fmt.Sprintf("Check %s result: %v", checkName, result.Passed))
-		// for key, value := range result.Details {
-		// 	log.Printf("Check %s detail: %s = %s", checkName, key, value)
-		// }
 	}
 }
 
