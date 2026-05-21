@@ -113,13 +113,14 @@ func (n *NatsConnection) SetupKVWatcher(keys []string) error {
 func (n *NatsConnection) SubjectSubscribe(settings *config.Settings) error {
 	var err error
 
-	n.natsStreamSub, err = n.NatsConn.Subscribe("events.score.>", score.HandleScoreEvent(settings, n.JetStreamConn))
+	var scoreStream string = "events.score.>"
 
+	n.natsStreamSub, err = n.NatsConn.Subscribe(scoreStream, score.HandleScoreEvent(settings, n.JetStreamConn))
 	if err != nil {
-		return fmt.Errorf("Failed to subscribe to ephemeral events: %v", err)
+		return fmt.Errorf("Failed to subscribe to stream %v", err)
 	}
 
-	slog.Debug("Subscribed to ephemeral events on 'events.>'")
+	slog.Debug(fmt.Sprintf("Subscribed to events on '%s'", scoreStream))
 
 	return nil
 }

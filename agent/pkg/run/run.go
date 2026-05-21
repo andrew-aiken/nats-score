@@ -53,7 +53,7 @@ func Run(args RunArgs) error {
 	}
 
 	if err = natsCon.SetupKVWatcher(watchList); err != nil {
-		return fmt.Errorf("Failed to start KV watcher: %v", err)
+		return err
 	}
 
 	var agentSettings config.Settings

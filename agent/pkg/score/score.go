@@ -102,7 +102,7 @@ func allowedArgumentOverrides(allowedItems []string, attributes map[string]strin
 	}
 }
 
-// There has is probably a better way to do this but for now just strip the {{ }} from the string
+// There is probably a better way to do this but for now just strip the {{ }} from the string
 func cleanTemplateString(definition string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(definition, "{{", ""), "}}", "")
 }

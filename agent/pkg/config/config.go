@@ -116,7 +116,7 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 
 				check := Check{}
 				if err := json.Unmarshal(value, &check); err != nil {
-					slog.Warn("Failed to unmarshal settings for check %s: %v", checkName, err)
+					slog.Warn(fmt.Sprintf("Failed to unmarshal settings for check %s: %v", checkName, err))
 				}
 
 				s.Checks[checkName] = check
@@ -126,7 +126,7 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 
 					var teamSettings map[string]map[string]string
 					if err := json.Unmarshal(value, &teamSettings); err != nil {
-						slog.Warn("Failed to unmarshal settings for setting %s: %v", key, err)
+						slog.Warn(fmt.Sprintf("Failed to unmarshal settings for setting %s: %v", key, err))
 						continue
 					}
 

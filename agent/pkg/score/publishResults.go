@@ -3,6 +3,7 @@ package score
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/nats-io/nats.go"
 
@@ -30,11 +31,19 @@ func publishResults(streamName string, results checks.Results, scoreWeight uint8
 		Points:  scoredPoints,
 	}
 
-	bytes, _ := json.Marshal(publishedResults)
-	js.Publish(
+	bytes, err := json.Marshal(publishedResults)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Failed to marshal when attempting to publishing to %s", streamName))
+		return err
+	}
+	_, err = js.Publish(
 		fmt.Sprintf("%s.%d", streamName, passedSubject),
 		bytes,
 	)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Failed publish to stream %s", streamName))
+		return err
+	}
 
 	return nil
 }

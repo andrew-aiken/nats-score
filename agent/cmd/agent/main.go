@@ -20,25 +20,21 @@ func main() {
 				Name:    "team",
 				Aliases: []string{"t"},
 				Usage:   "single team number (mutually exclusive with --teams)",
-				// Sources: cli.EnvVars("SCORE_TEAM_NUMBER"),
 			},
 			&cli.StringFlag{
 				Name:    "teams",
 				Aliases: []string{"T"},
 				Usage:   `comma-separated team numbers or ranges, e.g. "1,3,5-8,10" (mutually exclusive with --team)`,
-				// Sources: cli.EnvVars("SCORE_TEAM_NUMBERS"),
 			},
 			&cli.StringFlag{
 				Name:     "nats-creds",
 				Usage:    "path to the nats credentials file",
 				Required: true,
-				// Sources:  cli.EnvVars("SCORE_NATS_CREDS_FILE"),
 			},
 			&cli.StringFlag{
 				Name:    "nats-address",
 				Usage:   "NATS server address",
 				Value:   "nats://127.0.0.1:4222",
-				// Sources: cli.EnvVars("SCORE_NATS_URL"),
 			},
 			&cli.StringFlag{
 				Name:    "log-level",

@@ -5,6 +5,8 @@
 ## Agent
 - Once custom settings get removed checks don't revert to default values
   - Might be desired effect
+- If nats restarts and bucket missing spams attempts
+  - time=2026-05-20T23:00:45.623-04:00 level=INFO source=config.go:100 msg="Initial KV sync complete, watching for updates..."
 
 ## Frontend
 - [ ] Admin dashboard
