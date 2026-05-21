@@ -2,15 +2,19 @@ package score
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/nats-io/nats.go"
 
 	"github.com/andrew-aiken/checks"
+	"github.com/andrew-aiken/checks/helper"
+	"github.com/creasty/defaults"
 	"github.com/andrew-aiken/nats-score/agent/pkg/config"
 )
 
@@ -19,43 +23,72 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
 		value, ok := settings.Checks[checkName]
-
 		if !ok {
 			slog.Error(fmt.Sprintf("Check %s not found", checkName))
 			return
 		}
 
-		// Type assert the definition to the Checker interface and call Run
-		checker, ok := value.Definition.(checks.Checker)
-		if !ok {
+		// Verify the definition implements Checker before fanning out
+		if _, ok := value.Definition.(checks.Checker); !ok {
 			slog.Error(fmt.Sprintf("Check %s definition does not implement Checker interface", checkName))
 			return
 		}
 
-		// Override the mutable fields with the team setting attributes
-		var override map[string]string
-		allowedArgumentOverrides(value.MutableFields, settings.Attributes[checkName], &override)
-
-		// Apply overrides to the check definition
-		if err := applyOverrides(value.Definition, override); err != nil {
-			slog.Warn(fmt.Sprintf("Failed to apply overrides for check %s: %v", checkName, err))
+		// Marshal the definition once; each goroutine unmarshals into its own struct.
+		defBytes, err := json.Marshal(value.Definition)
+		if err != nil {
+			slog.Error(fmt.Sprintf("Failed to marshal definition for check %s: %v", checkName, err))
+			return
 		}
 
-		ctx := context.Background()
-
-		slog.Debug(fmt.Sprintf("Starting check: %s", checkName))
-
-		result := checker.Run(ctx, settings.StaticConf)
-
-		streamName := fmt.Sprintf("results.%d.%s", settings.StaticConf.TeamNumber, checkName)
-
-		// Publish the results of the check to NATS
-		if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
-			slog.Error(fmt.Sprintf("Failed to publish results: %v", err))
+		var wg sync.WaitGroup
+		for teamNum, teamState := range settings.Teams {
+			wg.Add(1)
+			go func(n uint16, ts *config.TeamState) {
+				defer wg.Done()
+				runTeamCheck(n, ts, checkName, value, defBytes, js)
+			}(teamNum, teamState)
 		}
-
-		slog.Info(fmt.Sprintf("Check %s result: %v", checkName, result.Passed))
+		wg.Wait()
 	}
+}
+
+func runTeamCheck(teamNum uint16, teamState *config.TeamState, checkName string, value config.Check, defBytes []byte, js nats.JetStreamContext) {
+	defCopy, err := helper.NewDefinition(value.Type)
+	if err != nil {
+		slog.Error(fmt.Sprintf("Failed to create definition copy for check %s team %d: %v", checkName, teamNum, err))
+		return
+	}
+	defaults.Set(defCopy)
+	if err := json.Unmarshal(defBytes, defCopy); err != nil {
+		slog.Error(fmt.Sprintf("Failed to unmarshal definition copy for check %s team %d: %v", checkName, teamNum, err))
+		return
+	}
+
+	checker, ok := defCopy.(checks.Checker)
+	if !ok {
+		slog.Error(fmt.Sprintf("Check %s definition copy does not implement Checker interface", checkName))
+		return
+	}
+
+	// Apply team-specific attribute overrides
+	var override map[string]string
+	allowedArgumentOverrides(value.MutableFields, teamState.Attributes[checkName], &override)
+	if err := applyOverrides(defCopy, override); err != nil {
+		slog.Warn(fmt.Sprintf("Failed to apply overrides for check %s team %d: %v", checkName, teamNum, err))
+	}
+
+	ctx := context.Background()
+	slog.Debug(fmt.Sprintf("Starting check: %s for team %d", checkName, teamNum))
+
+	result := checker.Run(ctx, teamState.StaticConf)
+
+	streamName := fmt.Sprintf("results.%d.%s", teamNum, checkName)
+	if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
+		slog.Error(fmt.Sprintf("Failed to publish results for team %d: %v", teamNum, err))
+	}
+
+	slog.Info(fmt.Sprintf("Check %s team %d result: %v", checkName, teamNum, result.Passed))
 }
 
 func allowedArgumentOverrides(allowedItems []string, attributes map[string]string, override *map[string]string) {

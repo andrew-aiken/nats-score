@@ -10,14 +10,18 @@ import (
 	"github.com/creasty/defaults"
 	"github.com/nats-io/nats.go"
 
-	"github.com/andrew-aiken/checks/helper"
 	"github.com/andrew-aiken/checks"
+	"github.com/andrew-aiken/checks/helper"
 )
 
+type TeamState struct {
+	Attributes map[string]map[string]string
+	StaticConf checks.StaticConf
+}
+
 type Settings struct {
-	Checks     map[string]Check             `json:"checks"`
-	Attributes map[string]map[string]string `json:"attributes"`
-	StaticConf checks.StaticConf          `json:"static_conf"`
+	Checks map[string]Check
+	Teams  map[uint16]*TeamState
 }
 
 type Check struct {
@@ -25,7 +29,7 @@ type Check struct {
 	Definition    any      `json:"definition"`
 	Description   string   `json:"description"`
 	MutableFields []string `json:"mutableFields"`
-	ScoreWeight   uint8     `json:"scoreWeight"`
+	ScoreWeight   uint8    `json:"scoreWeight"`
 	Type          string   `json:"type"`
 }
 
@@ -36,7 +40,7 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 		Description   string          `json:"description"`
 		Type          string          `json:"type"`
 		MutableFields []string        `json:"mutableFields"`
-		ScoreWeight   uint8            `json:"scoreWeight"`
+		ScoreWeight   uint8           `json:"scoreWeight"`
 		Definition    json.RawMessage `json:"definition"`
 	}
 
@@ -72,11 +76,17 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 }
 
 // MonitorSettings loops monitoring the nats KV for settings updates
-func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsKVWatcher nats.KeyWatcher) {
-	var teamSettingKey string = teamNumber + ".settings"
+func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWatcher nats.KeyWatcher) {
+	teamKeys := make(map[string]uint16, len(teams))
+	for _, n := range teams {
+		teamKeys[fmt.Sprintf("%d.settings", n)] = n
+	}
 
 	if s.Checks == nil {
 		s.Checks = make(map[string]Check)
+	}
+	if s.Teams == nil {
+		s.Teams = make(map[uint16]*TeamState)
 	}
 
 	for {
@@ -99,28 +109,31 @@ func (s *Settings) MonitorSettings(ctx context.Context, teamNumber string, natsK
 			key := entry.Key()
 			checkName, isCheck := strings.CutPrefix(key, "check.")
 			value := entry.Value()
+
 			switch {
-			case key == teamSettingKey:
-				slog.Info("Team settings update")
-
-				var teamSettings map[string]map[string]string
-				if err := json.Unmarshal(entry.Value(), &teamSettings); err != nil {
-					slog.Warn("Failed to unmarshal settings for setting %s: %v", key, err)
-					continue
-				}
-
-				// Replace Attributes entirely with team-specific config
-				s.Attributes = teamSettings
 			case isCheck:
 				slog.Info(fmt.Sprintf("Updating check %s", checkName))
 
 				check := Check{}
-
 				if err := json.Unmarshal(value, &check); err != nil {
 					slog.Warn("Failed to unmarshal settings for check %s: %v", checkName, err)
 				}
 
 				s.Checks[checkName] = check
+			default:
+				if n, ok := teamKeys[key]; ok {
+					slog.Info(fmt.Sprintf("Team %d settings update", n))
+
+					var teamSettings map[string]map[string]string
+					if err := json.Unmarshal(value, &teamSettings); err != nil {
+						slog.Warn("Failed to unmarshal settings for setting %s: %v", key, err)
+						continue
+					}
+
+					if ts, exists := s.Teams[n]; exists {
+						ts.Attributes = teamSettings
+					}
+				}
 			}
 		}
 	}

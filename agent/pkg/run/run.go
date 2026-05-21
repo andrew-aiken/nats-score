@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
+	"github.com/andrew-aiken/checks"
 	"github.com/andrew-aiken/nats-score/agent/pkg/config"
 	"github.com/andrew-aiken/nats-score/agent/pkg/nats"
 )
@@ -18,7 +20,7 @@ type RunArgs struct {
 	LogLevel      string
 	NatsUrl       string
 	NatsCredsFile string
-	TeamNumber    int16
+	TeamNumbers   []uint16
 }
 
 func Run(args RunArgs) error {
@@ -27,9 +29,16 @@ func Run(args RunArgs) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	var connName string
+	if len(args.TeamNumbers) == 1 {
+		connName = fmt.Sprintf("%d-agent", args.TeamNumbers[0])
+	} else {
+		connName = "multi-agent"
+	}
+
 	var natsCon = nats.NatsConnection{
 		NatsUrl:            args.NatsUrl,
-		NatsConnectionName: fmt.Sprintf("%d-agent", args.TeamNumber),
+		NatsConnectionName: connName,
 		NatsCredsFile:      args.NatsCredsFile,
 	}
 
@@ -38,10 +47,9 @@ func Run(args RunArgs) error {
 		return err
 	}
 
-	// Watch global settings and team-specific settings
-	watchList := []string{
-		"check.*",
-		fmt.Sprintf("%d.settings", args.TeamNumber), // TODO change to settings.X
+	watchList := []string{"check.*"}
+	for _, n := range args.TeamNumbers {
+		watchList = append(watchList, fmt.Sprintf("%d.settings", n))
 	}
 
 	if err = natsCon.SetupKVWatcher(watchList); err != nil {
@@ -49,7 +57,17 @@ func Run(args RunArgs) error {
 	}
 
 	var agentSettings config.Settings
-	agentSettings.StaticConf.TeamNumber = args.TeamNumber
+	agentSettings.Checks = make(map[string]config.Check)
+	agentSettings.Teams = make(map[uint16]*config.TeamState, len(args.TeamNumbers))
+	for _, n := range args.TeamNumbers {
+		agentSettings.Teams[n] = &config.TeamState{
+			Attributes: make(map[string]map[string]string),
+			StaticConf: checks.StaticConf{
+				TeamNumber:    n,
+				TeamNumberHex: fmt.Sprintf("%x", n),
+			},
+		}
+	}
 
 	if err = natsCon.SubjectSubscribe(&agentSettings); err != nil {
 		return err
@@ -67,9 +85,59 @@ func Run(args RunArgs) error {
 	}()
 
 	// Process KV settings updates
-	agentSettings.MonitorSettings(ctx, fmt.Sprint(args.TeamNumber), natsCon.NatsKVWatcher)
+	agentSettings.MonitorSettings(ctx, args.TeamNumbers, natsCon.NatsKVWatcher)
 
 	return nil
+}
+
+// ParseTeams parses a string like "1,3,5-8,10" into a slice of uint16.
+// Individual values and inclusive ranges (a-b) are supported and may be combined.
+func ParseTeams(s string) ([]uint16, error) {
+	var result []uint16
+	seen := make(map[uint16]struct{})
+
+	for part := range strings.SplitSeq(s, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+
+		if lo, hi, found := strings.Cut(part, "-"); found {
+			loN, err := strconv.ParseInt(strings.TrimSpace(lo), 10, 16)
+			if err != nil {
+				return nil, fmt.Errorf("invalid range start %q: %w", lo, err)
+			}
+			hiN, err := strconv.ParseInt(strings.TrimSpace(hi), 10, 16)
+			if err != nil {
+				return nil, fmt.Errorf("invalid range end %q: %w", hi, err)
+			}
+			if loN > hiN {
+				return nil, fmt.Errorf("range %q has start greater than end", part)
+			}
+			for n := loN; n <= hiN; n++ {
+				t := uint16(n)
+				if _, dup := seen[t]; !dup {
+					seen[t] = struct{}{}
+					result = append(result, t)
+				}
+			}
+		} else {
+			n, err := strconv.ParseInt(part, 10, 16)
+			if err != nil {
+				return nil, fmt.Errorf("invalid team number %q: %w", part, err)
+			}
+			t := uint16(n)
+			if _, dup := seen[t]; !dup {
+				seen[t] = struct{}{}
+				result = append(result, t)
+			}
+		}
+	}
+
+	if len(result) == 0 {
+		return nil, fmt.Errorf("no teams specified")
+	}
+	return result, nil
 }
 
 func setupLogging(logLevel string) {
