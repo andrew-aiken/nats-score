@@ -43,7 +43,7 @@ func (n *NatsConnection) SetupConnection() error {
 func (n *NatsConnection) natsConnect() error {
 	var nc *nats.Conn
 	var err error
-	var natsRetry int8 = 30
+	var natsRetry = 30
 
 	slog.Debug("Connecting to NATS " + n.NatsUrl)
 

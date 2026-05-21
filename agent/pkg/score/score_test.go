@@ -32,8 +32,7 @@ func TestAllowedArgumentOverrides(t *testing.T) {
 			"secret": "password",
 		}
 
-		var result map[string]string
-		allowedArgumentOverrides(allowed, attrs, &result)
+		result := allowedArgumentOverrides(allowed, attrs)
 
 		if _, ok := result["secret"]; ok {
 			t.Error("secret should not be in result")
@@ -47,16 +46,14 @@ func TestAllowedArgumentOverrides(t *testing.T) {
 	})
 
 	t.Run("nil attributes produces empty map", func(t *testing.T) {
-		var result map[string]string
-		allowedArgumentOverrides([]string{"host"}, nil, &result)
+		result := allowedArgumentOverrides([]string{"host"}, nil)
 		if len(result) != 0 {
 			t.Errorf("expected empty map, got %v", result)
 		}
 	})
 
 	t.Run("empty allowed list produces empty map", func(t *testing.T) {
-		var result map[string]string
-		allowedArgumentOverrides(nil, map[string]string{"host": "x"}, &result)
+		result := allowedArgumentOverrides(nil, map[string]string{"host": "x"})
 		if len(result) != 0 {
 			t.Errorf("expected empty map, got %v", result)
 		}

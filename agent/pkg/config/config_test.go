@@ -187,8 +187,7 @@ func TestMonitorSettings_DataRace(t *testing.T) {
 	}
 
 	watcher := newMockWatcher()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 
 	// MonitorSettings runs in the background, continuously writing to settings.Checks
 	go settings.MonitorSettings(ctx, nil, watcher)

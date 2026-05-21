@@ -13,8 +13,6 @@ import (
 	"github.com/nats-io/nats.go"
 
 	"github.com/andrew-aiken/checks"
-	"github.com/andrew-aiken/checks/helper"
-	"github.com/creasty/defaults"
 	"github.com/andrew-aiken/nats-score/agent/pkg/config"
 )
 
@@ -43,37 +41,25 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 
 		var wg sync.WaitGroup
 		for teamNum, teamState := range settings.Teams {
-			wg.Add(1)
-			go func(n uint16, ts *config.TeamState) {
-				defer wg.Done()
-				runTeamCheck(n, ts, checkName, value, defBytes, js)
-			}(teamNum, teamState)
+			wg.Go(func() {
+				runTeamCheck(teamNum, teamState, checkName, value, defBytes, js)
+			})
 		}
 		wg.Wait()
 	}
 }
 
 func runTeamCheck(teamNum uint16, teamState *config.TeamState, checkName string, value config.Check, defBytes []byte, js nats.JetStreamContext) {
-	defCopy, err := helper.NewDefinition(value.Type)
-	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to create definition copy for check %s team %d: %v", checkName, teamNum, err))
-		return
-	}
-	defaults.Set(defCopy)
+	defCopy := reflect.New(reflect.TypeOf(value.Definition).Elem()).Interface()
 	if err := json.Unmarshal(defBytes, defCopy); err != nil {
 		slog.Error(fmt.Sprintf("Failed to unmarshal definition copy for check %s team %d: %v", checkName, teamNum, err))
 		return
 	}
 
-	checker, ok := defCopy.(checks.Checker)
-	if !ok {
-		slog.Error(fmt.Sprintf("Check %s definition copy does not implement Checker interface", checkName))
-		return
-	}
+	checker := defCopy.(checks.Checker)
 
 	// Apply team-specific attribute overrides
-	var override map[string]string
-	allowedArgumentOverrides(value.MutableFields, teamState.GetAttributes(checkName), &override)
+	override := allowedArgumentOverrides(value.MutableFields, teamState.GetAttributes(checkName))
 	if err := applyOverrides(defCopy, override); err != nil {
 		slog.Warn(fmt.Sprintf("Failed to apply overrides for check %s team %d: %v", checkName, teamNum, err))
 	}
@@ -91,15 +77,16 @@ func runTeamCheck(teamNum uint16, teamState *config.TeamState, checkName string,
 	slog.Info(fmt.Sprintf("Check %s team %d result: %v", checkName, teamNum, result.Passed))
 }
 
-func allowedArgumentOverrides(allowedItems []string, attributes map[string]string, override *map[string]string) {
-	*override = make(map[string]string)
+func allowedArgumentOverrides(allowedItems []string, attributes map[string]string) map[string]string {
+	override := make(map[string]string)
 	for key, value := range attributes {
 		for _, allowed := range allowedItems {
 			if key == allowed {
-				(*override)[key] = cleanTemplateString(value)
+				override[key] = cleanTemplateString(value)
 			}
 		}
 	}
+	return override
 }
 
 // There is probably a better way to do this but for now just strip the {{ }} from the string
@@ -107,7 +94,6 @@ func cleanTemplateString(definition string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(definition, "{{", ""), "}}", "")
 }
 
-// TODO: This code stuff can probably be refactored
 // applyOverrides uses reflection to set field values on the definition struct
 func applyOverrides(definition any, overrides map[string]string) error {
 	if len(overrides) == 0 {

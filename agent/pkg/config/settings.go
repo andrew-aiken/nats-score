@@ -47,13 +47,6 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 		teamKeys[fmt.Sprintf("%d.settings", n)] = n
 	}
 
-	if s.Checks == nil {
-		s.Checks = make(map[string]Check)
-	}
-	if s.Teams == nil {
-		s.Teams = make(map[uint16]*TeamState)
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
