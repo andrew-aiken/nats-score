@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
+	"server/cmd/auth"
 	"server/cmd/checks"
 	"server/cmd/initialize"
 	"server/cmd/server"
@@ -15,7 +17,7 @@ import (
 func main() {
 	cmd := &cli.Command{
 		Name:  "server",
-		Usage: "Control plane for distributed scoring agents",
+		Usage: "Control plane for distributed scoring",
 		Commands: []*cli.Command{
 			{
 				Name:  "checks",
@@ -103,18 +105,59 @@ func main() {
 				},
 			},
 			{
-				Name:    "initialize",
-				Aliases: []string{"init"},
-				Usage:   "Initialize NATS KV and streams",
-				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return initialize.Initialize()
-				},
-			},
-			{
-				Name:  "server",
+				Name:  "start",
 				Usage: "Run the scoring controller",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					return server.Server()
+				},
+			},
+			{
+				Name:  "nats",
+				Usage: "Collection of commands to populate NATS structures",
+				Commands: []*cli.Command{
+					{
+						Name:  "auth",
+						Usage: "Generate agent NATS credentials",
+						Flags: []cli.Flag{
+							&cli.BoolFlag{
+								Name:     "standalone",
+								Aliases:  []string{"s"},
+								Usage:    "Generate agent credentials that support any amount of teams",
+								Required: false,
+							},
+							&cli.IntFlag{
+								Name:     "count",
+								Aliases:  []string{"c"},
+								Usage:    "Number of indivitual agent certs to generate",
+								Required: false,
+							},
+						},
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							hasStandalone := cmd.IsSet("standalone")
+							hasCount := cmd.IsSet("count")
+
+							if hasStandalone && hasCount {
+								return fmt.Errorf("--standalone and --count are mutually exclusive")
+							}
+							if !hasStandalone && !hasCount {
+								return fmt.Errorf("one of --standalone or --count is required")
+							}
+
+							if hasCount && 0 > cmd.Int("count") {
+								return fmt.Errorf("Count must be a positive number")
+							}
+
+							return auth.Auth(cmd.Bool("standalone"), cmd.Int("count"))
+						},
+					},
+					{
+						Name:    "initialize",
+						Aliases: []string{"init"},
+						Usage:   "Initialize NATS KV and streams",
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							return initialize.Initialize()
+						},
+					},
 				},
 			},
 		},

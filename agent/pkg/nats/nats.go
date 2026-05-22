@@ -15,6 +15,7 @@ type NatsConnection struct {
 	NatsUrl            string
 	NatsConnectionName string
 	NatsCredsFile      string
+	NatsInboxPrefix    string
 	NatsConn           *nats.Conn
 	NatsKV             nats.KeyValue
 	NatsKVWatcher      nats.KeyWatcher
@@ -50,8 +51,10 @@ func (n *NatsConnection) natsConnect() error {
 	// Build connection options
 	opts := []nats.Option{
 		nats.Name(n.NatsConnectionName),
-		// Use credentials file for JWT + NKey authentication
 		nats.UserCredentials(n.NatsCredsFile),
+	}
+	if n.NatsInboxPrefix != "" {
+		opts = append(opts, nats.CustomInboxPrefix(n.NatsInboxPrefix))
 	}
 
 	// Connect to NATS with retry

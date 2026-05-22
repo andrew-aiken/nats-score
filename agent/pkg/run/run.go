@@ -40,6 +40,7 @@ func Run(args RunArgs) error {
 		NatsUrl:            args.NatsUrl,
 		NatsConnectionName: connName,
 		NatsCredsFile:      args.NatsCredsFile,
+		NatsInboxPrefix:    "_INBOX.0",
 	}
 
 	err := natsCon.SetupConnection()
