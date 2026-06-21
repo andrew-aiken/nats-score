@@ -253,7 +253,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		log.Printf("Team %s settings updated by %s", teamNumber, claims.UserID)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"team":    teamNumber,
 		})
