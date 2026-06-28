@@ -45,7 +45,7 @@ func (m *mockKVEntry) Operation() nats.KeyValueOp { return m.op }
 // runWithEvents sends entries to a Settings via MonitorSettings, then cancels.
 // Uses an unbuffered channel so each send blocks until MonitorSettings receives it,
 // guaranteeing all events are processed before cancellation.
-func runWithEvents(settings *Settings, teams []uint16, entries []nats.KeyValueEntry) {
+func runWithEvents(settings *Settings, entries []nats.KeyValueEntry) {
 	watcher := newMockWatcher()
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -56,7 +56,7 @@ func runWithEvents(settings *Settings, teams []uint16, entries []nats.KeyValueEn
 		cancel()
 	}()
 
-	settings.MonitorSettings(ctx, teams, watcher)
+	settings.MonitorSettings(ctx, watcher)
 }
 
 func TestMonitorSettings_CheckUpdate(t *testing.T) {
@@ -74,7 +74,7 @@ func TestMonitorSettings_CheckUpdate(t *testing.T) {
 		Teams:  make(map[uint16]*TeamState),
 	}
 
-	runWithEvents(settings, nil, []nats.KeyValueEntry{
+	runWithEvents(settings, []nats.KeyValueEntry{
 		&mockKVEntry{key: "check.noop-test", value: []byte(checkJSON), op: nats.KeyValuePut},
 	})
 
@@ -103,7 +103,7 @@ func TestMonitorSettings_TeamAttributeUpdate(t *testing.T) {
 		},
 	}
 
-	runWithEvents(settings, []uint16{5}, []nats.KeyValueEntry{
+	runWithEvents(settings, []nats.KeyValueEntry{
 		&mockKVEntry{key: "5.settings", value: b, op: nats.KeyValuePut},
 	})
 
@@ -128,7 +128,7 @@ func TestMonitorSettings_OtherTeamNotUpdated(t *testing.T) {
 	}
 
 	// Send update for team 5 only; team 10 should be untouched
-	runWithEvents(settings, []uint16{5, 10}, []nats.KeyValueEntry{
+	runWithEvents(settings, []nats.KeyValueEntry{
 		&mockKVEntry{key: "5.settings", value: b, op: nats.KeyValuePut},
 	})
 
@@ -149,7 +149,7 @@ func TestMonitorSettings_DeleteIgnored(t *testing.T) {
 	}
 
 	// A delete operation should be skipped
-	runWithEvents(settings, []uint16{5}, []nats.KeyValueEntry{
+	runWithEvents(settings, []nats.KeyValueEntry{
 		&mockKVEntry{key: "5.settings", value: nil, op: nats.KeyValueDelete},
 	})
 
@@ -165,7 +165,7 @@ func TestMonitorSettings_NilEntryHandled(t *testing.T) {
 	}
 
 	// A nil entry (initial sync marker) should not panic
-	runWithEvents(settings, nil, []nats.KeyValueEntry{nil})
+	runWithEvents(settings, []nats.KeyValueEntry{nil})
 }
 
 // TestMonitorSettings_DataRace reproduces the race between MonitorSettings (writer)
@@ -190,7 +190,7 @@ func TestMonitorSettings_DataRace(t *testing.T) {
 	ctx := t.Context()
 
 	// MonitorSettings runs in the background, continuously writing to settings.Checks
-	go settings.MonitorSettings(ctx, nil, watcher)
+	go settings.MonitorSettings(ctx, watcher)
 
 	// Feed a steady stream of KV updates to drive concurrent writes
 	go func() {

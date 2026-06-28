@@ -91,7 +91,7 @@ func Run(args RunArgs) error {
 	}()
 
 	// Process KV settings updates
-	agentSettings.MonitorSettings(ctx, args.TeamNumbers, natsCon.NatsKVWatcher)
+	agentSettings.MonitorSettings(ctx, natsCon.NatsKVWatcher)
 
 	return nil
 }
