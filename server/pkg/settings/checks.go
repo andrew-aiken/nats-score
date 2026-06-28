@@ -22,11 +22,11 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 	// First, unmarshal into a temporary struct to get the type
 	type ChecksRaw struct {
 		Name          string          `json:"name"`
+		Definition    json.RawMessage `json:"definition"`
 		Description   string          `json:"description"`
-		Type          string          `json:"type"`
 		MutableFields []string        `json:"mutableFields"`
 		ScoreWeight   uint8           `json:"scoreWeight"`
-		Definition    json.RawMessage `json:"definition"`
+		Type          string          `json:"type"`
 	}
 
 	var raw ChecksRaw
