@@ -12,12 +12,13 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"server/pkg/config2"
+	"server/pkg/settings"
 
 	"github.com/andrew-aiken/checks"
 )
 
-func HandleScoreEvent(ctx context.Context, settings *config.Settings, js nats.JetStreamContext) nats.MsgHandler {
+
+func HandleScoreEvent(ctx context.Context, settings *settings.Settings, js nats.JetStreamContext) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
@@ -50,7 +51,7 @@ func HandleScoreEvent(ctx context.Context, settings *config.Settings, js nats.Je
 	}
 }
 
-func runTeamCheck(ctx context.Context, teamNum uint16, teamState *config.TeamState, checkName string, value config.Check, defBytes []byte, js nats.JetStreamContext) {
+func runTeamCheck(ctx context.Context, teamNum uint16, teamState *settings.TeamState, checkName string, value settings.Check, defBytes []byte, js nats.JetStreamContext) {
 	defCopy := reflect.New(reflect.TypeOf(value.Definition).Elem()).Interface()
 	if err := json.Unmarshal(defBytes, defCopy); err != nil {
 		slog.Error(fmt.Sprintf("Failed to unmarshal definition copy for check %s team %d: %v", checkName, teamNum, err))

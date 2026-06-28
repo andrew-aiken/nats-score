@@ -29,14 +29,17 @@ func Import(directory string) error {
 	}
 
 	// Connect to NATS settings KV
-	var natsKVClient *nats.NATSKVClient
-	natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
+	natsClient := nats.NatsConnection{
+		NatsUrl:       cfg.NATSUrl,
+		NatsCredsFile: cfg.NATSCredsFile,
+	}
+	err = natsClient.SetupConnection()
 	if err != nil {
 		log.Printf("Warning: Failed to initialize NATS KV client")
 		return err
 	} else {
 		log.Println("Connected to NATS KV bucket 'settings'")
-		defer natsKVClient.Close()
+		defer natsClient.Close()
 	}
 
 	// Read files in directory
@@ -45,7 +48,7 @@ func Import(directory string) error {
 		return err
 	}
 
-	err = loadKV(directory, checkFiles, *natsKVClient)
+	err = loadKV(directory, checkFiles, natsClient)
 
 	return err
 }
@@ -78,9 +81,7 @@ func readDirectory(directoryPath string) ([]string, error) {
 	return validFiles, nil
 }
 
-func loadKV(directory string, checkFiles []string, natsKVClient nats.NATSKVClient) error {
-	kv := natsKVClient.GetKVClient()
-
+func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnection) error {
 	for _, file := range checkFiles {
 		checkName := fmt.Sprintf("check.%s", strings.TrimSuffix(file, ".json"))
 
@@ -97,7 +98,7 @@ func loadKV(directory string, checkFiles []string, natsKVClient nats.NATSKVClien
 			return err
 		}
 
-		kv.Put(checkName, dst.Bytes())
+		natsClient.NatsKV.Put(checkName, dst.Bytes())
 	}
 
 	log.Println("Checks written to KV")

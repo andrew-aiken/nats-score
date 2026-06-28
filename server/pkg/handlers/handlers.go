@@ -13,8 +13,10 @@ import (
 	"server/pkg/config"
 	"server/pkg/discord"
 	"server/pkg/middleware"
+	"server/pkg/natsAuth"
 	"server/pkg/nats"
 
+	natsnats "github.com/nats-io/nats.go"
 	"github.com/go-co-op/gocron/v2"
 	"golang.org/x/oauth2"
 )
@@ -28,8 +30,8 @@ type TokenConfig struct {
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
 	OauthConfig     *oauth2.Config
-	NatsAuthService *nats.NATSAuthService
-	NatsKVClient    *nats.NATSKVClient
+	NatsAuthService *natsAuth.NATSAuthService
+	NatsKVClient    natsnats.KeyValue
 	TargetGuildID   string
 	RoleMap         config.DiscordRoleMap // role ID -> role name
 	AccessTokens    config.StaticAuthMap  // access token -> config
@@ -182,7 +184,7 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mutableFields, err := h.NatsKVClient.GetMutableFields()
+	mutableFields, err := nats.GetMutableFields(h.NatsKVClient)
 	if err != nil {
 		log.Printf("Failed to get mutable fields: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -214,19 +216,11 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	teamNumber := claims.TeamID
-	// Extract team number from roles
-	// teamNumber, ok := nats.GetTeamNumberFromRoles(claims.Roles)
-	// if !ok {
-	// 	log.Printf("User %s has no team role", claims.Username)
-	// 	w.WriteHeader(http.StatusForbidden)
-	// 	json.NewEncoder(w).Encode(map[string]string{"error": "No team role found"})
-	// 	return
-	// }
 
 	switch r.Method {
 	case http.MethodGet:
 		// Fetch team settings
-		settings, err := h.NatsKVClient.GetTeamSettings(teamNumber)
+		settings, err := nats.GetTeamSettings(h.NatsKVClient, teamNumber)
 		if err != nil {
 			log.Printf("Failed to get team settings for team %s: %v", teamNumber, err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -245,7 +239,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Write to NATS KV
-		if err := h.NatsKVClient.PutTeamSettings(teamNumber, settings); err != nil {
+		if err := nats.PutTeamSettings(h.NatsKVClient, teamNumber, settings); err != nil {
 			log.Printf("Failed to update team settings for team %s: %v", teamNumber, err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to save settings"})
@@ -275,7 +269,7 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checks, err := h.NatsKVClient.GetChecks()
+	checks, err := nats.GetChecks(h.NatsKVClient)
 	if err != nil {
 		log.Printf("Failed to get checks: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

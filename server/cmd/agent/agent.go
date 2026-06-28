@@ -13,8 +13,8 @@ import (
 
 	"github.com/andrew-aiken/checks"
 
-	nats "server/pkg/nats2"
-	config "server/pkg/config2"
+	"server/pkg/nats"
+	"server/pkg/settings"
 )
 
 type RunArgs struct {
@@ -62,11 +62,11 @@ func Run(args RunArgs) error {
 		return err
 	}
 
-	var agentSettings config.Settings
-	agentSettings.Checks = make(map[string]config.Check)
-	agentSettings.Teams = make(map[uint16]*config.TeamState, len(args.TeamNumbers))
+	var agentSettings settings.Settings
+	agentSettings.Checks = make(map[string]settings.Check)
+	agentSettings.Teams = make(map[uint16]*settings.TeamState, len(args.TeamNumbers))
 	for _, n := range args.TeamNumbers {
-		agentSettings.Teams[n] = &config.TeamState{
+		agentSettings.Teams[n] = &settings.TeamState{
 			Attributes: make(map[string]map[string]string),
 			StaticConf: checks.StaticConf{
 				TeamNumber:    n,

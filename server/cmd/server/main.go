@@ -17,6 +17,7 @@ import (
 
 	"server/pkg/handlers"
 	"server/pkg/middleware"
+	"server/pkg/natsAuth"
 	"server/pkg/nats"
 
 	"github.com/go-co-op/gocron/v2"
@@ -54,24 +55,26 @@ func Server() error {
 	defer cronScheduler.Shutdown()
 
 	// Initialize NATS auth service
-	natsAuthService, err := nats.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
+	natsAuthService, err := natsAuth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
 	if err != nil {
 		log.Fatalf("Failed to initialize NATS auth service: %v", err)
 	}
 
 	// Initialize NATS KV client (optional - only if NATS URL is configured)
-	// TODO: Change this logic
-	var natsKVClient *nats.NATSKVClient
-	natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
+	natsClient := nats.NatsConnection{
+		NatsUrl:       cfg.NATSUrl,
+		NatsCredsFile: cfg.NATSCredsFile,
+	}
+	err = natsClient.SetupConnection()
 	if err != nil {
 		log.Printf("Warning: Failed to initialize NATS KV client\nMutable fields endpoint will be unavailable")
 		return err
 	} else {
 		log.Println("Connected to NATS KV bucket 'settings'")
-		defer natsKVClient.Close()
+		defer natsClient.Close()
 	}
 
-	kv := natsKVClient.GetKVClient()
+	kv := natsClient.NatsKV
 	watcher, err := kv.Watch("check.*")
 	if err != nil {
 		log.Fatalf("Failed to start KV watcher: %v", err)
@@ -105,7 +108,7 @@ func Server() error {
 					check.Frequency = 60
 				}
 
-				cron.AddCheckCron(cronScheduler, natsKVClient, checkName, check.Frequency)
+				cron.AddCheckCron(cronScheduler, natsClient, checkName, check.Frequency)
 				log.Printf("Check %s added", checkName)
 
 			case "KeyValuePurgeOp":
@@ -143,7 +146,7 @@ func Server() error {
 	h := handlers.NewHandler(&handlers.Handler{
 		OauthConfig:     oauthConfig,
 		NatsAuthService: natsAuthService,
-		NatsKVClient:    natsKVClient,
+		NatsKVClient:    natsClient.NatsKV,
 		TargetGuildID:   cfg.DiscordGuildID,
 		RoleMap:         cfg.DiscordRoleMap,
 		AccessTokens:    cfg.StaticAuthMap,

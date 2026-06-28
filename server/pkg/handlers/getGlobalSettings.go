@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"server/pkg/nats"
 )
 
 // GetGlobalSettings returns an object of the global settings
@@ -16,7 +17,7 @@ func (h *Handler) GetChecks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checks, err := h.NatsKVClient.GetChecks()
+	checks, err := nats.GetChecks(h.NatsKVClient)
 
 	if err != nil {
 		log.Printf("Failed to get checks: %v", err)

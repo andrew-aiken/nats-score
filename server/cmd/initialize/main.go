@@ -51,7 +51,7 @@ func Initialize() error {
 	}
 	log.Println("Created settings KV")
 
-	_, err = js.AddStream(&nats.StreamConfig{
+	resultsStream := nats.StreamConfig{
 		Name:        "results",
 		Description: "Stream of score update events",
 		Subjects:    []string{"results.>"},
@@ -64,8 +64,20 @@ func Initialize() error {
 		DenyPurge:   true,
 		AllowRollup: false,
 		Duplicates:  2 * time.Minute,
-	})
+	}
+
+	_, err = js.AddStream(&resultsStream)
 	log.Println("Created results stream")
+	if err != nil {
+		return err
+	}
+
+	_, err = js.AddConsumer(resultsStream.Name, &nats.ConsumerConfig{
+		Name:          "results-watcher",
+		Description:   "Consumer for reading score results",
+		DeliverPolicy: nats.DeliverAllPolicy,
+		AckPolicy:     nats.AckAllPolicy,
+	})
 
 	return err
 }

@@ -42,18 +42,21 @@ func Validate(checkName string) error {
 	}
 
 	// Connect to NATS settings KV
-	var natsKVClient *nats.NATSKVClient
-	natsKVClient, err = nats.NewNATSKVClient(cfg.NATSUrl, cfg.NATSCredsFile)
+	natsClient := nats.NatsConnection{
+		NatsUrl:       cfg.NATSUrl,
+		NatsCredsFile: cfg.NATSCredsFile,
+	}
+	err = natsClient.SetupConnection()
 	if err != nil {
 		log.Printf("Warning: Failed to initialize NATS KV client")
 		return err
 	} else {
 		log.Println("Connected to NATS KV bucket 'settings'")
-		defer natsKVClient.Close()
+		defer natsClient.Close()
 	}
 
-	// Setup NATS key value handler
-	kv := natsKVClient.GetKVClient()
+	// Get NATS key value handler
+	kv := natsClient.NatsKV
 
 	checkKey := fmt.Sprintf("check.%s", checkName)
 
