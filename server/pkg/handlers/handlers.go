@@ -13,7 +13,7 @@ import (
 	"server/pkg/config"
 	"server/pkg/discord"
 	"server/pkg/middleware"
-	"server/pkg/natsAuth"
+	"server/pkg/auth"
 	"server/pkg/nats"
 
 	natsnats "github.com/nats-io/nats.go"
@@ -30,7 +30,7 @@ type TokenConfig struct {
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
 	OauthConfig     *oauth2.Config
-	NatsAuthService *natsAuth.NATSAuthService
+	NatsAuthService *auth.NATSAuthService
 	NatsKVClient    natsnats.KeyValue
 	TargetGuildID   string
 	RoleMap         config.DiscordRoleMap // role ID -> role name

@@ -1,4 +1,4 @@
-package natsAuth
+package auth
 
 import (
 	"fmt"

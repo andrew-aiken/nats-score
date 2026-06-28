@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"server/pkg/natsAuth"
+	"server/pkg/auth"
 )
 
 // contextKey is a custom type for context keys
@@ -21,12 +21,12 @@ const (
 
 // AuthMiddleware holds dependencies for authentication middleware
 type AuthMiddleware struct {
-	natsAuthService *natsAuth.NATSAuthService
+	natsAuthService *auth.NATSAuthService
 	requiredRoles   map[string]string
 }
 
 // NewAuthMiddleware creates a new auth middleware
-func NewAuthMiddleware(natsAuthService *natsAuth.NATSAuthService, requiredRoles map[string]string) *AuthMiddleware {
+func NewAuthMiddleware(natsAuthService *auth.NATSAuthService, requiredRoles map[string]string) *AuthMiddleware {
 	return &AuthMiddleware{
 		natsAuthService: natsAuthService,
 		requiredRoles:   requiredRoles,
@@ -89,7 +89,7 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // authenticate performs the authentication check
-func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *natsAuth.UserClaims) {
+func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *auth.UserClaims) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		return AuthResult{
@@ -149,8 +149,8 @@ func (m *AuthMiddleware) GetAuthResult(r *http.Request) AuthResult {
 }
 
 // GetClaimsFromContext retrieves claims from request context
-func GetClaimsFromContext(ctx context.Context) *natsAuth.UserClaims {
-	if claims, ok := ctx.Value(ClaimsContextKey).(*natsAuth.UserClaims); ok {
+func GetClaimsFromContext(ctx context.Context) *auth.UserClaims {
+	if claims, ok := ctx.Value(ClaimsContextKey).(*auth.UserClaims); ok {
 		return claims
 	}
 	return nil

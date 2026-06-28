@@ -17,7 +17,7 @@ import (
 
 	"server/pkg/handlers"
 	"server/pkg/middleware"
-	"server/pkg/natsAuth"
+	"server/pkg/auth"
 	"server/pkg/nats"
 
 	"github.com/go-co-op/gocron/v2"
@@ -55,7 +55,7 @@ func Server() error {
 	defer cronScheduler.Shutdown()
 
 	// Initialize NATS auth service
-	natsAuthService, err := natsAuth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
+	natsAuthService, err := auth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
 	if err != nil {
 		log.Fatalf("Failed to initialize NATS auth service: %v", err)
 	}
