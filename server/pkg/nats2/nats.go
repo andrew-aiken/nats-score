@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"time"
+	"context"
 
 	"server/pkg/config2"
 	"server/pkg/score"
@@ -113,12 +114,12 @@ func (n *NatsConnection) SetupKVWatcher(keys []string) error {
 }
 
 // SubjectSubscribe subscribes to the ephemeral score trigger stream
-func (n *NatsConnection) SubjectSubscribe(settings *config.Settings) error {
+func (n *NatsConnection) SubjectSubscribe(ctx context.Context, settings *config.Settings) error {
 	var err error
 
 	var scoreStream string = "events.score.>"
 
-	n.natsStreamSub, err = n.NatsConn.Subscribe(scoreStream, score.HandleScoreEvent(settings, n.JetStreamConn))
+	n.natsStreamSub, err = n.NatsConn.Subscribe(scoreStream, score.HandleScoreEvent(ctx, settings, n.JetStreamConn))
 	if err != nil {
 		return fmt.Errorf("Failed to subscribe to stream %v", err)
 	}

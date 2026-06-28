@@ -12,11 +12,12 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/andrew-aiken/checks"
 	"server/pkg/config2"
+
+	"github.com/andrew-aiken/checks"
 )
 
-func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.MsgHandler {
+func HandleScoreEvent(ctx context.Context, settings *config.Settings, js nats.JetStreamContext) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
 
@@ -42,14 +43,14 @@ func HandleScoreEvent(settings *config.Settings, js nats.JetStreamContext) nats.
 		var wg sync.WaitGroup
 		for teamNum, teamState := range settings.Teams {
 			wg.Go(func() {
-				runTeamCheck(teamNum, teamState, checkName, value, defBytes, js)
+				runTeamCheck(ctx, teamNum, teamState, checkName, value, defBytes, js)
 			})
 		}
 		wg.Wait()
 	}
 }
 
-func runTeamCheck(teamNum uint16, teamState *config.TeamState, checkName string, value config.Check, defBytes []byte, js nats.JetStreamContext) {
+func runTeamCheck(ctx context.Context, teamNum uint16, teamState *config.TeamState, checkName string, value config.Check, defBytes []byte, js nats.JetStreamContext) {
 	defCopy := reflect.New(reflect.TypeOf(value.Definition).Elem()).Interface()
 	if err := json.Unmarshal(defBytes, defCopy); err != nil {
 		slog.Error(fmt.Sprintf("Failed to unmarshal definition copy for check %s team %d: %v", checkName, teamNum, err))
@@ -64,7 +65,6 @@ func runTeamCheck(teamNum uint16, teamState *config.TeamState, checkName string,
 		slog.Warn(fmt.Sprintf("Failed to apply overrides for check %s team %d: %v", checkName, teamNum, err))
 	}
 
-	ctx := context.Background()
 	slog.Debug(fmt.Sprintf("Starting check: %s for team %d", checkName, teamNum))
 
 	result := checker.Run(ctx, teamState.StaticConf)

@@ -53,6 +53,9 @@ func Run(args RunArgs) error {
 	watchList := []string{"check.*"}
 	for _, n := range args.TeamNumbers {
 		watchList = append(watchList, fmt.Sprintf("%d.settings", n))
+		if args.LogLevel == "debug" {
+			slog.Debug("Team Loaded", "team", n)
+		}
 	}
 
 	if err = natsCon.SetupKVWatcher(watchList); err != nil {
@@ -72,7 +75,7 @@ func Run(args RunArgs) error {
 		}
 	}
 
-	if err = natsCon.SubjectSubscribe(&agentSettings); err != nil {
+	if err = natsCon.SubjectSubscribe(ctx, &agentSettings); err != nil {
 		return err
 	}
 

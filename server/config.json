@@ -11,12 +11,14 @@
   "discord_role_map": {
     "833740336010100793": "admin",
     "11111": "observer",
+    "0": "0",
     "1065039522443833364": "1",
     "1112233": "2"
   },
   "static_auth": {
     "admin": "admin123",
     "observer": "ob1",
+    "0": "team0",
     "1": "team1",
     "2": "team2"
   }

@@ -47,6 +47,8 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 		teamKeys[fmt.Sprintf("%d.settings", n)] = n
 	}
 
+	var startUpCompleted bool = false
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -56,11 +58,7 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 			if entry == nil {
 				// Initial sync complete
 				slog.Info("Initial KV sync complete, watching for updates...")
-				continue
-			}
-
-			// Only process add/update operations, skip deletes and purges
-			if entry.Operation() != nats.KeyValuePut {
+				startUpCompleted = true
 				continue
 			}
 
@@ -71,7 +69,21 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 
 			switch {
 			case isCheck:
-				slog.Info(fmt.Sprintf("Updating check %s", checkName))
+				// If the check is removed drop from the list of loaded checks and continue
+				if entry.Operation() != nats.KeyValuePut {
+					// If initial startup has not completed skip removing checks
+					if !startUpCompleted {
+						continue
+					}
+
+					s.mu.Lock()
+					delete(s.Checks, checkName)
+					s.mu.Unlock()
+					slog.Info(fmt.Sprintf("Removed check %s", checkName))
+					continue
+				}
+
+				slog.Info(fmt.Sprintf("Loading check %s", checkName))
 
 				check := Check{}
 				if err := json.Unmarshal(value, &check); err != nil {
@@ -83,20 +95,35 @@ func (s *Settings) MonitorSettings(ctx context.Context, teams []uint16, natsKVWa
 				s.Checks[checkName] = check
 				s.mu.Unlock()
 			default:
+				// TODO: Refactor
 				if teamID, ok := teamKeys[key]; ok {
-					slog.Info(fmt.Sprintf("Team %d settings update", teamID))
-
-					var teamSettings map[string]map[string]string
-					if err := json.Unmarshal(value, &teamSettings); err != nil {
-						slog.Warn(fmt.Sprintf("Failed to unmarshal settings for setting %s: %v", key, err))
-						continue
-					}
-
 					if ts, exists := s.Teams[teamID]; exists {
-						ts.mu.Lock()
-						ts.Attributes = teamSettings
-						ts.mu.Unlock()
+						// If the nats change updates the setting update the stored value
+						if entry.Operation() == nats.KeyValuePut {
+							var teamSettings map[string]map[string]string
+							if err := json.Unmarshal(value, &teamSettings); err != nil {
+								slog.Warn(fmt.Sprintf("Failed to unmarshal settings for setting %s: %v", key, err))
+								continue
+							}
+
+							ts.mu.Lock()
+							ts.Attributes = teamSettings
+							ts.mu.Unlock()
+							slog.Info(fmt.Sprintf("Team %d settings update", teamID))
+						} else { // If not updating its removing: drop the attributes key
+							// If initial startup has not completed skip removing checks
+							if !startUpCompleted {
+								continue
+							}
+
+							s.mu.Lock()
+							ts.Attributes = nil
+							s.mu.Unlock()
+							slog.Info(fmt.Sprintf("Removed settings for team %d", teamID))
+						}
 					}
+				} else {
+					slog.Warn(fmt.Sprintf("Unknown team key %v", key))
 				}
 			}
 		}
