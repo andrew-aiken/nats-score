@@ -25,18 +25,18 @@ type DiscordRoleMap map[string]string
 type StaticAuthMap map[string]string
 
 // Load loads the configuration from the specified JSON file
-func Load(path string) (*Config, error) {
+func Load(path string) (Config, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return Config{}, err
 	}
 	defer file.Close()
 
 	var cfg Config
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&cfg); err != nil {
-		return nil, err
+		return Config{}, err
 	}
 
-	return &cfg, nil
+	return cfg, nil
 }
