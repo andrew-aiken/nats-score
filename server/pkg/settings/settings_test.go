@@ -3,6 +3,8 @@ package settings
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 
@@ -172,6 +174,11 @@ func TestMonitorSettings_NilEntryHandled(t *testing.T) {
 // and concurrent map reads that mirror what HandleScoreEvent does on each NATS message.
 // Run with: go test -race -run TestMonitorSettings_DataRace ./pkg/config/
 func TestMonitorSettings_DataRace(t *testing.T) {
+	// Removes the info logs on loading checks
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelError,
+	})))
+
 	checkJSON := `{
 		"name": "noop-race",
 		"type": "noop",

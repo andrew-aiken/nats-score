@@ -12,12 +12,11 @@ import (
 	"syscall"
 	"time"
 
+	"server/pkg/auth"
 	"server/pkg/config"
 	"server/pkg/cron"
-
 	"server/pkg/handlers"
 	"server/pkg/middleware"
-	"server/pkg/auth"
 	"server/pkg/nats"
 
 	"github.com/go-co-op/gocron/v2"
@@ -108,7 +107,11 @@ func Server() error {
 					check.Frequency = 60
 				}
 
-				cron.AddCheckCron(cronScheduler, natsClient, checkName, check.Frequency)
+				_, err := cron.AddCheckCron(cronScheduler, natsClient, checkName, check.Frequency)
+				if err != nil {
+					log.Printf("Failed to add check to cron: %v", err)
+					return
+				}
 				log.Printf("Check %s added", checkName)
 
 			case "KeyValuePurgeOp":

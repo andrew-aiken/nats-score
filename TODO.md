@@ -1,6 +1,7 @@
 # TODO
 - [ ] HTTPS
 - [ ] Dynamic Timeout per check
+- [ ] Standardize logging
 
 ## Agent
 - Once custom settings get removed checks don't revert to default values
