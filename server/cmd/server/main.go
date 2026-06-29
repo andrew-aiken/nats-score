@@ -107,7 +107,7 @@ func Server() error {
 					check.Frequency = 60
 				}
 
-				_, err := cron.AddCheckCron(cronScheduler, natsClient, checkName, check.Frequency)
+				_, err := cron.AddCheckCron(cronScheduler, natsClient.NatsConn, checkName, check.Frequency)
 				if err != nil {
 					log.Printf("Failed to add check to cron: %v", err)
 					return

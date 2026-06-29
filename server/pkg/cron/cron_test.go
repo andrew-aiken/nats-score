@@ -7,9 +7,10 @@ import (
 	"time"
 
 	"server/pkg/cron"
-	"server/pkg/nats"
 
 	"github.com/go-co-op/gocron/v2"
+	natsserver "github.com/nats-io/nats-server/v2/test"
+	"github.com/nats-io/nats.go"
 )
 
 func TestRemoveCheckCron(t *testing.T) {
@@ -44,7 +45,27 @@ func TestAddCheckCron(t *testing.T) {
 
 		var checkFrequency int16 = 30000 // This is set high so it never triggers naturally
 
-		job, err := cron.AddCheckCron(s, nats.NatsConnection{}, checkName, checkFrequency)
+		opts := natsserver.DefaultTestOptions
+		opts.Port = -1
+		opts.StoreDir = t.TempDir()
+
+		server := natsserver.RunServer(&opts)
+		defer server.Shutdown()
+
+		nc, err := nats.Connect(server.Addr().String())
+		if err != nil {
+			t.Fatalf("Failed to connect to NATS: %v", err)
+		}
+		defer nc.Close()
+		if err = nc.Flush(); err != nil {
+			t.Errorf("Error when flushing nats connection: %v", err)
+		}
+
+		// Setup a channel to follow score check
+		ch := make(chan *nats.Msg, 64)
+		_, err = nc.ChanSubscribe("events.score."+checkName, ch)
+
+		job, err := cron.AddCheckCron(s, nc, checkName, checkFrequency)
 		if err != nil {
 			t.Error(err)
 		}
@@ -64,6 +85,15 @@ func TestAddCheckCron(t *testing.T) {
 			t.FailNow()
 		}
 
+		select {
+		case msg := <-ch:
+			if len(msg.Data) != 0 {
+				t.Error("Expected 0 length nats response")
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("Timed out waiting for nats event")
+		}
+
 		if s.RemoveJob(job.ID()) != nil {
 			t.Error("Failed to remove job from schedule")
 		}
@@ -75,7 +105,7 @@ func TestAddCheckCron(t *testing.T) {
 
 		var checkFrequency int16 = -1
 
-		_, err := cron.AddCheckCron(s, nats.NatsConnection{}, checkName, checkFrequency)
+		_, err := cron.AddCheckCron(s, &nats.Conn{}, checkName, checkFrequency)
 		if !errors.Is(err, gocron.ErrDurationJobIntervalNegative) {
 			t.Error("Error not properly returned")
 		}
