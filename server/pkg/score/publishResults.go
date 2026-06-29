@@ -33,13 +33,14 @@ func publishResults(streamName string, results checks.Results, scoreWeight uint8
 
 	bytes, err := json.Marshal(publishedResults)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to marshal when attempting to publishing to %s", streamName))
+		slog.Error("Failed to marshal results object")
 		return err
 	}
 	_, err = js.Publish(
 		fmt.Sprintf("%s.%d", streamName, passedSubject),
 		bytes,
 	)
+
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed publish to stream %s", streamName))
 		return err
