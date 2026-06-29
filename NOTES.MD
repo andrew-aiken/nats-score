@@ -89,3 +89,9 @@ Edit shows all possible options
 ```bash
 EDITOR=vim nats context edit score
 ```
+
+
+# Testing
+```bash
+go test -coverprofile=coverage.out ./pkg/... && go tool cover -html=coverage.out
+```
