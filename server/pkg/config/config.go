@@ -18,6 +18,11 @@ type Config struct {
 	DiscordGuildID     string         `json:"discord_guild_id"`
 	DiscordRoleMap     DiscordRoleMap `json:"discord_role_map"`
 	StaticAuthMap      StaticAuthMap  `json:"static_auth"`
+	HttpPort           int            `json:"port"`
+}
+
+var defaultConfig = Config{
+	HttpPort: 3000,
 }
 
 type DiscordRoleMap map[string]string
@@ -32,11 +37,11 @@ func Load(path string) (Config, error) {
 	}
 	defer file.Close()
 
-	var cfg Config
+	// var cfg Config
 	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&cfg); err != nil {
+	if err := decoder.Decode(&defaultConfig); err != nil {
 		return Config{}, err
 	}
 
-	return cfg, nil
+	return defaultConfig, nil
 }

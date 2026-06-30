@@ -2,6 +2,7 @@
 - [ ] HTTPS
 - [ ] Dynamic Timeout per check
 - [ ] Standardize logging
+- [ ] Setup command to generate server config file
 
 ## Agent
 - Once custom settings get removed checks don't revert to default values
@@ -21,3 +22,4 @@
 - [ ] Flip static_auth to be token:role (would allow multiple of the same account with different tokens)
 - [ ] User custom setting changes triggers server checks to reload
 - Message when 0 checks returned
+- Handlers and routes combined

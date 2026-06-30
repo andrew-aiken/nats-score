@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -16,14 +17,16 @@ import (
 	"server/pkg/config"
 	"server/pkg/cron"
 	"server/pkg/handlers"
+	"server/pkg/logging"
 	"server/pkg/middleware"
 	"server/pkg/nats"
 
 	"github.com/go-co-op/gocron/v2"
+	natsnats "github.com/nats-io/nats.go"
 	"golang.org/x/oauth2"
 )
 
-type Check struct {
+type check struct {
 	Frequency   int16  `json:"frequency"`   // How often the check runs in seconds
 	Type        string `json:"type"`        // Type of check
 	Description string `json:"description"` // Additional information about the check
@@ -36,27 +39,32 @@ type Check struct {
 // but in real apps you must provide a proper function that generates a state.
 const state = "random"
 
-func Server() error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+type ServerArgs struct {
+	LogLevel       string
+	ConfigFilePath string
+}
+
+func Server(args ServerArgs) error {
+	logging.SetupLogging(args.LogLevel)
 
 	// Load configuration
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(args.ConfigFilePath)
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		slog.Error(fmt.Sprintf("Failed to load configuration: %v", err))
+		return nil
 	}
 
 	cronScheduler, err := gocron.NewScheduler()
 	if err != nil {
 		fmt.Printf("Failed to create cron scheduler: %v\n", err)
 	}
-
 	defer cronScheduler.Shutdown()
 
 	// Initialize NATS auth service
 	natsAuthService, err := auth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
 	if err != nil {
-		log.Fatalf("Failed to initialize NATS auth service: %v", err)
+		slog.Error(fmt.Sprintf("Failed to initialize NATS auth service: %v", err))
+		return nil
 	}
 
 	// Initialize NATS KV client (optional - only if NATS URL is configured)
@@ -66,67 +74,25 @@ func Server() error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client\nMutable fields endpoint will be unavailable")
+		slog.Error("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket 'settings'")
 		defer natsClient.Close()
 	}
 
 	kv := natsClient.NatsKV
 	watcher, err := kv.Watch("check.*")
 	if err != nil {
-		log.Fatalf("Failed to start KV watcher: %v", err)
+		slog.Error("Failed to start KV watcher")
+		return err
 	}
 	defer watcher.Stop()
 
 	// Watch for check updates in background
-	go func() {
-		initialized := false
-		for entry := range watcher.Updates() {
-			if entry == nil {
-				initialized = true
-				continue
-			}
+	go monitorChecks(watcher, cronScheduler, natsClient.NatsConn)
 
-			// Remove the prefix from the nats KV
-			checkName := strings.TrimPrefix(entry.Key(), "check.")
-
-			// Filter based on event type
-			switch entry.Operation().String() {
-			case "KeyValuePutOp":
-				var check Check
-
-				if err := json.Unmarshal(entry.Value(), &check); err != nil {
-					log.Printf("Warning: Failed to unmarshal settings for key %s: %v", entry.Key(), err)
-					return
-				}
-
-				// Default check frequency is 60 seconds
-				if check.Frequency == 0 {
-					check.Frequency = 60
-				}
-
-				_, err := cron.AddCheckCron(cronScheduler, natsClient.NatsConn, checkName, check.Frequency)
-				if err != nil {
-					log.Printf("Failed to add check to cron: %v", err)
-					return
-				}
-				log.Printf("Check %s added", checkName)
-
-			case "KeyValuePurgeOp":
-			case "KeyValueDeleteOp":
-				if !initialized {
-					continue
-				}
-				cron.RemoveCheckCron(cronScheduler, checkName)
-				log.Printf("Check %s removed", checkName)
-			default:
-				return
-			}
-		}
-	}()
-	log.Println("Watching KV for check changes")
+	slog.Info("Watching KV for check changes")
 
 	// Create OAuth2 config
 	oauthConfig := &oauth2.Config{
@@ -179,7 +145,7 @@ func Server() error {
 
 	// Create HTTP server with proper configuration
 	server := &http.Server{
-		Addr:         "0.0.0.0:3000",
+		Addr:         "0.0.0.0:" + strconv.Itoa(cfg.HttpPort),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -187,9 +153,10 @@ func Server() error {
 
 	// Start server in a goroutine
 	go func() {
-		log.Println("Listening on :3000")
+		slog.Info(fmt.Sprintf("Listening on port %d", cfg.HttpPort))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("HTTP server error: %v", err)
+			slog.Error(fmt.Sprintf("Failed to start http server: %v", err))
+			os.Exit(1) // Kill since we're in a gorouting, probably a cleaner way but this works
 		}
 	}()
 
@@ -199,7 +166,7 @@ func Server() error {
 
 	// Wait for interrupt signal
 	sig := <-sigChan
-	log.Printf("Received signal: %v. Shutting down gracefully...", sig)
+	slog.Info("Received shutting down trigger...", "signal", sig)
 
 	// Create shutdown context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -207,16 +174,64 @@ func Server() error {
 
 	// Stop KV watcher if running
 	if watcher != nil {
-		log.Println("Stopping KV watcher...")
+		slog.Debug("Stopping KV watcher")
 		watcher.Stop()
 	}
 
 	// Shutdown HTTP server
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("HTTP server shutdown error: %v", err)
+		slog.Error("error shutting down http server")
+		return err
 	}
 
-	log.Println("Server stopped")
+	slog.Info("Server stopped")
 
 	return nil
+}
+
+// monitorChecks monitors nats kv changes and schedules cronjobs on change
+func monitorChecks(kvWatcher natsnats.KeyWatcher, cronScheduler gocron.Scheduler, natsConnection *natsnats.Conn) {
+	initialized := false
+	for entry := range kvWatcher.Updates() {
+		if entry == nil {
+			initialized = true
+			continue
+		}
+
+		// Remove the prefix from the nats KV
+		checkName := strings.TrimPrefix(entry.Key(), "check.")
+
+		// Filter based on event type
+		switch entry.Operation().String() {
+		case "KeyValuePutOp":
+			var check check
+
+			if err := json.Unmarshal(entry.Value(), &check); err != nil {
+				slog.Warn("Failed to unmarshal settings", entry.Key(), err)
+				return
+			}
+
+			// Default check frequency is 60 seconds
+			if check.Frequency == 0 {
+				check.Frequency = 60
+			}
+
+			_, err := cron.AddCheckCron(cronScheduler, natsConnection, checkName, check.Frequency)
+			if err != nil {
+				slog.Warn("Failed to add check to cron", "error", err)
+				return
+			}
+			slog.Info("Added check to cron", "name", checkName)
+
+		case "KeyValuePurgeOp":
+		case "KeyValueDeleteOp":
+			if !initialized {
+				continue
+			}
+			cron.RemoveCheckCron(cronScheduler, checkName)
+			slog.Info("Removed check fro cron", "name", checkName)
+		default:
+			return
+		}
+	}
 }

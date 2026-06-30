@@ -6,13 +6,13 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 
 	"github.com/andrew-aiken/checks"
 
+	"server/pkg/logging"
 	"server/pkg/nats"
 	"server/pkg/settings"
 )
@@ -25,7 +25,7 @@ type RunArgs struct {
 }
 
 func Run(args RunArgs) error {
-	setupLogging(args.LogLevel)
+	logging.SetupLogging(args.LogLevel)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -144,35 +144,4 @@ func ParseTeams(s string) ([]uint16, error) {
 		return nil, fmt.Errorf("no teams specified")
 	}
 	return result, nil
-}
-
-func setupLogging(logLevel string) {
-	var slogLevel slog.Level
-
-	switch strings.ToLower(logLevel) {
-	case "debug":
-		slogLevel = slog.LevelDebug
-	case "warn":
-		slogLevel = slog.LevelWarn
-	case "error":
-		slogLevel = slog.LevelError
-	default:
-		slogLevel = slog.LevelInfo
-	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		AddSource: true,
-		Level:     slogLevel,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.SourceKey {
-				source, _ := a.Value.Any().(*slog.Source)
-				if source != nil {
-					source.File = filepath.Base(source.File)
-				}
-			}
-			return a
-		},
-	}))
-
-	slog.SetDefault(logger)
 }

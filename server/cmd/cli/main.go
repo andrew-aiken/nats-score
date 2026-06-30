@@ -114,7 +114,26 @@ func main() {
 						Name:  "start",
 						Usage: "Run the scoring controller",
 						Action: func(ctx context.Context, cmd *cli.Command) error {
-							return server.Server()
+							return server.Server(server.ServerArgs{
+								LogLevel:       cmd.String("log-level"),
+								ConfigFilePath: cmd.String("config"),
+							})
+						},
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:     "config",
+								Aliases:  []string{"c"},
+								Usage:    "path to the score server configuration file",
+								Required: false,
+								Value:    "config.json",
+							},
+							&cli.StringFlag{
+								Name:     "log-level",
+								Aliases:  []string{"l"},
+								Usage:    "Sets the program log level",
+								Required: false,
+								Value:    "info",
+							},
 						},
 					},
 					{
