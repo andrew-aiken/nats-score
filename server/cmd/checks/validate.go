@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"server/pkg/config"
-	"server/pkg/nats"
+	"server/internal/config"
+	"server/internal/nats"
 
 	"github.com/andrew-aiken/checks/helper"
 

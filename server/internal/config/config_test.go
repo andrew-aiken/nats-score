@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"server/pkg/config"
+	"server/internal/config"
 )
 
 func TestLoad(t *testing.T) {

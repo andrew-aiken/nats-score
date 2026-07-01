@@ -6,8 +6,8 @@ import (
 	"time"
 	"context"
 
-	"server/pkg/settings"
-	"server/pkg/score"
+	"server/internal/settings"
+	"server/internal/score"
 
 	"github.com/nats-io/nats.go"
 )

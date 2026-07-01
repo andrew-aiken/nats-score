@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"server/pkg/config"
-	"server/pkg/nats"
+	"server/internal/config"
+	"server/internal/nats"
 )
 
 func Import(directory string) error {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"server/pkg/config"
+	"server/internal/config"
 
 	"github.com/nats-io/nats.go"
 )

@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"server/pkg/config"
-	"server/pkg/nats"
+	"server/internal/config"
+	"server/internal/nats"
 
 	natsnats "github.com/nats-io/nats.go"
 )

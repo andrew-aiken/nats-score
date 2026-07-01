@@ -172,7 +172,7 @@ func TestMonitorSettings_NilEntryHandled(t *testing.T) {
 
 // TestMonitorSettings_DataRace reproduces the race between MonitorSettings (writer)
 // and concurrent map reads that mirror what HandleScoreEvent does on each NATS message.
-// Run with: go test -race -run TestMonitorSettings_DataRace ./pkg/config/
+// Run with: go test -race -run TestMonitorSettings_DataRace ./internal/config/
 func TestMonitorSettings_DataRace(t *testing.T) {
 	// Removes the info logs on loading checks
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{

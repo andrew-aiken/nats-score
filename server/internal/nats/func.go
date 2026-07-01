@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"server/pkg/settings"
+	"server/internal/settings"
 
 	"github.com/nats-io/nats.go"
 )

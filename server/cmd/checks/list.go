@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"server/pkg/config"
-	"server/pkg/nats"
+	"server/internal/config"
+	"server/internal/nats"
 )
 
 func List() error {

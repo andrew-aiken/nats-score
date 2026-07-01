@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"server/pkg/logging"
+	"server/internal/logging"
 )
 
 func TestLogger(t *testing.T) {

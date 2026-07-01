@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"server/pkg/auth"
+	"server/internal/auth"
 )
 
 // contextKey is a custom type for context keys

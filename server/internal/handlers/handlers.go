@@ -10,11 +10,11 @@ import (
 	"sort"
 	"strings"
 
-	"server/pkg/config"
-	"server/pkg/discord"
-	"server/pkg/middleware"
-	"server/pkg/auth"
-	"server/pkg/nats"
+	"server/internal/config"
+	"server/internal/discord"
+	"server/internal/middleware"
+	"server/internal/auth"
+	"server/internal/nats"
 
 	natsnats "github.com/nats-io/nats.go"
 	"github.com/go-co-op/gocron/v2"

@@ -12,7 +12,7 @@ import (
 
 	"github.com/nats-io/nats.go"
 
-	"server/pkg/settings"
+	"server/internal/settings"
 
 	"github.com/andrew-aiken/checks"
 )

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"server/pkg/nats"
+	"server/internal/nats"
 )
 
 // GetGlobalSettings returns an object of the global settings
