@@ -20,6 +20,7 @@ import (
 	"server/internal/logging"
 	"server/internal/middleware"
 	"server/internal/nats"
+	"server/internal/routes"
 
 	"github.com/go-co-op/gocron/v2"
 	natsnats "github.com/nats-io/nats.go"
@@ -44,6 +45,7 @@ type ServerArgs struct {
 	ConfigFilePath string
 }
 
+// Server setups the initial connection to NATS, watches checks that get loaded into cron, and runs the webserver
 func Server(args ServerArgs) error {
 	logging.SetupLogging(args.LogLevel)
 
@@ -82,38 +84,34 @@ func Server(args ServerArgs) error {
 	}
 
 	kv := natsClient.NatsKV
-	watcher, err := kv.Watch("check.*")
+	kvWatcher, err := kv.Watch("check.*")
 	if err != nil {
 		slog.Error("Failed to start KV watcher")
 		return err
 	}
-	defer watcher.Stop()
+	defer kvWatcher.Stop()
 
 	// Watch for check updates in background
-	go monitorChecks(watcher, cronScheduler, natsClient.NatsConn)
-
+	go monitorChecks(kvWatcher, cronScheduler, natsClient.NatsConn)
 	slog.Info("Watching KV for check changes")
-
-	// Create OAuth2 config
-	oauthConfig := &oauth2.Config{
-		RedirectURL:  cfg.RedirectURL,
-		ClientID:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-		Scopes: []string{
-			"guilds",
-			"guilds.members.read",
-			"identify",
-		},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:   "https://discord.com/api/oauth2/authorize",
-			TokenURL:  "https://discord.com/api/oauth2/token",
-			AuthStyle: oauth2.AuthStyleInParams,
-		},
-	}
 
 	// Create handler
 	h := handlers.NewHandler(&handlers.Handler{
-		OauthConfig:     oauthConfig,
+		OauthConfig: &oauth2.Config{
+			RedirectURL:  cfg.RedirectURL,
+			ClientID:     cfg.ClientID,
+			ClientSecret: cfg.ClientSecret,
+			Scopes: []string{
+				"guilds",
+				"guilds.members.read",
+				"identify",
+			},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:   "https://discord.com/api/oauth2/authorize",
+				TokenURL:  "https://discord.com/api/oauth2/token",
+				AuthStyle: oauth2.AuthStyleInParams,
+			},
+		},
 		NatsAuthService: natsAuthService,
 		NatsKVClient:    natsClient.NatsKV,
 		TargetGuildID:   cfg.DiscordGuildID,
@@ -124,26 +122,11 @@ func Server(args ServerArgs) error {
 		CronScheduler:   cronScheduler,
 	})
 
-	// Create CORS middleware (allow frontend origin)
+	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
 
-	// Create auth middleware
-	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
+	routes.SetupRoutes(h, *corsMiddleware, *authMiddleware)
 
-	// Register routes with CORS
-	http.HandleFunc("/login", h.Login)
-	http.HandleFunc("/auth/verify", corsMiddleware.Handler(h.Verify))
-	http.HandleFunc("/auth/callback", h.Callback)
-	http.HandleFunc("/auth/token", corsMiddleware.Handler(h.TokenLogin))
-	http.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(h.GetMutableFields)))
-	http.HandleFunc("/api/checks", corsMiddleware.Handler(h.Checks))
-	http.HandleFunc("/api/settings", corsMiddleware.Handler(authMiddleware.RequireAuth(h.TeamSettings)))
-
-	http.HandleFunc("/api/admin/settings", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.GetChecks)))
-	http.HandleFunc("/api/admin/cron/start", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StartScoringCron)))
-	http.HandleFunc("/api/admin/cron/stop", corsMiddleware.Handler(authMiddleware.RequireAdminAuth(h.StopScoringCron)))
-
-	// Create HTTP server with proper configuration
 	server := &http.Server{
 		Addr:         "0.0.0.0:" + strconv.Itoa(cfg.HttpPort),
 		ReadTimeout:  15 * time.Second,
@@ -151,14 +134,9 @@ func Server(args ServerArgs) error {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start server in a goroutine
-	go func() {
-		slog.Info(fmt.Sprintf("Listening on port %d", cfg.HttpPort))
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			slog.Error(fmt.Sprintf("Failed to start http server: %v", err))
-			os.Exit(1) // Kill since we're in a gorouting, probably a cleaner way but this works
-		}
-	}()
+	// Start server in the background
+	go routes.StartServer(server)
+	slog.Info(fmt.Sprintf("Started webserver, listening on port %d", cfg.HttpPort))
 
 	// Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
@@ -173,9 +151,9 @@ func Server(args ServerArgs) error {
 	defer cancel()
 
 	// Stop KV watcher if running
-	if watcher != nil {
+	if kvWatcher != nil {
 		slog.Debug("Stopping KV watcher")
-		watcher.Stop()
+		kvWatcher.Stop()
 	}
 
 	// Shutdown HTTP server
