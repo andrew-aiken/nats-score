@@ -3,7 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -56,7 +56,6 @@ func (h *Handler) TokenLogin(w http.ResponseWriter, r *http.Request) {
 	var userRoleID string
 
 	for roleID, roleName := range h.RoleMap {
-		// fmt.Println("RoleID:", roleID, "RoleName:", roleName)
 		if roleName == userRole {
 			userRoleID = roleID
 			continue
@@ -77,7 +76,7 @@ func (h *Handler) TokenLogin(w http.ResponseWriter, r *http.Request) {
 		roles,
 	)
 	if err != nil {
-		log.Printf("Failed to generate NATS credentials for token user: %v", err)
+		slog.Error("Failed to generate NATS credentials for token user", "roleID", userRoleID, "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to generate credentials"})
 		return

@@ -2,18 +2,22 @@ package initialize
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"server/internal/config"
+	"server/internal/logging"
 
 	"github.com/nats-io/nats.go"
 )
 
 func Initialize() error {
+	logging.SetupLogging("info")
+
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		slog.Error("Failed to load config", "error", err)
+		return err
 	}
 
 	opts := []nats.Option{
@@ -49,7 +53,7 @@ func Initialize() error {
 	if err != nil {
 		return err
 	}
-	log.Println("Created settings KV")
+	slog.Info("Successfully created NATS settings KV")
 
 	resultsStream := nats.StreamConfig{
 		Name:        "results",
@@ -67,7 +71,7 @@ func Initialize() error {
 	}
 
 	_, err = js.AddStream(&resultsStream)
-	log.Println("Created results stream")
+	slog.Info("Successfully created results NATS stream")
 	if err != nil {
 		return err
 	}

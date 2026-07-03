@@ -80,7 +80,7 @@ func Server(args ServerArgs) error {
 		slog.Error("Failed to initialize NATS KV client")
 		return err
 	} else {
-		slog.Debug("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 

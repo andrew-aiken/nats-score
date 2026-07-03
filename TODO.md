@@ -1,8 +1,8 @@
 # TODO
 - [ ] HTTPS
 - [ ] Dynamic Timeout per check
-- [ ] Standardize logging
 - [ ] Setup command to generate server config file
+- [ ] Check commands take CLI arguments
 
 ## Agent
 - Once custom settings get removed checks don't revert to default values

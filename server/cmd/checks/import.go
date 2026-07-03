@@ -4,22 +4,22 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
 	"server/internal/config"
+	"server/internal/logging"
 	"server/internal/nats"
 )
 
 func Import(directory string) error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logging.SetupLogging("info")
 
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		slog.Error("Failed to load config")
 		return err
 	}
 
@@ -35,10 +35,10 @@ func Import(directory string) error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client")
+		slog.Warn("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 
@@ -89,7 +89,8 @@ func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnectio
 
 		data, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Fatalf("failed reading file: %s", err)
+			slog.Error("Failed to read check file", "name", file, "error", err)
+			return err
 		}
 
 		dst := &bytes.Buffer{}
@@ -101,7 +102,7 @@ func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnectio
 		natsClient.NatsKV.Put(checkName, dst.Bytes())
 	}
 
-	log.Println("Checks written to KV")
+	slog.Info("All Checks written to NATS KV")
 
 	return nil
 }

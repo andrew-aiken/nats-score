@@ -5,18 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
 
 	"server/internal/config"
+	"server/internal/logging"
 	"server/internal/nats"
 
 	natsnats "github.com/nats-io/nats.go"
 )
 
 func Describe(checkName string) error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logging.SetupLogging("warn")
 
 	if checkName == "" {
 		fmt.Println("Check name required")
@@ -26,7 +25,7 @@ func Describe(checkName string) error {
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		slog.Error("Failed to load config")
 		return err
 	}
 
@@ -37,10 +36,10 @@ func Describe(checkName string) error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client")
+		slog.Warn("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 

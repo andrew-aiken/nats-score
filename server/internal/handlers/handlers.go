@@ -5,20 +5,20 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"sort"
 	"strings"
 
+	"server/internal/auth"
 	"server/internal/config"
 	"server/internal/discord"
 	"server/internal/middleware"
-	"server/internal/auth"
 	"server/internal/nats"
 
-	natsnats "github.com/nats-io/nats.go"
 	"github.com/go-co-op/gocron/v2"
+	natsnats "github.com/nats-io/nats.go"
 	"golang.org/x/oauth2"
 )
 
@@ -158,7 +158,7 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("User Info: ID=%s, Username=%s\n", user.ID, user.Username)
+	slog.Info("User Info", "ID", user.ID, "Username", user.Username)
 
 	// Get user's guilds
 	guilds, err := client.GetUserGuilds()
@@ -171,13 +171,13 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	// Check if user is in the target guild
 	targetGuild := discord.FindGuild(guilds, h.TargetGuildID)
 	if targetGuild == nil {
-		log.Printf("✗ User is NOT in guild %s\n", h.TargetGuildID)
+		slog.Warn("User is not in Discord server", "guild", h.TargetGuildID)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("User is not in the required guild"))
 		return
 	}
 
-	log.Printf("✓ User IS in guild %s (Name: %s)\n", h.TargetGuildID, targetGuild.Name)
+	slog.Debug("User is in Discord server", "guild", h.TargetGuildID)
 
 	// Fetch member details to get roles
 	member, err := client.GetGuildMember(h.TargetGuildID)
@@ -187,17 +187,14 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("User's Roles in guild %s:\n", targetGuild.Name)
+	slog.Debug(fmt.Sprintf("User's Roles in Discord server %s", targetGuild.Name))
 	if len(member.Roles) == 0 {
-		log.Println("  No roles (only @everyone)")
+		slog.Warn("User does not have any associated roles", "username", user.Username)
 	} else {
-		for i, roleID := range member.Roles {
-			log.Printf("  %d. Role ID: %s\n", i+1, roleID)
+		for _, roleID := range member.Roles {
+			slog.Debug("User roles", "username", user.Username, "roleID", roleID)
 		}
 	}
-	// if member.Nick != "" {
-	// 	log.Printf("  Nickname: %s\n", member.Nick)
-	// }
 
 	team, err := validateRoles(h.RoleMap, member.Roles)
 
@@ -234,7 +231,7 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.NatsKVClient == nil {
-		log.Printf("NATS KV client not initialized")
+		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
 		return
@@ -242,7 +239,7 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 
 	mutableFields, err := nats.GetMutableFields(h.NatsKVClient)
 	if err != nil {
-		log.Printf("Failed to get mutable fields: %v", err)
+		slog.Warn("Failed to get mutable fields", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve mutable fields"})
 		return
@@ -257,7 +254,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	if h.NatsKVClient == nil {
-		log.Printf("NATS KV client not initialized")
+		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
 		return
@@ -278,7 +275,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		// Fetch team settings
 		settings, err := nats.GetTeamSettings(h.NatsKVClient, teamNumber)
 		if err != nil {
-			log.Printf("Failed to get team settings for team %s: %v", teamNumber, err)
+			slog.Warn("Failed to get team settings", "team", teamNumber, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve settings"})
 			return
@@ -296,13 +293,13 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 
 		// Write to NATS KV
 		if err := nats.PutTeamSettings(h.NatsKVClient, teamNumber, settings); err != nil {
-			log.Printf("Failed to update team settings for team %s: %v", teamNumber, err)
+			slog.Warn("Failed to update team settings", "team", teamNumber, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to save settings"})
 			return
 		}
 
-		log.Printf("Team %s settings updated by %s", teamNumber, claims.UserID)
+		slog.Info("Team settings updated", "team", teamNumber, "user", claims.UserID)
 		json.NewEncoder(w).Encode(map[string]any{
 			"success": true,
 			"team":    teamNumber,
@@ -324,7 +321,7 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.NatsKVClient == nil {
-		log.Printf("NATS KV client not initialized")
+		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
 		return
@@ -332,7 +329,7 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 
 	checks, err := nats.GetChecks(h.NatsKVClient)
 	if err != nil {
-		log.Printf("Failed to get checks: %v", err)
+		slog.Warn("Failed to get checks", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve checks"})
 		return
@@ -352,7 +349,7 @@ func validateRoles(roleMap config.DiscordRoleMap, userRoles []string) (teamID st
 
 	for k := range userRoles {
 		if teamID, ok := roleMap[userRoles[k]]; ok {
-			fmt.Println("Role found: " + teamID)
+			slog.Debug("Found role on user claim", "role", teamID)
 			userValidRoles = append(userValidRoles, teamID)
 		}
 	}

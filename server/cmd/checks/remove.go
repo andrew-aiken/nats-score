@@ -2,18 +2,17 @@ package checks
 
 import (
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
 
 	"server/internal/config"
+	"server/internal/logging"
 	"server/internal/nats"
 
 	natsnats "github.com/nats-io/nats.go"
 )
 
 func Remove(checkName string) error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logging.SetupLogging("info")
 
 	if checkName == "" {
 		fmt.Println("Check name required")
@@ -23,7 +22,7 @@ func Remove(checkName string) error {
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		slog.Error("Failed to load config")
 		return err
 	}
 
@@ -34,10 +33,10 @@ func Remove(checkName string) error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client")
+		slog.Warn("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 
@@ -48,13 +47,15 @@ func Remove(checkName string) error {
 
 	_, err = kv.Get(checkKey)
 	if err == natsnats.ErrKeyNotFound {
-		log.Println("Check does not exist")
+		slog.Warn("Check does not exist", "check", checkName)
 	}
 
 	err = kv.Delete(checkKey)
 	if err != nil {
 		return err
 	}
+
+	slog.Info("Removed check", "name", checkName)
 
 	return nil
 }

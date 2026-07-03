@@ -9,9 +9,9 @@ import (
 
 func Purge(force bool) error {
 	if !force && askForConfirmation("Are you sure you want to proceed?") {
-		fmt.Println("Proceeding...")
 	} else {
 		fmt.Println("Aborting.")
+		return nil
 	}
 
 	return listChecks(true)

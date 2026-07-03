@@ -1,12 +1,12 @@
 package checks
 
 import (
-	"log"
-	"os"
+	"log/slog"
 	"strings"
 
 	"server/internal/config"
 	"server/internal/nats"
+	"server/internal/logging"
 )
 
 func List() error {
@@ -14,13 +14,12 @@ func List() error {
 }
 
 func listChecks(deleteKeys bool) error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logging.SetupLogging("info")
 
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		slog.Error("Failed to load config")
 		return err
 	}
 
@@ -31,10 +30,10 @@ func listChecks(deleteKeys bool) error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client")
+		slog.Warn("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Info("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 
@@ -54,10 +53,10 @@ func listChecks(deleteKeys bool) error {
 
 			// Delete the check key if enabled
 			if deleteKeys {
-				log.Printf("Removing key - %s", checkName)
+				slog.Info("Removing check", "name", checkName)
 				kv.Delete(key)
 			} else {
-				log.Printf("%s", checkName)
+				slog.Info(checkName)
 			}
 		}
 	}

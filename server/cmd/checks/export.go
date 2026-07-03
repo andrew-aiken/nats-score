@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
 	"server/internal/config"
+	"server/internal/logging"
 	"server/internal/nats"
 )
 
 func Export(directory string) error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logging.SetupLogging("info")
 
 	// Check if directory exists if not create
 	info, err := os.Stat(directory)
@@ -37,7 +37,7 @@ func Export(directory string) error {
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		slog.Error("Failed to load config")
 		return err
 	}
 
@@ -48,10 +48,10 @@ func Export(directory string) error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client")
+		slog.Warn("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 
@@ -68,7 +68,7 @@ func Export(directory string) error {
 	// Read keys from channel
 	for key := range keys.Keys() {
 		if checkName, prefix := strings.CutPrefix(key, "check."); prefix {
-			log.Printf("%s", checkName)
+			slog.Info("Exporting check", "name", checkName)
 			keyValue, err := kv.Get(key)
 			if err != nil {
 				return err

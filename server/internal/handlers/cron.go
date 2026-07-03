@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -17,7 +17,7 @@ func (h *Handler) StartScoringCron(w http.ResponseWriter, r *http.Request) {
 
 	h.CronScheduler.Start()
 
-	log.Println("Starting cron")
+	slog.Info("Starting check cron")
 
 	json.NewEncoder(w).Encode("Started Scoring CronJob")
 }
@@ -34,13 +34,13 @@ func (h *Handler) StopScoringCron(w http.ResponseWriter, r *http.Request) {
 	err := h.CronScheduler.StopJobs()
 
 	if err != nil {
-		log.Printf("Failed to stop scoring cronjob: %v", err)
+		slog.Error("Failed to stop check cronjob", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to stop scoring cronjob"})
 		return
 	}
 
-	log.Println("Stopping cron")
+	slog.Info("Stopping check cron")
 
 	json.NewEncoder(w).Encode("Stopped Scoring CronJob")
 }

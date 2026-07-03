@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 
 	"golang.org/x/oauth2"
 )
@@ -114,12 +115,7 @@ func FindGuild(guilds []Guild, guildID string) *Guild {
 
 // HasRole checks if a role ID is in the list of roles
 func HasRole(roles []string, roleID string) bool {
-	for _, role := range roles {
-		if role == roleID {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(roles, roleID)
 }
 
 // GetMatchingRoles returns a map of role IDs to names for roles the user has

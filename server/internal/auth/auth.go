@@ -8,33 +8,6 @@ import (
 	"github.com/nats-io/nkeys"
 )
 
-// Role IDs for permission mapping
-// const (
-// 	AdminRoleID = "833740336010100793"
-// 	Team1RoleID = "1065039522443833364"
-// )
-
-// // RoleToTeamNumber maps role IDs to team numbers
-// var RoleToTeamNumber = map[string]string{
-// 	Team1RoleID: "1",
-// 	// Add more team mappings here as needed
-// }
-
-// GetTeamNumberFromRoles extracts the team number from a list of role IDs
-// Returns the team number and true if found, or empty string and false if not found
-// Admin role returns "admin" as a special case
-// func GetTeamNumberFromRoles(roles []string) (string, bool) {
-// 	for _, role := range roles {
-// 		if role == AdminRoleID {
-// 			return "admin", true
-// 		}
-// 		if teamNum, ok := RoleToTeamNumber[role]; ok {
-// 			return teamNum, true
-// 		}
-// 	}
-// 	return "", false
-// }
-
 // Credentials holds the NATS JWT and seed for authentication
 type Credentials struct {
 	JWT  string `json:"jwt"`
@@ -210,14 +183,3 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 		IssuerAccount: claim.IssuerAccount,
 	}, nil
 }
-
-// // FormatCredentialsFile creates a .creds file content from JWT and seed
-// func FormatCredentialsFile(creds *Credentials) string {
-// 	return fmt.Sprintf(`-----BEGIN NATS USER JWT-----
-// %s
-// ------END NATS USER JWT------
-// -----BEGIN USER NKEY SEED-----
-// %s
-// ------END USER NKEY SEED------
-// `, creds.JWT, creds.Seed)
-// }

@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
-	"os"
+	"log/slog"
+
 	"server/internal/config"
+	"server/internal/logging"
 	"server/internal/nats"
 
 	"github.com/andrew-aiken/checks/helper"
@@ -17,17 +18,16 @@ import (
 
 type Check struct {
 	Definition    json.RawMessage `json:"definition"`    // Parameters for the check
-	Description   string            `json:"description"`   // Additional information about the check
-	Frequency     uint16             `json:"frequency"`     // How often the check runs in seconds
-	MutableFields []string          `json:"mutableFields"` // Fields in the definition that can be overwritten
-	Name          string            `json:"name"`          // Name of the check
-	ScoreWeight   uint8              `json:"scoreWeight"`   // How many points to assign the check
-	Type          string            `json:"type"`          // Type of check
+	Description   string          `json:"description"`   // Additional information about the check
+	Frequency     uint16          `json:"frequency"`     // How often the check runs in seconds
+	MutableFields []string        `json:"mutableFields"` // Fields in the definition that can be overwritten
+	Name          string          `json:"name"`          // Name of the check
+	ScoreWeight   uint8           `json:"scoreWeight"`   // How many points to assign the check
+	Type          string          `json:"type"`          // Type of check
 }
 
 func Validate(checkName string) error {
-	log.SetOutput(os.Stdout)
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	logging.SetupLogging("info")
 
 	if checkName == "" {
 		fmt.Println("Check name required")
@@ -37,7 +37,7 @@ func Validate(checkName string) error {
 	// Load configuration
 	cfg, err := config.Load("config.json")
 	if err != nil {
-		log.Fatalf("Failed to load config")
+		slog.Error("Failed to load config")
 		return err
 	}
 
@@ -48,10 +48,10 @@ func Validate(checkName string) error {
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
-		log.Printf("Warning: Failed to initialize NATS KV client")
+		slog.Warn("Failed to initialize NATS KV client")
 		return err
 	} else {
-		log.Println("Connected to NATS KV bucket 'settings'")
+		slog.Debug("Connected to NATS KV bucket")
 		defer natsClient.Close()
 	}
 
@@ -105,9 +105,9 @@ func Validate(checkName string) error {
 
 	passed, msg := v.Validate()
 	if passed {
-		fmt.Printf("Check %q validation passed\n", checkName)
+		slog.Info("Check validation passed", "name", checkName)
 	} else {
-		fmt.Printf("Check %q validation failed: %s\n", checkName, msg)
+		slog.Error("Check validation failed", "name", checkName, "error", msg)
 	}
 
 	return nil
@@ -115,11 +115,11 @@ func Validate(checkName string) error {
 
 func validateCheck(check Check) error {
 	if check.Frequency == 0 {
-		fmt.Println("Warning | Frequency undefined, will default to 60 seconds")
+		slog.Warn("Frequency undefined, will default to 60 seconds")
 	}
 
 	if check.Name == "" {
-		fmt.Println("The checks name not defined, should be set to the filename to reduct confusion")
+		slog.Warn("The checks name not defined, should be set to the filename to reduct confusion")
 	}
 
 	if check.ScoreWeight == 0 {

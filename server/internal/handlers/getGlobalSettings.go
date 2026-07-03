@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"server/internal/nats"
 )
@@ -18,7 +18,7 @@ func (h *Handler) GetChecks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.NatsKVClient == nil {
-		log.Printf("NATS KV client not initialized")
+		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
 		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
 		return
@@ -27,7 +27,7 @@ func (h *Handler) GetChecks(w http.ResponseWriter, r *http.Request) {
 	checks, err := nats.GetChecks(h.NatsKVClient)
 
 	if err != nil {
-		log.Printf("Failed to get checks: %v", err)
+		slog.Warn("Failed to get checks", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve checks"})
 		return

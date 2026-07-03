@@ -59,12 +59,9 @@ func TestPublishResults(t *testing.T) {
 	t.Run("non-existent stream", func(t *testing.T) {
 		streamName := "dneStream"
 		err = publishResults(streamName, results, scoreWeight, js)
-		fmt.Printf("%T", err)
 
 		if errors.Is(err, nats.ErrStreamNotFound) {
 			t.Error(err)
 		}
 	})
-
-	fmt.Println(streamName)
 }
