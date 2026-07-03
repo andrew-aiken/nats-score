@@ -62,7 +62,7 @@ func (m *AuthMiddleware) RequireAdminAuth(next http.HandlerFunc) http.HandlerFun
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusUnauthorized)
+		w.WriteHeader(http.StatusForbidden)
 		// TODO: Obfuscate results
 		json.NewEncoder(w).Encode(result)
 	}

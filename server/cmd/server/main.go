@@ -53,12 +53,13 @@ func Server(args ServerArgs) error {
 	cfg, err := config.Load(args.ConfigFilePath)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to load configuration: %v", err))
-		return nil
+		return fmt.Errorf("load config: %w", err)
 	}
 
 	cronScheduler, err := gocron.NewScheduler()
 	if err != nil {
-		fmt.Printf("Failed to create cron scheduler: %v\n", err)
+		slog.Error(fmt.Sprintf("Failed to create cron scheduler: %v", err))
+		return fmt.Errorf("create cron scheduler: %w", err)
 	}
 	defer cronScheduler.Shutdown()
 
@@ -66,7 +67,7 @@ func Server(args ServerArgs) error {
 	natsAuthService, err := auth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
 	if err != nil {
 		slog.Error(fmt.Sprintf("Failed to initialize NATS auth service: %v", err))
-		return nil
+		return fmt.Errorf("initialize NATS auth service: %w", err)
 	}
 
 	// Initialize NATS KV client (optional - only if NATS URL is configured)
@@ -125,26 +126,38 @@ func Server(args ServerArgs) error {
 	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
 
-	routes.SetupRoutes(h, *corsMiddleware, *authMiddleware)
+	mux := routes.SetupRoutes(h, *corsMiddleware, *authMiddleware)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:" + strconv.Itoa(cfg.HttpPort),
+		Handler:      mux,
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 
+	serverErrCh := make(chan error, 1)
+
 	// Start server in the background
-	go routes.StartServer(server)
+	go func() {
+		serverErrCh <- routes.StartServer(server)
+	}()
 	slog.Info(fmt.Sprintf("Started webserver, listening on port %d", cfg.HttpPort))
 
 	// Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 
-	// Wait for interrupt signal
-	sig := <-sigChan
-	slog.Info("Received shutting down trigger...", "signal", sig)
+	select {
+	case err := <-serverErrCh:
+		if err != nil {
+			return err
+		}
+		return nil
+	case sig := <-sigChan:
+		slog.Info("Received shutting down trigger...", "signal", sig)
+	}
 
 	// Create shutdown context with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -186,7 +199,7 @@ func monitorChecks(kvWatcher natsnats.KeyWatcher, cronScheduler gocron.Scheduler
 
 			if err := json.Unmarshal(entry.Value(), &check); err != nil {
 				slog.Warn("Failed to unmarshal settings", entry.Key(), err)
-				return
+				continue
 			}
 
 			// Default check frequency is 60 seconds
@@ -197,7 +210,7 @@ func monitorChecks(kvWatcher natsnats.KeyWatcher, cronScheduler gocron.Scheduler
 			_, err := cron.AddCheckCron(cronScheduler, natsConnection, checkName, check.Frequency)
 			if err != nil {
 				slog.Warn("Failed to add check to cron", "error", err)
-				return
+				continue
 			}
 			slog.Info("Added check to cron", "name", checkName)
 
@@ -207,9 +220,10 @@ func monitorChecks(kvWatcher natsnats.KeyWatcher, cronScheduler gocron.Scheduler
 				continue
 			}
 			cron.RemoveCheckCron(cronScheduler, checkName)
-			slog.Info("Removed check fro cron", "name", checkName)
+			slog.Info("Removed check from cron", "name", checkName)
 		default:
-			return
+			slog.Warn("Ignoring unknown KV operation", "operation", entry.Operation().String(), "key", entry.Key())
+			continue
 		}
 	}
 }
