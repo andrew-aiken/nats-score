@@ -4,13 +4,6 @@ const STORAGE_KEY = 'nats_credentials'
 const AUTH_SERVER = 'http://localhost:3000'
 
 /**
- * Redirect to backend OAuth2 login
- */
-export function login(): void {
-  window.location.href = `${AUTH_SERVER}/login`
-}
-
-/**
  * Login using a predefined access token
  * Returns credentials on success, throws error on failure
  */
@@ -29,23 +22,6 @@ export async function loginWithToken(token: string): Promise<NatsCredentials> {
   }
 
   const credentials: NatsCredentials = await response.json()
-  saveCredentials(credentials)
-  return credentials
-}
-
-/**
- * Extract credentials from URL query params (called on /auth/callback)
- */
-export function handleCallback(): NatsCredentials | null {
-  const params = new URLSearchParams(window.location.search)
-  const jwt = params.get('jwt')
-  const seed = params.get('seed')
-
-  if (!jwt || !seed) {
-    return null
-  }
-
-  const credentials: NatsCredentials = { jwt, seed }
   saveCredentials(credentials)
   return credentials
 }

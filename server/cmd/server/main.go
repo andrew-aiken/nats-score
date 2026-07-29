@@ -24,7 +24,6 @@ import (
 
 	"github.com/go-co-op/gocron/v2"
 	natsnats "github.com/nats-io/nats.go"
-	"golang.org/x/oauth2"
 )
 
 type check struct {
@@ -33,12 +32,6 @@ type check struct {
 	Description string `json:"description"` // Additional information about the check
 	ScoreWeight int8   `json:"scoreWeight"` // How many points to assign the check
 }
-
-// TODO
-// This is the state key used for security, sent in login, validated in callback.
-// For this example we keep it simple and hardcode a string
-// but in real apps you must provide a proper function that generates a state.
-const state = "random"
 
 type ServerArgs struct {
 	LogLevel       string
@@ -98,28 +91,10 @@ func Server(args ServerArgs) error {
 
 	// Create handler
 	h := handlers.NewHandler(&handlers.Handler{
-		OauthConfig: &oauth2.Config{
-			RedirectURL:  cfg.RedirectURL,
-			ClientID:     cfg.ClientID,
-			ClientSecret: cfg.ClientSecret,
-			Scopes: []string{
-				"guilds",
-				"guilds.members.read",
-				"identify",
-			},
-			Endpoint: oauth2.Endpoint{
-				AuthURL:   "https://discord.com/api/oauth2/authorize",
-				TokenURL:  "https://discord.com/api/oauth2/token",
-				AuthStyle: oauth2.AuthStyleInParams,
-			},
-		},
 		NatsAuthService: natsAuthService,
 		NatsKVClient:    natsClient.NatsKV,
-		TargetGuildID:   cfg.DiscordGuildID,
 		RoleMap:         cfg.DiscordRoleMap,
 		AccessTokens:    cfg.StaticAuthMap,
-		State:           state,
-		FrontendURL:     cfg.FrontendURL,
 		CronScheduler:   cronScheduler,
 	})
 
