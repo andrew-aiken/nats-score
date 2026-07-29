@@ -81,8 +81,7 @@ func TestAddCheckCron(t *testing.T) {
 		s.Start()
 		err = job.RunNow()
 		if err != nil {
-			t.Errorf("Error when triggering job: %v", err)
-			t.FailNow()
+			t.Fatalf("Error when triggering job: %v", err)
 		}
 
 		select {

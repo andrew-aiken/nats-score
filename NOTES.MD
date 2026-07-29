@@ -95,3 +95,7 @@ EDITOR=vim nats context edit score
 ```bash
 go test -coverprofile=coverage.out ./pkg/... && go tool cover -html=coverage.out
 ```
+
+
+# Other Scoring Projects
+https://github.com/Scorify/Scorify
