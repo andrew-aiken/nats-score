@@ -13,10 +13,10 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-func Initialize() error {
+func Initialize(configPath string) error {
 	logging.SetupLogging("info")
 
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		slog.Error("Failed to load config", "error", err)
 		return err
@@ -86,10 +86,10 @@ func Initialize() error {
 	}
 
 	_, err = js.AddStream(&resultsStream)
-	slog.Info("Successfully created results NATS stream")
 	if err != nil {
 		return err
 	}
+	slog.Info("Successfully created results NATS stream")
 
 	_, err = js.AddConsumer(resultsStream.Name, &nats.ConsumerConfig{
 		Name:          "results-watcher",
@@ -100,12 +100,13 @@ func Initialize() error {
 	if err != nil {
 		return err
 	}
+	slog.Debug("Successfully created consumer")
 
 	// Generate random uuid what will server as the admin password
 	password := fmt.Sprint(uuid.New())
 
 	// Add admin user
-	err = user.Add("admin", "admin", password, true)
+	err = user.Add(configPath, "admin", "admin", password, true)
 	if err != nil {
 		return err
 	}

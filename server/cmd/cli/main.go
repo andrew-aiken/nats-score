@@ -181,7 +181,7 @@ func main() {
 								Aliases: []string{"init"},
 								Usage:   "Initialize NATS KV and streams",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return initialize.Initialize()
+									return initialize.Initialize("config.json")
 								},
 							},
 							{
@@ -208,6 +208,7 @@ func main() {
 												Name:    "password",
 												Aliases: []string{"p"},
 												Usage:   "Password (omit to be prompted securely)",
+												Required: true,
 											},
 											&cli.BoolFlag{
 												Name:    "force",
@@ -216,7 +217,7 @@ func main() {
 											},
 										},
 										Action: func(ctx context.Context, cmd *cli.Command) error {
-											return user.Add(cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
+											return user.Add("config.json", cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
 										},
 									},
 									{
@@ -224,7 +225,7 @@ func main() {
 										Aliases: []string{"ls"},
 										Usage:   "Lists all registered login accounts",
 										Action: func(ctx context.Context, cmd *cli.Command) error {
-											return user.List()
+											return user.List("config.json")
 										},
 									},
 									{
@@ -233,7 +234,7 @@ func main() {
 										Usage:     "Removes a login account",
 										ArgsUsage: "username",
 										Action: func(ctx context.Context, cmd *cli.Command) error {
-											return user.Remove(cmd.Args().First())
+											return user.Remove("config.json", cmd.Args().First())
 										},
 									},
 								},

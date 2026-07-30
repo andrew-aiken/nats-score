@@ -8,6 +8,7 @@ require (
 	github.com/andrew-aiken/checks v0.0.0-00010101000000-000000000000
 	github.com/creasty/defaults v1.8.0
 	github.com/go-co-op/gocron/v2 v2.22.0
+	github.com/google/uuid v1.6.0
 	github.com/nats-io/jwt/v2 v2.8.2
 	github.com/nats-io/nats-server/v2 v2.14.3
 	github.com/nats-io/nats.go v1.52.0
@@ -20,7 +21,6 @@ require (
 require (
 	github.com/antithesishq/antithesis-sdk-go v0.7.0-default-no-op // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/miekg/dns v1.1.72 // indirect

@@ -53,8 +53,11 @@ func (n *NatsConnection) natsConnect() error {
 	// Build connection options
 	opts := []nats.Option{
 		nats.Name(n.NatsConnectionName),
-		nats.UserCredentials(n.NatsCredsFile),
 	}
+	if n.NatsCredsFile != "" {
+		opts = append(opts, nats.UserCredentials(n.NatsCredsFile))
+	}
+
 	if n.NatsInboxPrefix != "" {
 		opts = append(opts, nats.CustomInboxPrefix(n.NatsInboxPrefix))
 	}
