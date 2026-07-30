@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-func Purge(force bool) error {
+func Purge(configFile string, force bool) error {
 	if !force && askForConfirmation("Are you sure you want to proceed?") {
 	} else {
 		fmt.Println("Aborting.")
 		return nil
 	}
 
-	return listChecks(true)
+	return listChecks(configFile, true)
 }
 
 func askForConfirmation(s string) bool {

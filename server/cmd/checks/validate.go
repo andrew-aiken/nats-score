@@ -26,7 +26,7 @@ type Check struct {
 	Type          string          `json:"type"`          // Type of check
 }
 
-func Validate(checkName string) error {
+func Validate(configFile string, checkName string) error {
 	logging.SetupLogging("info")
 
 	if checkName == "" {
@@ -35,7 +35,7 @@ func Validate(checkName string) error {
 	}
 
 	// Load configuration
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		slog.Error("Failed to load config")
 		return err

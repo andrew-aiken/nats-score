@@ -25,6 +25,14 @@ func main() {
 			{
 				Name:  "server",
 				Usage: "Control plane for distributed scoring",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "config",
+						Aliases: []string{"c"},
+						Usage:   "path to the score server configuration file",
+						Value:   "config.json",
+					},
+				},
 				Commands: []*cli.Command{
 					{
 						Name:  "checks",
@@ -35,7 +43,7 @@ func main() {
 								Aliases: []string{"ls"},
 								Usage:   "Displays loaded checks",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.List()
+									return checks.List(cmd.String("config"))
 								},
 							},
 							{
@@ -51,7 +59,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Import(cmd.String("directory"))
+									return checks.Import(cmd.String("config"), cmd.String("directory"))
 								},
 							},
 							{
@@ -66,7 +74,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Export(cmd.String("directory"))
+									return checks.Export(cmd.String("config"), cmd.String("directory"))
 								},
 							},
 							{
@@ -81,7 +89,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Purge(cmd.Bool("force"))
+									return checks.Purge(cmd.String("config"), cmd.Bool("force"))
 								},
 							},
 							{
@@ -90,7 +98,7 @@ func main() {
 								Usage:     "Removes a check",
 								ArgsUsage: "check",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Remove(cmd.Args().First())
+									return checks.Remove(cmd.String("config"), cmd.Args().First())
 								},
 							},
 							{
@@ -98,7 +106,7 @@ func main() {
 								Usage:     "Prints out a checks definition",
 								ArgsUsage: "check",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Describe(cmd.Args().First())
+									return checks.Describe(cmd.String("config"), cmd.Args().First())
 								},
 							},
 							{
@@ -106,7 +114,7 @@ func main() {
 								Usage:     "Validates that a check if formatted correctly",
 								ArgsUsage: "check",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Validate(cmd.Args().First())
+									return checks.Validate(cmd.String("config"), cmd.Args().First())
 								},
 							},
 						},
@@ -122,18 +130,67 @@ func main() {
 						},
 						Flags: []cli.Flag{
 							&cli.StringFlag{
-								Name:     "config",
-								Aliases:  []string{"c"},
-								Usage:    "path to the score server configuration file",
-								Required: false,
-								Value:    "config.json",
-							},
-							&cli.StringFlag{
 								Name:     "log-level",
 								Aliases:  []string{"l"},
 								Usage:    "Sets the program log level",
 								Required: false,
 								Value:    "info",
+							},
+						},
+					},
+					{
+						Name:    "user",
+						Aliases: []string{"users"},
+						Usage:   "Manage username/password login accounts",
+						Commands: []*cli.Command{
+							{
+								Name:  "add",
+								Usage: "Create or overwrite a login account",
+								Flags: []cli.Flag{
+									&cli.StringFlag{
+										Name:     "username",
+										Aliases:  []string{"u"},
+										Usage:    "Login username",
+										Required: true,
+									},
+									&cli.StringFlag{
+										Name:     "team",
+										Aliases:  []string{"t"},
+										Usage:    `Team assignment: "admin", "observer", or a team number (e.g. "0", "1")`,
+										Required: true,
+									},
+									&cli.StringFlag{
+										Name:     "password",
+										Aliases:  []string{"p"},
+										Usage:    "Password (omit to be prompted securely)",
+										Required: true,
+									},
+									&cli.BoolFlag{
+										Name:    "force",
+										Aliases: []string{"f"},
+										Usage:   "Overwrite an existing user with this username",
+									},
+								},
+								Action: func(ctx context.Context, cmd *cli.Command) error {
+									return user.Add(cmd.String("config"), cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
+								},
+							},
+							{
+								Name:    "list",
+								Aliases: []string{"ls"},
+								Usage:   "Lists all registered login accounts",
+								Action: func(ctx context.Context, cmd *cli.Command) error {
+									return user.List(cmd.String("config"))
+								},
+							},
+							{
+								Name:      "remove",
+								Aliases:   []string{"rm"},
+								Usage:     "Removes a login account",
+								ArgsUsage: "username",
+								Action: func(ctx context.Context, cmd *cli.Command) error {
+									return user.Remove(cmd.String("config"), cmd.Args().First())
+								},
 							},
 						},
 					},
@@ -181,62 +238,7 @@ func main() {
 								Aliases: []string{"init"},
 								Usage:   "Initialize NATS KV and streams",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return initialize.Initialize("config.json")
-								},
-							},
-							{
-								Name:  "user",
-								Usage: "Manage username/password login accounts",
-								Commands: []*cli.Command{
-									{
-										Name:  "add",
-										Usage: "Create or overwrite a login account",
-										Flags: []cli.Flag{
-											&cli.StringFlag{
-												Name:     "username",
-												Aliases:  []string{"u"},
-												Usage:    "Login username",
-												Required: true,
-											},
-											&cli.StringFlag{
-												Name:     "team",
-												Aliases:  []string{"t"},
-												Usage:    `Team assignment: "admin", "observer", or a team number (e.g. "0", "1")`,
-												Required: true,
-											},
-											&cli.StringFlag{
-												Name:    "password",
-												Aliases: []string{"p"},
-												Usage:   "Password (omit to be prompted securely)",
-												Required: true,
-											},
-											&cli.BoolFlag{
-												Name:    "force",
-												Aliases: []string{"f"},
-												Usage:   "Overwrite an existing user with this username",
-											},
-										},
-										Action: func(ctx context.Context, cmd *cli.Command) error {
-											return user.Add("config.json", cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
-										},
-									},
-									{
-										Name:    "list",
-										Aliases: []string{"ls"},
-										Usage:   "Lists all registered login accounts",
-										Action: func(ctx context.Context, cmd *cli.Command) error {
-											return user.List("config.json")
-										},
-									},
-									{
-										Name:      "remove",
-										Aliases:   []string{"rm"},
-										Usage:     "Removes a login account",
-										ArgsUsage: "username",
-										Action: func(ctx context.Context, cmd *cli.Command) error {
-											return user.Remove("config.json", cmd.Args().First())
-										},
-									},
+									return initialize.Initialize(cmd.String("config"))
 								},
 							},
 						},
