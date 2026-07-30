@@ -77,6 +77,11 @@ func Server(args ServerArgs) error {
 		defer natsClient.Close()
 	}
 
+	if err := natsClient.SetupUsersKV(); err != nil {
+		slog.Error("Failed to initialize NATS users KV client")
+		return err
+	}
+
 	kv := natsClient.NatsKV
 	kvWatcher, err := kv.Watch("check.*")
 	if err != nil {
@@ -91,14 +96,13 @@ func Server(args ServerArgs) error {
 
 	// Create handler
 	h := handlers.NewHandler(&handlers.Handler{
-		NatsAuthService: natsAuthService,
-		NatsKVClient:    natsClient.NatsKV,
-		RoleMap:         cfg.DiscordRoleMap,
-		AccessTokens:    cfg.StaticAuthMap,
-		CronScheduler:   cronScheduler,
+		NatsAuthService:   natsAuthService,
+		NatsKVClient:      natsClient.NatsKV,
+		NatsUsersKVClient: natsClient.NatsUsersKV,
+		CronScheduler:     cronScheduler,
 	})
 
-	authMiddleware := middleware.NewAuthMiddleware(natsAuthService, cfg.DiscordRoleMap)
+	authMiddleware := middleware.NewAuthMiddleware(natsAuthService)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
 
 	mux := routes.SetupRoutes(h, *corsMiddleware, *authMiddleware)

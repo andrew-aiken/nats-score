@@ -164,11 +164,11 @@
   gap: 0.875rem;
 }
 
-/* Token Section */
+/* Login fields */
 .token-section {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 0.75rem;
 }
 
 .token-input-wrapper {

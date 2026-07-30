@@ -22,7 +22,7 @@ func SetupRoutes(serverConfig *handlers.Handler, corsMiddleware middleware.CORSM
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/auth/verify", corsMiddleware.Handler(serverConfig.Verify))
-	mux.HandleFunc("/auth/token", corsMiddleware.Handler(serverConfig.TokenLogin))
+	mux.HandleFunc("/auth/login", corsMiddleware.Handler(serverConfig.Login))
 
 	mux.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(serverConfig.GetMutableFields)))
 	mux.HandleFunc("/api/checks", corsMiddleware.Handler(serverConfig.Checks))

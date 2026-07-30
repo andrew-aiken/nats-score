@@ -18,7 +18,6 @@ type Credentials struct {
 type UserClaims struct {
 	UserID        string
 	TeamID        string
-	Roles         []string
 	PubAllow      []string
 	SubAllow      []string
 	ExpiresAt     time.Time
@@ -46,8 +45,8 @@ func NewNATSAuthService(accountSeed, accountPubKey string) (*NATSAuthService, er
 	}, nil
 }
 
-// GenerateCredentials creates NATS credentials for a user with role-based permissions
-func (s *NATSAuthService) GenerateCredentials(userID string, team string, roles []string) (*Credentials, error) {
+// GenerateCredentials creates NATS credentials for a user with team-based permissions
+func (s *NATSAuthService) GenerateCredentials(userID string, team string) (*Credentials, error) {
 	// Create a new user keypair
 	userKP, err := nkeys.CreateUser()
 	if err != nil {
@@ -68,12 +67,10 @@ func (s *NATSAuthService) GenerateCredentials(userID string, team string, roles 
 
 	// Store user metadata in tags
 	userClaim.Tags.Add(fmt.Sprintf("user_id:%s", userID))
-	for _, role := range roles {
-		userClaim.Tags.Add(fmt.Sprintf("role:%s", role))
-	}
+	userClaim.Tags.Add(fmt.Sprintf("team_id:%s", team))
 
-	// Apply role-based permissions
-	s.applyPermissions(userClaim, roles, team)
+	// Apply team-based permissions
+	s.applyPermissions(userClaim, team)
 
 	// Sign with account key
 	accountKP, err := nkeys.FromSeed(s.accountSeed)
@@ -98,8 +95,8 @@ func (s *NATSAuthService) GenerateCredentials(userID string, team string, roles 
 	}, nil
 }
 
-// applyPermissions sets NATS pub/sub permissions based on Discord roles
-func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, roles []string, team string) {
+// applyPermissions sets NATS pub/sub permissions based on the user's team
+func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, team string) {
 	// Check for admin role - full access
 	if team == "admin" {
 		userClaim.Permissions.Pub.Allow.Add(">")
@@ -151,15 +148,11 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 		return nil, fmt.Errorf("JWT has expired")
 	}
 
-	// Extract user ID and roles from tags
+	// Extract user ID from tags
 	var userID string
-	var roles []string
 	for _, tag := range claim.Tags {
 		if len(tag) > 8 && tag[:8] == "user_id:" {
 			userID = tag[8:]
-		}
-		if len(tag) > 5 && tag[:5] == "role:" {
-			roles = append(roles, tag[5:])
 		}
 	}
 
@@ -175,7 +168,6 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 	return &UserClaims{
 		UserID:        userID,
 		TeamID:        claim.Name,
-		Roles:         roles,
 		PubAllow:      pubAllow,
 		SubAllow:      subAllow,
 		ExpiresAt:     time.Unix(claim.Expires, 0),

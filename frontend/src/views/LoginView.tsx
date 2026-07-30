@@ -1,26 +1,27 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { loginWithToken } from '../services/auth'
+import { login } from '../services/auth'
 import './LoginView.css'
 
 export default function LoginView() {
   const navigate = useNavigate()
-  const [token, setToken] = useState('')
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleTokenSubmit = async () => {
-    if (!token.trim()) return
+  const handleLoginSubmit = async () => {
+    if (!username.trim() || !password) return
 
     setIsLoading(true)
     setError(null)
 
     try {
-      await loginWithToken(token.trim())
+      await login(username.trim(), password)
       navigate('/', { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Authentication failed')
-      setToken('')
+      setPassword('')
     } finally {
       setIsLoading(false)
     }
@@ -28,7 +29,7 @@ export default function LoginView() {
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleTokenSubmit()
+      handleLoginSubmit()
     }
   }
 
@@ -76,20 +77,31 @@ export default function LoginView() {
 
           <div className="login-content">
             <div className="token-section">
+              <input
+                type="text"
+                className="token-input"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onKeyPress={handleKeyPress}
+                disabled={isLoading}
+                autoComplete="username"
+              />
               <div className="token-input-wrapper">
                 <input
                   type="password"
                   className="token-input"
-                  placeholder="Enter your access token"
-                  value={token}
-                  onChange={(e) => setToken(e.target.value)}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   onKeyPress={handleKeyPress}
                   disabled={isLoading}
+                  autoComplete="current-password"
                 />
                 <button
                   className="token-submit"
-                  onClick={handleTokenSubmit}
-                  disabled={!token.trim() || isLoading}
+                  onClick={handleLoginSubmit}
+                  disabled={!username.trim() || !password || isLoading}
                 >
                   {isLoading ? (
                     <div className="token-spinner"></div>

@@ -4,16 +4,16 @@ const STORAGE_KEY = 'nats_credentials'
 const AUTH_SERVER = 'http://localhost:3000'
 
 /**
- * Login using a predefined access token
+ * Login using a username and password
  * Returns credentials on success, throws error on failure
  */
-export async function loginWithToken(token: string): Promise<NatsCredentials> {
-  const response = await fetch(`${AUTH_SERVER}/auth/token`, {
+export async function login(username: string, password: string): Promise<NatsCredentials> {
+  const response = await fetch(`${AUTH_SERVER}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ username, password }),
   })
 
   if (!response.ok) {

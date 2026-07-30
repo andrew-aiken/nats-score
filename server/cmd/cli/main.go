@@ -10,6 +10,7 @@ import (
 	"server/cmd/checks"
 	"server/cmd/initialize"
 	"server/cmd/server"
+	"server/cmd/user"
 
 	"server/cmd/agent"
 
@@ -181,6 +182,60 @@ func main() {
 								Usage:   "Initialize NATS KV and streams",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									return initialize.Initialize()
+								},
+							},
+							{
+								Name:  "user",
+								Usage: "Manage username/password login accounts",
+								Commands: []*cli.Command{
+									{
+										Name:  "add",
+										Usage: "Create or overwrite a login account",
+										Flags: []cli.Flag{
+											&cli.StringFlag{
+												Name:     "username",
+												Aliases:  []string{"u"},
+												Usage:    "Login username",
+												Required: true,
+											},
+											&cli.StringFlag{
+												Name:     "team",
+												Aliases:  []string{"t"},
+												Usage:    `Team assignment: "admin", "observer", or a team number (e.g. "0", "1")`,
+												Required: true,
+											},
+											&cli.StringFlag{
+												Name:    "password",
+												Aliases: []string{"p"},
+												Usage:   "Password (omit to be prompted securely)",
+											},
+											&cli.BoolFlag{
+												Name:    "force",
+												Aliases: []string{"f"},
+												Usage:   "Overwrite an existing user with this username",
+											},
+										},
+										Action: func(ctx context.Context, cmd *cli.Command) error {
+											return user.Add(cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
+										},
+									},
+									{
+										Name:    "list",
+										Aliases: []string{"ls"},
+										Usage:   "Lists all registered login accounts",
+										Action: func(ctx context.Context, cmd *cli.Command) error {
+											return user.List()
+										},
+									},
+									{
+										Name:      "remove",
+										Aliases:   []string{"rm"},
+										Usage:     "Removes a login account",
+										ArgsUsage: "username",
+										Action: func(ctx context.Context, cmd *cli.Command) error {
+											return user.Remove(cmd.Args().First())
+										},
+									},
 								},
 							},
 						},

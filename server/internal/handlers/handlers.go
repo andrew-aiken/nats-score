@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"server/internal/auth"
-	"server/internal/config"
 	"server/internal/middleware"
 	"server/internal/nats"
 
@@ -16,19 +15,12 @@ import (
 	natsnats "github.com/nats-io/nats.go"
 )
 
-// TokenConfig represents a predefined access token with associated role
-type TokenConfig struct {
-	Role     string // Role ID for permissions
-	Username string // Display name for the token user
-}
-
 // Handler holds dependencies for HTTP handlers
 type Handler struct {
-	NatsAuthService *auth.NATSAuthService
-	NatsKVClient    natsnats.KeyValue
-	RoleMap         config.DiscordRoleMap // role ID -> role name
-	AccessTokens    config.StaticAuthMap  // access token -> config
-	CronScheduler   gocron.Scheduler
+	NatsAuthService   *auth.NATSAuthService
+	NatsKVClient      natsnats.KeyValue
+	NatsUsersKVClient natsnats.KeyValue
+	CronScheduler     gocron.Scheduler
 }
 
 // NewHandler creates a new Handler with the given dependencies
