@@ -73,7 +73,10 @@ export const useNatsStore = create<NatsState>((set, get) => ({
       redirectToLogin()
       return
     }
-    const subject = `results.${teamId}.>`
+    // The "observer" role isn't a real team - it's granted read access to
+    // every team's results, so its subject must be the wildcard rather than
+    // the literal (and non-existent) "results.observer.>".
+    const subject = teamId === 'observer' ? 'results.>' : `results.${teamId}.>`
 
     try {
       const encoder = new TextEncoder()

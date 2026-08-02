@@ -107,7 +107,14 @@ func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, team strin
 	teamSubject := "results." + team + ".>"
 
 	if team == "observer" {
-		teamSubject = "results.*.>"
+		// Must match the literal filter subject the frontend requests
+		// (AdminScoringOverviewView/AdminView hardcode "results.>") since
+		// that filter is embedded verbatim in the JetStream consumer-create
+		// authorization subject ($JS.API.CONSUMER.CREATE.results.*.<filter>).
+		// "results.*.>" is a narrower pattern than "results.>" and would
+		// fail that permission check even though it covers every real
+		// result subject.
+		teamSubject = "results.>"
 	}
 
 	userClaim.Permissions.Pub.Allow.Add("_INBOX.>")

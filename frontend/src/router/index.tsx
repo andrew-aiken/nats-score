@@ -44,6 +44,10 @@ export const router = createBrowserRouter([
           {
             path: 'admin/scores',
             element: <AdminScoringOverviewView />
+          },
+          {
+            path: 'observer',
+            element: <AdminScoringOverviewView />
           }
         ]
       }

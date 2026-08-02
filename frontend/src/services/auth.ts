@@ -135,3 +135,16 @@ export function isAdmin(): boolean {
   const teamId = getTeamIdFromJwt(creds.jwt)
   return teamId === 'admin'
 }
+
+/**
+ * Check if the current user is an observer based on JWT name claim
+ * Observers have the name claim set to "observer"
+ */
+export function isObserver(): boolean {
+  const creds = getCredentials()
+  if (!creds) {
+    return false
+  }
+  const teamId = getTeamIdFromJwt(creds.jwt)
+  return teamId === 'observer'
+}
