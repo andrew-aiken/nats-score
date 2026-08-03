@@ -30,7 +30,7 @@ export default function SettingsView() {
   const [mutableFields, setMutableFields] = useState<MutableFieldsMap | null>(null)
   const [fieldValues, setFieldValues] = useState<UserSettings>({})
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
   const soundEnabled = useNotificationPreferenceStore(s => s.soundEnabled)
   const setSoundEnabled = useNotificationPreferenceStore(s => s.setSoundEnabled)
@@ -96,25 +96,19 @@ export default function SettingsView() {
     }))
   }
 
-  const handleSaveCheck = async (checkKey: string) => {
-    if (!mutableFields) return
-
-    setSaving(checkKey)
+  const handleSaveAll = async () => {
+    setSaving(true)
     try {
       // Save via API - team number is determined from JWT on server
-      const updatedUserSettings = getSanitizedSettingsPayload({
-        ...fieldValues,
-        [checkKey]: fieldValues[checkKey] || {}
-      })
+      const updatedUserSettings = getSanitizedSettingsPayload(fieldValues)
 
       await updateTeamSettings(updatedUserSettings)
-      // toast.success('Settings saved', "")
       toast.success('Settings saved', "")
     } catch (err) {
       console.error('Failed to save settings:', err)
       toast.error('Failed to save settings', err instanceof Error ? err.message : 'Unknown error')
     } finally {
-      setSaving(null)
+      setSaving(false)
     }
   }
 
@@ -144,14 +138,6 @@ export default function SettingsView() {
                 />
               </div>
             ))}
-
-            <button
-              className="save-button"
-              onClick={() => handleSaveCheck(checkKey)}
-              disabled={saving === checkKey}
-            >
-              {saving === checkKey ? 'Saving...' : 'Save'}
-            </button>
           </div>
         ) : (
           <p className="no-fields">No configurable fields</p>
@@ -176,6 +162,11 @@ export default function SettingsView() {
               <span className="toggle-switch-thumb" />
             </button>
           </label>
+        </div>
+        <div className="header-right">
+          <button className="save-button" onClick={handleSaveAll} disabled={saving}>
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </div>
       </div>
 
