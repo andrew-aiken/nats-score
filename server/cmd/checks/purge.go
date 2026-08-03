@@ -31,11 +31,11 @@ func askForConfirmation(s string) bool {
 		response = strings.ToLower(strings.TrimSpace(response))
 
 		switch response {
-			case "y", "yes":
-				return true
-			case "n", "no", "":
-				return false
-			default:
+		case "y", "yes":
+			return true
+		case "n", "no", "":
+			return false
+		default:
 		}
 
 		// If the input is something else, the loop continues and prompts again

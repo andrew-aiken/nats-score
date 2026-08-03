@@ -69,7 +69,6 @@ func createAgentCredentials(streamIndex string) error {
 	userClaim.Permissions.Sub.Allow.Add("events.score.>")
 	userClaim.Permissions.Sub.Allow.Add("_INBOX." + streamIndex + ".>")
 
-
 	// Sign with account key
 	accountKP, err := nkeys.FromSeed([]byte(accountSeed))
 	if err != nil {

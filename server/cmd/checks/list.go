@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"server/internal/config"
-	"server/internal/nats"
 	"server/internal/logging"
+	"server/internal/nats"
 )
 
 func List(configFile string) error {

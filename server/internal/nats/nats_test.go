@@ -16,10 +16,10 @@ type mockKeyWatcher struct {
 	errCh chan error
 }
 
-func (m *mockKeyWatcher) Context() context.Context              { return context.Background() }
-func (m *mockKeyWatcher) Updates() <-chan natsio.KeyValueEntry  { return m.ch }
+func (m *mockKeyWatcher) Context() context.Context             { return context.Background() }
+func (m *mockKeyWatcher) Updates() <-chan natsio.KeyValueEntry { return m.ch }
 func (m *mockKeyWatcher) Stop() error                          { return nil }
-func (m *mockKeyWatcher) Error() <-chan error                   { return m.errCh }
+func (m *mockKeyWatcher) Error() <-chan error                  { return m.errCh }
 
 type mockKeyValue struct {
 	watchFilteredErr error
@@ -31,22 +31,28 @@ func (m *mockKeyValue) WatchFiltered(keys []string, opts ...natsio.WatchOpt) (na
 }
 
 // Unused KeyValue interface methods required to satisfy the interface.
-func (m *mockKeyValue) Get(key string) (natsio.KeyValueEntry, error)                              { return nil, nil }
-func (m *mockKeyValue) GetRevision(key string, revision uint64) (natsio.KeyValueEntry, error)     { return nil, nil }
-func (m *mockKeyValue) Put(key string, value []byte) (uint64, error)                              { return 0, nil }
-func (m *mockKeyValue) PutString(key string, value string) (uint64, error)                        { return 0, nil }
-func (m *mockKeyValue) Create(key string, value []byte) (uint64, error)                           { return 0, nil }
-func (m *mockKeyValue) Update(key string, value []byte, last uint64) (uint64, error)              { return 0, nil }
-func (m *mockKeyValue) Delete(key string, opts ...natsio.DeleteOpt) error                         { return nil }
-func (m *mockKeyValue) Purge(key string, opts ...natsio.DeleteOpt) error                          { return nil }
-func (m *mockKeyValue) Watch(keys string, opts ...natsio.WatchOpt) (natsio.KeyWatcher, error)     { return nil, nil }
-func (m *mockKeyValue) WatchAll(opts ...natsio.WatchOpt) (natsio.KeyWatcher, error)               { return nil, nil }
-func (m *mockKeyValue) Keys(opts ...natsio.WatchOpt) ([]string, error)                            { return nil, nil }
-func (m *mockKeyValue) ListKeys(opts ...natsio.WatchOpt) (natsio.KeyLister, error)                { return nil, nil }
-func (m *mockKeyValue) History(key string, opts ...natsio.WatchOpt) ([]natsio.KeyValueEntry, error) { return nil, nil }
-func (m *mockKeyValue) Bucket() string                                                            { return "settings" }
-func (m *mockKeyValue) PurgeDeletes(opts ...natsio.PurgeOpt) error                               { return nil }
-func (m *mockKeyValue) Status() (natsio.KeyValueStatus, error)                                   { return nil, nil }
+func (m *mockKeyValue) Get(key string) (natsio.KeyValueEntry, error) { return nil, nil }
+func (m *mockKeyValue) GetRevision(key string, revision uint64) (natsio.KeyValueEntry, error) {
+	return nil, nil
+}
+func (m *mockKeyValue) Put(key string, value []byte) (uint64, error)                 { return 0, nil }
+func (m *mockKeyValue) PutString(key string, value string) (uint64, error)           { return 0, nil }
+func (m *mockKeyValue) Create(key string, value []byte) (uint64, error)              { return 0, nil }
+func (m *mockKeyValue) Update(key string, value []byte, last uint64) (uint64, error) { return 0, nil }
+func (m *mockKeyValue) Delete(key string, opts ...natsio.DeleteOpt) error            { return nil }
+func (m *mockKeyValue) Purge(key string, opts ...natsio.DeleteOpt) error             { return nil }
+func (m *mockKeyValue) Watch(keys string, opts ...natsio.WatchOpt) (natsio.KeyWatcher, error) {
+	return nil, nil
+}
+func (m *mockKeyValue) WatchAll(opts ...natsio.WatchOpt) (natsio.KeyWatcher, error) { return nil, nil }
+func (m *mockKeyValue) Keys(opts ...natsio.WatchOpt) ([]string, error)              { return nil, nil }
+func (m *mockKeyValue) ListKeys(opts ...natsio.WatchOpt) (natsio.KeyLister, error)  { return nil, nil }
+func (m *mockKeyValue) History(key string, opts ...natsio.WatchOpt) ([]natsio.KeyValueEntry, error) {
+	return nil, nil
+}
+func (m *mockKeyValue) Bucket() string                             { return "settings" }
+func (m *mockKeyValue) PurgeDeletes(opts ...natsio.PurgeOpt) error { return nil }
+func (m *mockKeyValue) Status() (natsio.KeyValueStatus, error)     { return nil, nil }
 
 // --- tests ---
 

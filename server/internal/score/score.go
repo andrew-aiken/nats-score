@@ -17,7 +17,6 @@ import (
 	"github.com/andrew-aiken/checks"
 )
 
-
 func HandleScoreEvent(ctx context.Context, settings *settings.Settings, js nats.JetStreamContext) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")

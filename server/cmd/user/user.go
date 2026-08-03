@@ -77,7 +77,7 @@ func Add(configFile string, username, team, password string, force bool) error {
 
 // List prints all registered usernames and their team assignment. Password
 // hashes are never printed.
-func List(configFile string,) error {
+func List(configFile string) error {
 	logging.SetupLogging("info")
 
 	cfg, err := config.Load(configFile)

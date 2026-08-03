@@ -1,13 +1,13 @@
 package nats
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"time"
-	"context"
 
-	"server/internal/settings"
 	"server/internal/score"
+	"server/internal/settings"
 
 	"github.com/nats-io/nats.go"
 )
