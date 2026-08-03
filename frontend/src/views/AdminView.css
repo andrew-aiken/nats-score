@@ -81,18 +81,114 @@
   color: #333;
 }
 
-.settings-display {
+.check-settings-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.check-setting-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.check-setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.check-setting-header:hover {
+  background: #f3f4f6;
+}
+
+.check-setting-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.check-setting-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1f2937;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check-setting-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.check-setting-badge {
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.check-setting-badge--weight {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.check-setting-body {
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.25rem;
+  background: white;
+}
+
+.check-setting-description {
+  margin: 0 0 1rem 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.check-setting-field {
+  margin-bottom: 1rem;
+}
+
+.check-setting-field:last-child {
+  margin-bottom: 0;
+}
+
+.check-setting-field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.check-setting-field-value {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.check-setting-definition {
+  margin: 0;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  padding: 1rem;
+  padding: 0.75rem;
   overflow-x: auto;
-}
-
-.settings-display pre {
-  margin: 0;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #374151;
 }
 

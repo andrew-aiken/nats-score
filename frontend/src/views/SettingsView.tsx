@@ -104,8 +104,9 @@ export default function SettingsView() {
         [checkKey]: fieldValues[checkKey] || {}
       })
 
-      const result = await updateTeamSettings(updatedUserSettings)
-      toast.success('Settings saved', `Updated ${checkKey} for team ${result.team}`)
+      await updateTeamSettings(updatedUserSettings)
+      // toast.success('Settings saved', "")
+      toast.success('Settings saved', "")
     } catch (err) {
       console.error('Failed to save settings:', err)
       toast.error('Failed to save settings', err instanceof Error ? err.message : 'Unknown error')
@@ -140,8 +141,8 @@ export default function SettingsView() {
                 />
               </div>
             ))}
-            
-            <button 
+
+            <button
               className="save-button"
               onClick={() => handleSaveCheck(checkKey)}
               disabled={saving === checkKey}
@@ -172,7 +173,7 @@ export default function SettingsView() {
           </div>
         ) : mutableFields && Object.keys(mutableFields).length > 0 ? (
           <div className="checks-grid">
-            {Object.entries(mutableFields).map(([key, fields]) => 
+            {Object.entries(mutableFields).map(([key, fields]) =>
               renderCheckCard(key, fields)
             )}
           </div>

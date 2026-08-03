@@ -20,6 +20,15 @@ interface TeamStats {
   }
 }
 
+interface GlobalCheck {
+  name: string
+  type: string
+  description: string
+  mutableFields: string[] | null
+  scoreWeight: number
+  definition: Record<string, unknown>
+}
+
 // Parse subject to extract team and check name
 // Format: results.<team>.<check>
 const parseSubject = (subject: string): { team: string; check: string } | null => {
@@ -34,10 +43,11 @@ const parseSubject = (subject: string): { team: string; check: string } | null =
 }
 
 export default function AdminView() {
-  const [globalSettings, setGlobalSettings] = useState<any>(null)
+  const [globalSettings, setGlobalSettings] = useState<Record<string, GlobalCheck> | null>(null)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<'start' | 'stop' | null>(null)
   const [expandedTeams, setExpandedTeams] = useState<Set<string>>(new Set())
+  const [expandedChecks, setExpandedChecks] = useState<Set<string>>(new Set())
 
   const status = useNatsStore(state => state.status)
   const messages = useNatsStore(state => state.messages)
@@ -140,6 +150,23 @@ export default function AdminView() {
       return next
     })
   }
+
+  const toggleCheckExpanded = (checkName: string) => {
+    setExpandedChecks(prev => {
+      const next = new Set(prev)
+      if (next.has(checkName)) {
+        next.delete(checkName)
+      } else {
+        next.add(checkName)
+      }
+      return next
+    })
+  }
+
+  const sortedChecks = useMemo(
+    () => Object.entries(globalSettings ?? {}).sort(([a], [b]) => a.localeCompare(b)),
+    [globalSettings]
+  )
 
   const getPercentageColor = (percentage: number): string => {
     if (percentage >= 80) return 'var(--success-color, #10b981)'
@@ -278,9 +305,51 @@ export default function AdminView() {
         <h3>Global Settings</h3>
         {loading ? (
           <div className="loading">Loading settings...</div>
-        ) : globalSettings ? (
-          <div className="settings-display">
-            <pre>{JSON.stringify(globalSettings, null, 2)}</pre>
+        ) : sortedChecks.length > 0 ? (
+          <div className="check-settings-list">
+            {sortedChecks.map(([checkName, check]) => (
+              <div key={checkName} className="check-setting-card">
+                <div
+                  className="check-setting-header"
+                  onClick={() => toggleCheckExpanded(checkName)}
+                >
+                  <div className="check-setting-info">
+                    <span className="expand-icon">
+                      {expandedChecks.has(checkName) ? '▼' : '▶'}
+                    </span>
+                    <span className="check-setting-name">{checkName}</span>
+                  </div>
+                  <div className="check-setting-badges">
+                    <span className="check-setting-badge">{check.type}</span>
+                    <span className="check-setting-badge check-setting-badge--weight">
+                      {check.scoreWeight} pts
+                    </span>
+                  </div>
+                </div>
+
+                {expandedChecks.has(checkName) && (
+                  <div className="check-setting-body">
+                    {check.description && (
+                      <p className="check-setting-description">{check.description}</p>
+                    )}
+                    <div className="check-setting-field">
+                      <span className="check-setting-field-label">Mutable fields</span>
+                      <span className="check-setting-field-value">
+                        {check.mutableFields && check.mutableFields.length > 0
+                          ? check.mutableFields.join(', ')
+                          : 'None'}
+                      </span>
+                    </div>
+                    <div className="check-setting-field">
+                      <span className="check-setting-field-label">Definition</span>
+                      <pre className="check-setting-definition">
+                        {JSON.stringify(check.definition, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ) : (
           <div className="no-settings">No global settings available</div>
