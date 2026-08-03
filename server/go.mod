@@ -2,10 +2,10 @@ module server
 
 go 1.26.5
 
-replace github.com/andrew-aiken/checks => ../../checks
+// replace github.com/andrew-aiken/checks => ../../checks
 
 require (
-	github.com/andrew-aiken/checks v0.0.0-00010101000000-000000000000
+	github.com/andrew-aiken/checks v0.0.0
 	github.com/creasty/defaults v1.8.0
 	github.com/go-co-op/gocron/v2 v2.22.0
 	github.com/google/uuid v1.6.0
@@ -15,7 +15,6 @@ require (
 	github.com/nats-io/nkeys v0.4.16
 	github.com/urfave/cli/v3 v3.10.1
 	golang.org/x/crypto v0.54.0
-	golang.org/x/term v0.45.0
 )
 
 require (
