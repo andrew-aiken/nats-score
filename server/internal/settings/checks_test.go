@@ -39,7 +39,7 @@ func TestCheckUnmarshalJSON(t *testing.T) {
 		}`)
 
 		var c Check
-		err := json.Unmarshal(data, &c);
+		err := json.Unmarshal(data, &c)
 		if _, ok := err.(*json.UnmarshalTypeError); !ok {
 			t.Errorf("Failed to unmarshal incorrect type: %v", err)
 		}

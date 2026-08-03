@@ -7,7 +7,6 @@ import HealthCheckView from '../views/HealthCheckView'
 import SettingsView from '../views/SettingsView'
 import AdminView from '../views/AdminView'
 import AdminScoringOverviewView from '../views/AdminScoringOverviewView'
-import AuthCallbackView from '../views/AuthCallbackView'
 import LoginView from '../views/LoginView'
 
 export const router = createBrowserRouter([
@@ -18,10 +17,6 @@ export const router = createBrowserRouter([
         <LoginView />
       </PublicRoute>
     )
-  },
-  {
-    path: '/auth/callback',
-    element: <AuthCallbackView />
   },
   {
     path: '/',
@@ -48,6 +43,10 @@ export const router = createBrowserRouter([
           },
           {
             path: 'admin/scores',
+            element: <AdminScoringOverviewView />
+          },
+          {
+            path: 'observer',
             element: <AdminScoringOverviewView />
           }
         ]

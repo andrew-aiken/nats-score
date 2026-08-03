@@ -13,11 +13,11 @@ import (
 	"server/internal/nats"
 )
 
-func Import(directory string) error {
+func Import(configFile string, directory string) error {
 	logging.SetupLogging("info")
 
 	// Load configuration
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		slog.Error("Failed to load config")
 		return err

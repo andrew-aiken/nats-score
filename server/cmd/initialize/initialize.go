@@ -5,16 +5,18 @@ import (
 	"log/slog"
 	"time"
 
+	"server/cmd/user"
 	"server/internal/config"
 	"server/internal/logging"
 
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
 
-func Initialize() error {
+func Initialize(configPath string) error {
 	logging.SetupLogging("info")
 
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		slog.Error("Failed to load config", "error", err)
 		return err
@@ -55,6 +57,19 @@ func Initialize() error {
 	}
 	slog.Info("Successfully created NATS settings KV")
 
+	_, err = js.CreateKeyValue(&nats.KeyValueConfig{
+		Bucket:       "users",
+		Description:  "Username/password login account storage",
+		History:      5,
+		TTL:          0,
+		MaxValueSize: -1,
+		MaxBytes:     -1,
+	})
+	if err != nil {
+		return err
+	}
+	slog.Info("Successfully created NATS users KV")
+
 	resultsStream := nats.StreamConfig{
 		Name:        "results",
 		Description: "Stream of score update events",
@@ -71,10 +86,10 @@ func Initialize() error {
 	}
 
 	_, err = js.AddStream(&resultsStream)
-	slog.Info("Successfully created results NATS stream")
 	if err != nil {
 		return err
 	}
+	slog.Info("Successfully created results NATS stream")
 
 	_, err = js.AddConsumer(resultsStream.Name, &nats.ConsumerConfig{
 		Name:          "results-watcher",
@@ -82,6 +97,21 @@ func Initialize() error {
 		DeliverPolicy: nats.DeliverAllPolicy,
 		AckPolicy:     nats.AckAllPolicy,
 	})
+	if err != nil {
+		return err
+	}
+	slog.Debug("Successfully created consumer")
+
+	// Generate random uuid what will server as the admin password
+	password := fmt.Sprint(uuid.New())
+
+	// Add admin user
+	err = user.Add(configPath, "admin", "admin", password, true)
+	if err != nil {
+		return err
+	}
+
+	slog.Info("Generated initial admin user credentials", "password", password)
 
 	return err
 }

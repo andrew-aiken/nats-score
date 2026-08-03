@@ -21,10 +21,8 @@ func StartServer(server *http.Server) error {
 func SetupRoutes(serverConfig *handlers.Handler, corsMiddleware middleware.CORSMiddleware, authMiddleware middleware.AuthMiddleware) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/login", serverConfig.Login)
 	mux.HandleFunc("/auth/verify", corsMiddleware.Handler(serverConfig.Verify))
-	mux.HandleFunc("/auth/callback", serverConfig.Callback)
-	mux.HandleFunc("/auth/token", corsMiddleware.Handler(serverConfig.TokenLogin))
+	mux.HandleFunc("/auth/login", corsMiddleware.Handler(serverConfig.Login))
 
 	mux.HandleFunc("/api/checks/mutable-fields", corsMiddleware.Handler(authMiddleware.RequireAuth(serverConfig.GetMutableFields)))
 	mux.HandleFunc("/api/checks", corsMiddleware.Handler(serverConfig.Checks))

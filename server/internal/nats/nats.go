@@ -1,13 +1,13 @@
 package nats
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"time"
-	"context"
 
-	"server/internal/settings"
 	"server/internal/score"
+	"server/internal/settings"
 
 	"github.com/nats-io/nats.go"
 )
@@ -19,6 +19,7 @@ type NatsConnection struct {
 	NatsInboxPrefix    string
 	NatsConn           *nats.Conn
 	NatsKV             nats.KeyValue
+	NatsUsersKV        nats.KeyValue
 	NatsKVWatcher      nats.KeyWatcher
 	JetStreamConn      nats.JetStreamContext
 	natsStreamSub      *nats.Subscription
@@ -52,8 +53,11 @@ func (n *NatsConnection) natsConnect() error {
 	// Build connection options
 	opts := []nats.Option{
 		nats.Name(n.NatsConnectionName),
-		nats.UserCredentials(n.NatsCredsFile),
 	}
+	if n.NatsCredsFile != "" {
+		opts = append(opts, nats.UserCredentials(n.NatsCredsFile))
+	}
+
 	if n.NatsInboxPrefix != "" {
 		opts = append(opts, nats.CustomInboxPrefix(n.NatsInboxPrefix))
 	}
@@ -96,6 +100,24 @@ func (n *NatsConnection) keyValueConnect() error {
 	}
 
 	n.NatsKV = kv
+
+	return nil
+}
+
+// SetupUsersKV connects to the "users" KV bucket. This is opt-in and must be
+// called explicitly after SetupConnection() by callers that hold
+// full-privilege server credentials (cmd/server, cmd/user). It is
+// intentionally NOT part of SetupConnection()/keyValueConnect() because
+// agent and per-team credentials (see cmd/auth/auth.go createAgentCredentials)
+// are not granted any permissions on the users bucket/stream, and calling
+// this from cmd/agent or cmd/checks/* would fail and break those processes.
+func (n *NatsConnection) SetupUsersKV() error {
+	kv, err := n.JetStreamConn.KeyValue("users")
+	if err != nil {
+		return fmt.Errorf("failed to get KV bucket 'users': %v", err)
+	}
+
+	n.NatsUsersKV = kv
 
 	return nil
 }

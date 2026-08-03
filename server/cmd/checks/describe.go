@@ -14,7 +14,7 @@ import (
 	natsnats "github.com/nats-io/nats.go"
 )
 
-func Describe(checkName string) error {
+func Describe(configFile string, checkName string) error {
 	logging.SetupLogging("warn")
 
 	if checkName == "" {
@@ -23,7 +23,7 @@ func Describe(checkName string) error {
 	}
 
 	// Load configuration
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		slog.Error("Failed to load config")
 		return err

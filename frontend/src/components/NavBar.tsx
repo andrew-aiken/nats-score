@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { clearCredentials, getCredentials, getTeamIdFromJwt, isAdmin } from '../services/auth'
+import { clearCredentials, getCredentials, getTeamIdFromJwt, isAdmin, isObserver } from '../services/auth'
 import './NavBar.css'
 
 export default function NavBar() {
@@ -10,6 +10,7 @@ export default function NavBar() {
   const creds = getCredentials()
   const teamId = creds ? getTeamIdFromJwt(creds.jwt) : null
   const userIsAdmin = isAdmin()
+  const userIsObserver = isObserver()
 
   const handleLogout = () => {
     clearCredentials()
@@ -19,9 +20,9 @@ export default function NavBar() {
   return (
     <nav className="navbar">
       <div className="nav-brand">
-        <h1 className="logo">NATS Dashboard</h1>
+        <h1 className="logo">Score Dashboard</h1>
       </div>
-      
+
       <div className="nav-links">
         {userIsAdmin ? (
           <>
@@ -41,24 +42,32 @@ export default function NavBar() {
               Admin
             </NavLink>
           </>
+        ) : userIsObserver ? (
+          <NavLink
+            to="/observer"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+          >
+            <span className="nav-icon">📈</span>
+            Scores
+          </NavLink>
         ) : (
           <>
-            <NavLink 
-              to="/" 
+            <NavLink
+              to="/"
               className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
             >
               <span className="nav-icon">📊</span>
               Messages
             </NavLink>
-            <NavLink 
-              to="/health" 
+            <NavLink
+              to="/health"
               className={`nav-link ${location.pathname === '/health' ? 'active' : ''}`}
             >
               <span className="nav-icon">💚</span>
               Health Check
             </NavLink>
-            <NavLink 
-              to="/settings" 
+            <NavLink
+              to="/settings"
               className={`nav-link ${location.pathname === '/settings' ? 'active' : ''}`}
             >
               <span className="nav-icon">⚙️</span>
@@ -69,7 +78,11 @@ export default function NavBar() {
       </div>
 
       <div className="nav-user">
-        {teamId && <span className="team-id">{userIsAdmin ? 'Admin' : `Team ${teamId}`}</span>}
+        {teamId && (
+          <span className="team-id">
+            {userIsAdmin ? 'Admin' : userIsObserver ? 'Observer' : `Team ${teamId}`}
+          </span>
+        )}
         <button className="logout-btn" onClick={handleLogout}>
           Logout
         </button>

@@ -7,14 +7,14 @@ import (
 	"strings"
 )
 
-func Purge(force bool) error {
+func Purge(configFile string, force bool) error {
 	if !force && askForConfirmation("Are you sure you want to proceed?") {
 	} else {
 		fmt.Println("Aborting.")
 		return nil
 	}
 
-	return listChecks(true)
+	return listChecks(configFile, true)
 }
 
 func askForConfirmation(s string) bool {
@@ -31,11 +31,11 @@ func askForConfirmation(s string) bool {
 		response = strings.ToLower(strings.TrimSpace(response))
 
 		switch response {
-			case "y", "yes":
-				return true
-			case "n", "no", "":
-				return false
-			default:
+		case "y", "yes":
+			return true
+		case "n", "no", "":
+			return false
+		default:
 		}
 
 		// If the input is something else, the loop continues and prompts again

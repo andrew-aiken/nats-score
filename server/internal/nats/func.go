@@ -59,7 +59,6 @@ func GetMutableFields(natsKV nats.KeyValue) (map[string][]string, error) {
 	return result, nil
 }
 
-
 // GetTeamSettings retrieves team-specific settings from the KV bucket
 // The key format is "{teamNumber}.settings"
 func GetTeamSettings(natsKV nats.KeyValue, teamNumber string) (map[string]map[string]string, error) {

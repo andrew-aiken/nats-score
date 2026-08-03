@@ -14,7 +14,7 @@ import (
 	"server/internal/nats"
 )
 
-func Export(directory string) error {
+func Export(configFile string, directory string) error {
 	logging.SetupLogging("info")
 
 	// Check if directory exists if not create
@@ -35,7 +35,7 @@ func Export(directory string) error {
 	}
 
 	// Load configuration
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		slog.Error("Failed to load config")
 		return err

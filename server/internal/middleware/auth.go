@@ -15,37 +15,32 @@ type contextKey string
 const (
 	// ClaimsContextKey is the key for storing claims in context
 	ClaimsContextKey contextKey = "claims"
-	// MatchedRolesContextKey is the key for storing matched roles in context
-	MatchedRolesContextKey contextKey = "matchedRoles"
 )
 
 // AuthMiddleware holds dependencies for authentication middleware
 type AuthMiddleware struct {
 	natsAuthService *auth.NATSAuthService
-	requiredRoles   map[string]string
 }
 
 // NewAuthMiddleware creates a new auth middleware
-func NewAuthMiddleware(natsAuthService *auth.NATSAuthService, requiredRoles map[string]string) *AuthMiddleware {
+func NewAuthMiddleware(natsAuthService *auth.NATSAuthService) *AuthMiddleware {
 	return &AuthMiddleware{
 		natsAuthService: natsAuthService,
-		requiredRoles:   requiredRoles,
 	}
 }
 
 // AuthResult represents the authentication result
 type AuthResult struct {
-	Authorized   bool              `json:"authorized"`
-	UserID       string            `json:"user_id,omitempty"`
-	TeamID       string            `json:"team_id,omitempty"`
-	MatchedRoles map[string]string `json:"matched_roles,omitempty"`
-	Error        string            `json:"error,omitempty"`
+	Authorized bool   `json:"authorized"`
+	UserID     string `json:"user_id,omitempty"`
+	TeamID     string `json:"team_id,omitempty"`
+	Error      string `json:"error,omitempty"`
 }
 
-// RequireAdminAuth is a middleware that checks if the request has an admin role
+// RequireAdminAuth is a middleware that requires a valid JWT belonging to the admin team
 func (m *AuthMiddleware) RequireAdminAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		result, claim := m.authenticate(r)
+		result, claims := m.authenticate(r)
 
 		if !result.Authorized {
 			w.Header().Set("Content-Type", "application/json")
@@ -54,21 +49,19 @@ func (m *AuthMiddleware) RequireAdminAuth(next http.HandlerFunc) http.HandlerFun
 			return
 		}
 
-		for _, role := range claim.Roles {
-			if result.MatchedRoles[role] == "admin" {
-				next(w, r)
-				return
-			}
+		if claims.TeamID != "admin" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(result)
+			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		// TODO: Obfuscate results
-		json.NewEncoder(w).Encode(result)
+		ctx := context.WithValue(r.Context(), ClaimsContextKey, claims)
+		next(w, r.WithContext(ctx))
 	}
 }
 
-// RequireAuth is middleware that requires a valid NATS JWT with at least one required role
+// RequireAuth is middleware that requires any valid, successfully-verified NATS JWT
 func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		result, claims := m.authenticate(r)
@@ -80,10 +73,7 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Add claims and matched roles to context
 		ctx := context.WithValue(r.Context(), ClaimsContextKey, claims)
-		ctx = context.WithValue(ctx, MatchedRolesContextKey, result.MatchedRoles)
-
 		next(w, r.WithContext(ctx))
 	}
 }
@@ -117,28 +107,10 @@ func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *auth.UserCl
 		}, nil
 	}
 
-	// Check if user has any required roles
-	matchedRoles := make(map[string]string)
-	for _, roleID := range claims.Roles {
-		if roleName, ok := m.requiredRoles[roleID]; ok {
-			matchedRoles[roleID] = roleName
-		}
-	}
-
-	if len(matchedRoles) == 0 {
-		return AuthResult{
-			Authorized: false,
-			UserID:     claims.UserID,
-			TeamID:     claims.TeamID,
-			Error:      "user does not have any required roles",
-		}, claims
-	}
-
 	return AuthResult{
-		Authorized:   true,
-		UserID:       claims.UserID,
-		TeamID:       claims.TeamID,
-		MatchedRoles: matchedRoles,
+		Authorized: true,
+		UserID:     claims.UserID,
+		TeamID:     claims.TeamID,
 	}, claims
 }
 
@@ -152,14 +124,6 @@ func (m *AuthMiddleware) GetAuthResult(r *http.Request) AuthResult {
 func GetClaimsFromContext(ctx context.Context) *auth.UserClaims {
 	if claims, ok := ctx.Value(ClaimsContextKey).(*auth.UserClaims); ok {
 		return claims
-	}
-	return nil
-}
-
-// GetMatchedRolesFromContext retrieves matched roles from request context
-func GetMatchedRolesFromContext(ctx context.Context) map[string]string {
-	if roles, ok := ctx.Value(MatchedRolesContextKey).(map[string]string); ok {
-		return roles
 	}
 	return nil
 }

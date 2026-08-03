@@ -5,19 +5,19 @@ import (
 	"strings"
 
 	"server/internal/config"
-	"server/internal/nats"
 	"server/internal/logging"
+	"server/internal/nats"
 )
 
-func List() error {
-	return listChecks(false)
+func List(configFile string) error {
+	return listChecks(configFile, false)
 }
 
-func listChecks(deleteKeys bool) error {
+func listChecks(configFile string, deleteKeys bool) error {
 	logging.SetupLogging("info")
 
 	// Load configuration
-	cfg, err := config.Load("config.json")
+	cfg, err := config.Load(configFile)
 	if err != nil {
 		slog.Error("Failed to load config")
 		return err

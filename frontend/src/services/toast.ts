@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 
 const DEFAULT_DURATION = 5000
+const SOUND_PREFERENCE_KEY = 'notification_sound_enabled'
 
 export interface Toast {
   id: string
@@ -58,6 +59,23 @@ const playAlertSound = (type: Toast['type']) => {
   }
 }
 
+interface NotificationPreferenceState {
+  soundEnabled: boolean
+  setSoundEnabled: (enabled: boolean) => void
+}
+
+/**
+ * Whether notification toasts should play an alert sound.
+ * Persisted to localStorage, defaults to enabled.
+ */
+export const useNotificationPreferenceStore = create<NotificationPreferenceState>((set) => ({
+  soundEnabled: localStorage.getItem(SOUND_PREFERENCE_KEY) !== 'false',
+  setSoundEnabled: (enabled: boolean) => {
+    localStorage.setItem(SOUND_PREFERENCE_KEY, String(enabled))
+    set({ soundEnabled: enabled })
+  },
+}))
+
 export const useToastStore = create<ToastState>((set) => ({
   toasts: [],
 
@@ -65,10 +83,11 @@ export const useToastStore = create<ToastState>((set) => ({
     const id = crypto.randomUUID()
     const duration = toast.duration ?? DEFAULT_DURATION
     const newToast: Toast = { ...toast, id, duration }
-    
-    // Play alert sound
-    playAlertSound(toast.type)
-    
+
+    if (useNotificationPreferenceStore.getState().soundEnabled) {
+      playAlertSound(toast.type)
+    }
+
     set((state) => ({
       toasts: [...state.toasts, newToast]
     }))

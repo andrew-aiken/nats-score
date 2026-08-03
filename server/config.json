@@ -1,25 +1,7 @@
 {
-  "redirect_url": "http://localhost:3000/auth/callback",
   "frontend_url": "http://localhost:5173",
-  "client_id": "1448867532084871179",
-  "client_secret": "6fyCTmu4KsTPqx-cTTRbqk3K7X__snXK",
   "account_public_key": "ACAZUY774GKV27BNGEAPA6RFO2OMMLVLRG5TTZLAAJZDR5ZRORV6QCJ7",
   "account_signing_seed": "SAAJAURE5C35ZJQUUQSSVKYZP5V5L3A6RFPMMNEFRLPDBP2GCMID5TZUXA",
   "nats_url": "nats://localhost:4222",
-  "nats_creds_file": "/Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds",
-  "discord_guild_id": "833740335997124608",
-  "discord_role_map": {
-    "833740336010100793": "admin",
-    "11111": "observer",
-    "0": "0",
-    "1065039522443833364": "1",
-    "1112233": "2"
-  },
-  "static_auth": {
-    "admin": "admin123",
-    "observer": "ob1",
-    "0": "team0",
-    "1": "team1",
-    "2": "team2"
-  }
+  "nats_creds_file": "/Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds"
 }

@@ -4,23 +4,16 @@ const STORAGE_KEY = 'nats_credentials'
 const AUTH_SERVER = 'http://localhost:3000'
 
 /**
- * Redirect to backend OAuth2 login
- */
-export function login(): void {
-  window.location.href = `${AUTH_SERVER}/login`
-}
-
-/**
- * Login using a predefined access token
+ * Login using a username and password
  * Returns credentials on success, throws error on failure
  */
-export async function loginWithToken(token: string): Promise<NatsCredentials> {
-  const response = await fetch(`${AUTH_SERVER}/auth/token`, {
+export async function login(username: string, password: string): Promise<NatsCredentials> {
+  const response = await fetch(`${AUTH_SERVER}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ token }),
+    body: JSON.stringify({ username, password }),
   })
 
   if (!response.ok) {
@@ -29,23 +22,6 @@ export async function loginWithToken(token: string): Promise<NatsCredentials> {
   }
 
   const credentials: NatsCredentials = await response.json()
-  saveCredentials(credentials)
-  return credentials
-}
-
-/**
- * Extract credentials from URL query params (called on /auth/callback)
- */
-export function handleCallback(): NatsCredentials | null {
-  const params = new URLSearchParams(window.location.search)
-  const jwt = params.get('jwt')
-  const seed = params.get('seed')
-
-  if (!jwt || !seed) {
-    return null
-  }
-
-  const credentials: NatsCredentials = { jwt, seed }
   saveCredentials(credentials)
   return credentials
 }
@@ -158,4 +134,17 @@ export function isAdmin(): boolean {
   }
   const teamId = getTeamIdFromJwt(creds.jwt)
   return teamId === 'admin'
+}
+
+/**
+ * Check if the current user is an observer based on JWT name claim
+ * Observers have the name claim set to "observer"
+ */
+export function isObserver(): boolean {
+  const creds = getCredentials()
+  if (!creds) {
+    return false
+  }
+  const teamId = getTeamIdFromJwt(creds.jwt)
+  return teamId === 'observer'
 }

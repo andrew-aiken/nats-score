@@ -2,7 +2,11 @@ import { create } from 'zustand'
 import { connect, StringCodec, jwtAuthenticator, DeliverPolicy } from 'nats.ws'
 import type { NatsConnection, JetStreamClient, ConsumerMessages } from 'nats.ws'
 import type { ConnectionStatus, NatsMessage } from '../types'
-import { getCredentials, login, clearCredentials, isTokenExpired, getTeamIdFromJwt } from './auth'
+import { getCredentials, clearCredentials, isTokenExpired, getTeamIdFromJwt } from './auth'
+
+function redirectToLogin(): void {
+  window.location.href = '/login'
+}
 
 const NATS_CONFIG = {
   servers: 'ws://localhost:8080',
@@ -49,7 +53,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
     const creds = getCredentials()
     if (!creds) {
       console.log('No credentials found, redirecting to login')
-      login()
+      redirectToLogin()
       return
     }
 
@@ -57,7 +61,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
     if (isTokenExpired(creds.jwt)) {
       console.log('JWT expired, redirecting to login')
       clearCredentials()
-      login()
+      redirectToLogin()
       return
     }
 
@@ -66,10 +70,13 @@ export const useNatsStore = create<NatsState>((set, get) => ({
     if (!teamId) {
       console.log('No team ID in JWT, redirecting to login')
       clearCredentials()
-      login()
+      redirectToLogin()
       return
     }
-    const subject = `results.${teamId}.>`
+    // The "observer" role isn't a real team - it's granted read access to
+    // every team's results, so its subject must be the wildcard rather than
+    // the literal (and non-existent) "results.observer.>".
+    const subject = teamId === 'observer' ? 'results.>' : `results.${teamId}.>`
 
     try {
       const encoder = new TextEncoder()
@@ -98,7 +105,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
         if (err && (err.message?.includes('authorization') || err.message?.includes('auth'))) {
           console.log('Connection closed due to auth error, redirecting to login')
           clearCredentials()
-          login()
+          redirectToLogin()
         }
       })
 
@@ -111,7 +118,7 @@ export const useNatsStore = create<NatsState>((set, get) => ({
       if (errorMessage.includes('authorization') || errorMessage.includes('auth')) {
         console.log('Auth error during connect, clearing credentials and redirecting to login')
         clearCredentials()
-        login()
+        redirectToLogin()
         return
       }
       

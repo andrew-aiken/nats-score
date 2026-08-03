@@ -1,5 +1,5 @@
 # Base build
-FROM public.ecr.aws/docker/library/node:24.11.1-alpine3.22 AS base
+FROM public.ecr.aws/docker/library/node:26.5.0-alpine3.24 AS base
 
 WORKDIR /app
 
