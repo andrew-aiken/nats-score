@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getMutableFields, getTeamSettings, updateTeamSettings } from '../services/api'
-import { toast } from '../services/toast'
+import { toast, useNotificationPreferenceStore } from '../services/toast'
 import './SettingsView.css'
 
 // Mutable fields map from the API
@@ -31,6 +31,9 @@ export default function SettingsView() {
   const [fieldValues, setFieldValues] = useState<UserSettings>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
+
+  const soundEnabled = useNotificationPreferenceStore(s => s.soundEnabled)
+  const setSoundEnabled = useNotificationPreferenceStore(s => s.setSoundEnabled)
 
   // Fetch mutable fields and team settings from API on mount
   useEffect(() => {
@@ -160,8 +163,19 @@ export default function SettingsView() {
   return (
     <div className="settings-view">
       <div className="view-header">
-        <div className="header-right">
-          <h2 className="page-title">Settings</h2>
+        <div className="header-left">
+          <label className="sound-toggle">
+            <span className="sound-toggle-label">Notification sounds</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={soundEnabled}
+              className={`toggle-switch ${soundEnabled ? 'toggle-switch--on' : ''}`}
+              onClick={() => setSoundEnabled(!soundEnabled)}
+            >
+              <span className="toggle-switch-thumb" />
+            </button>
+          </label>
         </div>
       </div>
 
