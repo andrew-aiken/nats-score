@@ -48,12 +48,18 @@ func (s *Settings) MonitorSettings(ctx context.Context, natsKVWatcher nats.KeyWa
 	for {
 		select {
 		case <-ctx.Done():
-			slog.Debug("Context cancelled, stopping watcher")
+			slog.Warn("Context cancelled, stopping watcher")
 			return
-		case entry := <-natsKVWatcher.Updates():
+		case entry, okay := <-natsKVWatcher.Updates():
+			// If the KV gets removed error and exit
+			if !okay {
+				slog.Error("NATS KV watcher failed")
+				return
+			}
+
 			if entry == nil {
 				// Initial sync complete
-				slog.Info("Initial KV sync complete, watching for updates...")
+				slog.Info("Initial KV sync complete, switching to watch for updates")
 				startUpCompleted = true
 				continue
 			}
