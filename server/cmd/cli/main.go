@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"server/cmd/auth"
@@ -19,7 +18,7 @@ import (
 
 func main() {
 	cmd := &cli.Command{
-		Name:  "nats-score",
+		Name:  "score",
 		Usage: "score",
 		Commands: []*cli.Command{
 			{
@@ -96,17 +95,35 @@ func main() {
 								Name:      "remove",
 								Aliases:   []string{"rm"},
 								Usage:     "Removes a check",
+								UsageText: "score server check rm <name>",
 								ArgsUsage: "check",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Remove(cmd.String("config"), cmd.Args().First())
+									checkName := cmd.Args().First()
+
+									if checkName == "" {
+										fmt.Println("Check name required")
+										fmt.Println(cmd.UsageText)
+										return nil
+									}
+
+									return checks.Remove(cmd.String("config"), checkName)
 								},
 							},
 							{
 								Name:      "describe",
 								Usage:     "Prints out a checks definition",
+								UsageText: "score server check describe <name>",
 								ArgsUsage: "check",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Describe(cmd.String("config"), cmd.Args().First())
+									checkName := cmd.Args().First()
+
+									if checkName == "" {
+										fmt.Println("Check name required")
+										fmt.Println(cmd.UsageText)
+										return nil
+									}
+
+									return checks.Describe(cmd.String("config"), checkName)
 								},
 							},
 							{
@@ -310,6 +327,7 @@ func main() {
 	}
 
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
-		log.Fatal(err)
+		fmt.Printf("%s\n", err)
+		os.Exit(1)
 	}
 }

@@ -10,7 +10,7 @@ import (
 func Purge(configFile string, force bool) error {
 	if !force && askForConfirmation("Are you sure you want to proceed?") {
 	} else {
-		fmt.Println("Aborting.")
+		fmt.Println("Aborting")
 		return nil
 	}
 

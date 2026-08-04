@@ -15,7 +15,7 @@ import (
 )
 
 func Export(configFile string, directory string) error {
-	logging.SetupLogging("info")
+	logging.SetupLogging("warn")
 
 	// Check if directory exists if not create
 	info, err := os.Stat(directory)
@@ -68,7 +68,7 @@ func Export(configFile string, directory string) error {
 	// Read keys from channel
 	for key := range keys.Keys() {
 		if checkName, prefix := strings.CutPrefix(key, "check."); prefix {
-			slog.Info("Exporting check", "name", checkName)
+			fmt.Printf("Exporting check: %s\n", checkName)
 			keyValue, err := kv.Get(key)
 			if err != nil {
 				return err

@@ -2,7 +2,6 @@
 - [ ] HTTPS
 - [ ] Dynamic Timeout per check
 - [ ] Setup command to generate server config file
-- [ ] Check commands take CLI arguments
 
 ## Agent
 

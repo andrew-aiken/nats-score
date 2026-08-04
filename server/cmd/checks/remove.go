@@ -12,12 +12,7 @@ import (
 )
 
 func Remove(configFile string, checkName string) error {
-	logging.SetupLogging("info")
-
-	if checkName == "" {
-		fmt.Println("Check name required")
-		return nil
-	}
+	logging.SetupLogging("warn")
 
 	// Load configuration
 	cfg, err := config.Load(configFile)
@@ -48,6 +43,7 @@ func Remove(configFile string, checkName string) error {
 	_, err = kv.Get(checkKey)
 	if err == natsnats.ErrKeyNotFound {
 		slog.Warn("Check does not exist", "check", checkName)
+		return nil
 	}
 
 	err = kv.Delete(checkKey)
@@ -55,7 +51,6 @@ func Remove(configFile string, checkName string) error {
 		return err
 	}
 
-	slog.Info("Removed check", "name", checkName)
-
+	fmt.Printf("Removed check %s\n", checkName)
 	return nil
 }

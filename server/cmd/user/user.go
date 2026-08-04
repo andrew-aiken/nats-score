@@ -12,12 +12,9 @@ import (
 	"server/internal/nats"
 )
 
-// Add creates a new username/password login account in the NATS "users" KV
-// bucket. If password is empty, it is read interactively via a masked
-// terminal prompt (with confirmation re-entry). Refuses to overwrite an
-// existing username unless force is true.
+// Add creates a new user login account in the NATS "users" KV bucket.
 func Add(configFile string, username, team, password string, force bool) error {
-	logging.SetupLogging("info")
+	logging.SetupLogging("warn")
 
 	username = strings.TrimSpace(username)
 	team = strings.TrimSpace(team)
@@ -71,14 +68,17 @@ func Add(configFile string, username, team, password string, force bool) error {
 		return fmt.Errorf("failed to store user: %w", err)
 	}
 
-	slog.Info("User added", "username", username, "team", team)
+	if exists {
+		fmt.Printf("Update user %s\n", username)
+	} else {
+		fmt.Printf("Created user %s\n", username)
+	}
 	return nil
 }
 
-// List prints all registered usernames and their team assignment. Password
-// hashes are never printed.
+// List prints all teams and their registered users.
 func List(configFile string) error {
-	logging.SetupLogging("info")
+	logging.SetupLogging("warn")
 
 	cfg, err := config.Load(configFile)
 	if err != nil {
@@ -110,16 +110,27 @@ func List(configFile string) error {
 		return users[i].Username < users[j].Username
 	})
 
+	teamUserMap := map[string][]string{}
+
 	for _, u := range users {
-		slog.Info(u.Username, "team", u.Team)
+		teamUserMap[u.Team] = append(teamUserMap[u.Team], u.Username)
+	}
+
+	for team, users := range teamUserMap {
+		fmt.Printf("Team %s\n", team)
+
+		for _, user := range users {
+			fmt.Printf("  %s\n", user)
+		}
 	}
 
 	return nil
 }
 
-// Remove deletes a username/password login account from the NATS "users" KV
-// bucket.
+// Remove deletes a user login account from the NATS "users" KV bucket.
 func Remove(configFile string, username string) error {
+	logging.SetupLogging("warn")
+
 	username = strings.TrimSpace(username)
 	if username == "" {
 		return fmt.Errorf("username must not be empty")
@@ -158,6 +169,6 @@ func Remove(configFile string, username string) error {
 		return fmt.Errorf("failed to remove user: %w", err)
 	}
 
-	slog.Info("User removed", "username", username)
+	fmt.Printf("Removed user %s\n", username)
 	return nil
 }

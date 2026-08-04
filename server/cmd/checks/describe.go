@@ -17,11 +17,6 @@ import (
 func Describe(configFile string, checkName string) error {
 	logging.SetupLogging("warn")
 
-	if checkName == "" {
-		fmt.Println("Check name required")
-		return nil
-	}
-
 	// Load configuration
 	cfg, err := config.Load(configFile)
 	if err != nil {

@@ -1,6 +1,7 @@
 package checks
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -14,7 +15,7 @@ func List(configFile string) error {
 }
 
 func listChecks(configFile string, deleteKeys bool) error {
-	logging.SetupLogging("info")
+	logging.SetupLogging("warn")
 
 	// Load configuration
 	cfg, err := config.Load(configFile)
@@ -53,10 +54,10 @@ func listChecks(configFile string, deleteKeys bool) error {
 
 			// Delete the check key if enabled
 			if deleteKeys {
-				slog.Info("Removing check", "name", checkName)
+				fmt.Printf("Removing check %s", checkName)
 				kv.Delete(key)
 			} else {
-				slog.Info(checkName)
+				fmt.Println(checkName)
 			}
 		}
 	}

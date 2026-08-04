@@ -14,7 +14,7 @@ import (
 )
 
 func Import(configFile string, directory string) error {
-	logging.SetupLogging("info")
+	logging.SetupLogging("warn")
 
 	// Load configuration
 	cfg, err := config.Load(configFile)
@@ -102,7 +102,7 @@ func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnectio
 		natsClient.NatsKV.Put(checkName, dst.Bytes())
 	}
 
-	slog.Info("All Checks written to NATS KV")
+	fmt.Println("All Checks written to NATS KV")
 
 	return nil
 }

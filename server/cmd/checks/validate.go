@@ -16,6 +16,7 @@ import (
 	natsnats "github.com/nats-io/nats.go"
 )
 
+// TODO have this struct centralized
 type Check struct {
 	Definition    json.RawMessage `json:"definition"`    // Parameters for the check
 	Description   string          `json:"description"`   // Additional information about the check
@@ -27,7 +28,7 @@ type Check struct {
 }
 
 func Validate(configFile string, checkName string) error {
-	logging.SetupLogging("info")
+	logging.SetupLogging("warn")
 
 	if checkName == "" {
 		fmt.Println("Check name required")
@@ -70,7 +71,7 @@ func Validate(configFile string, checkName string) error {
 	data := key.Value()
 
 	var check Check
-	if err := json.Unmarshal(data, &check); err != nil {
+	if err = json.Unmarshal(data, &check); err != nil {
 		return err
 	}
 
@@ -105,9 +106,9 @@ func Validate(configFile string, checkName string) error {
 
 	passed, msg := v.Validate()
 	if passed {
-		slog.Info("Check validation passed", "name", checkName)
+		fmt.Println("Check validation passed")
 	} else {
-		slog.Error("Check validation failed", "name", checkName, "error", msg)
+		return fmt.Errorf("Check validation failed, error: %s", msg)
 	}
 
 	return nil
