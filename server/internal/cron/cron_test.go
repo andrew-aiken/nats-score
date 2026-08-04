@@ -1,7 +1,6 @@
 package cron_test
 
 import (
-	"errors"
 	"slices"
 	"testing"
 	"time"
@@ -43,7 +42,7 @@ func TestAddCheckCron(t *testing.T) {
 		s, _ := gocron.NewScheduler()
 		defer func() { _ = s.Shutdown() }()
 
-		var checkFrequency int16 = 30000 // This is set high so it never triggers naturally
+		var checkFrequency uint16 = 30000 // This is set high so it never triggers naturally
 
 		opts := natsserver.DefaultTestOptions
 		opts.Port = -1
@@ -95,18 +94,6 @@ func TestAddCheckCron(t *testing.T) {
 
 		if s.RemoveJob(job.ID()) != nil {
 			t.Error("Failed to remove job from schedule")
-		}
-	})
-
-	t.Run("Negative frequency", func(t *testing.T) {
-		s, _ := gocron.NewScheduler()
-		defer func() { _ = s.Shutdown() }()
-
-		var checkFrequency int16 = -1
-
-		_, err := cron.AddCheckCron(s, &nats.Conn{}, checkName, checkFrequency)
-		if !errors.Is(err, gocron.ErrDurationJobIntervalNegative) {
-			t.Error("Error not properly returned")
 		}
 	})
 }
