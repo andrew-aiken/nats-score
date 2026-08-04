@@ -18,7 +18,7 @@ type LoginRequest struct {
 // dummyBcryptHash is a fixed valid bcrypt hash used to keep timing/behavior
 // identical between "unknown user" and "wrong password" cases, preventing
 // username enumeration.
-var dummyBcryptHash, _ = auth.HashPassword("dummy-password-for-timing-safety")
+var _, dummyBcryptHash = auth.HashPassword("dummy-password-for-timing-safety")
 
 const invalidCredentialsError = "Invalid username or password"
 

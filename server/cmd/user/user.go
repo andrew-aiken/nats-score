@@ -58,7 +58,7 @@ func Add(configFile string, username, team, password string, force bool) error {
 		return fmt.Errorf("user %q already exists (use --force to overwrite)", username)
 	}
 
-	hash, err := auth.HashPassword(password)
+	err, hash := auth.HashPassword(password)
 	if err != nil {
 		return err
 	}
