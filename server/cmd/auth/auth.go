@@ -2,23 +2,37 @@ package auth
 
 import (
 	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
+
+	"server/internal/config"
+	"server/internal/logging"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 )
 
-func Auth(standalone bool, teams int) error {
+func Auth(configFile string, standalone bool, teams int) error {
+	logging.SetupLogging("warn")
+
 	// Adds one to team list so index of 1 team include team 0
 	offsetTeams := teams + 1
 
+	// Load configuration
+	cfg, err := config.Load(configFile)
+	if err != nil {
+		slog.Error("Failed to load config")
+		return err
+	}
+
 	for team := range offsetTeams {
+		// If its standalone only one set of credentials is needed so it returns one wildcard credential
 		if standalone {
-			return createAgentCredentials("*")
+			return createAgentCredentials(cfg, "*")
 		}
 
-		if err := createAgentCredentials(strconv.Itoa(team)); err != nil {
+		if err := createAgentCredentials(cfg, strconv.Itoa(team)); err != nil {
 			return err
 		}
 	}
@@ -26,12 +40,9 @@ func Auth(standalone bool, teams int) error {
 	return nil
 }
 
-func createAgentCredentials(streamIndex string) error {
-	accountPubKey := "ACAZUY774GKV27BNGEAPA6RFO2OMMLVLRG5TTZLAAJZDR5ZRORV6QCJ7"
-	accountSeed := "SAAJAURE5C35ZJQUUQSSVKYZP5V5L3A6RFPMMNEFRLPDBP2GCMID5TZUXA"
-
+func createAgentCredentials(conf config.Config, streamIndex string) error {
 	// Validate the account seed
-	_, err := nkeys.FromSeed([]byte(accountSeed))
+	_, err := nkeys.FromSeed([]byte(conf.AccountSigningSeed))
 	if err != nil {
 		return fmt.Errorf("invalid account seed: %w", err)
 	}
@@ -57,7 +68,7 @@ func createAgentCredentials(streamIndex string) error {
 
 	userClaim.IssuedAt = time.Now().Unix()
 	userClaim.Expires = time.Now().Add(24 * time.Hour).Unix()
-	userClaim.IssuerAccount = accountPubKey
+	userClaim.IssuerAccount = conf.AccountPublicKey
 
 	// Apply permissions
 	userClaim.Permissions.Pub.Allow.Add("results." + streamIndex + ".>")
@@ -70,7 +81,7 @@ func createAgentCredentials(streamIndex string) error {
 	userClaim.Permissions.Sub.Allow.Add("_INBOX." + streamIndex + ".>")
 
 	// Sign with account key
-	accountKP, err := nkeys.FromSeed([]byte(accountSeed))
+	accountKP, err := nkeys.FromSeed([]byte(conf.AccountSigningSeed))
 	if err != nil {
 		return fmt.Errorf("failed to create account keypair: %w", err)
 	}

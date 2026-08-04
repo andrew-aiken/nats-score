@@ -141,8 +141,8 @@ func main() {
 						Usage: "Run the scoring controller",
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							return server.Server(server.ServerArgs{
-								LogLevel:       cmd.String("log-level"),
 								ConfigFilePath: cmd.String("config"),
+								LogLevel:       cmd.String("log-level"),
 							})
 						},
 						Flags: []cli.Flag{
@@ -247,7 +247,7 @@ func main() {
 										return fmt.Errorf("Count must be a positive number")
 									}
 
-									return auth.Auth(cmd.Bool("standalone"), cmd.Int("count"))
+									return auth.Auth(cmd.String("config"), cmd.Bool("standalone"), cmd.Int("count"))
 								},
 							},
 							{

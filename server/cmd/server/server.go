@@ -16,6 +16,7 @@ import (
 	"server/internal/auth"
 	"server/internal/config"
 	"server/internal/cron"
+	"server/internal/settings"
 	"server/internal/handlers"
 	"server/internal/logging"
 	"server/internal/middleware"
@@ -25,13 +26,6 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	natsnats "github.com/nats-io/nats.go"
 )
-
-type check struct {
-	Frequency   int16  `json:"frequency"`   // How often the check runs in seconds
-	Type        string `json:"type"`        // Type of check
-	Description string `json:"description"` // Additional information about the check
-	ScoreWeight int8   `json:"scoreWeight"` // How many points to assign the check
-}
 
 type ServerArgs struct {
 	LogLevel       string
@@ -150,7 +144,7 @@ func Server(args ServerArgs) error {
 
 	// Shutdown HTTP server
 	if err := server.Shutdown(ctx); err != nil {
-		slog.Error("error shutting down http server")
+		slog.Error("Shutting down http server")
 		return err
 	}
 
@@ -174,7 +168,8 @@ func monitorChecks(kvWatcher natsnats.KeyWatcher, cronScheduler gocron.Scheduler
 		// Filter based on event type
 		switch entry.Operation().String() {
 		case "KeyValuePutOp":
-			var check check
+			// var check check
+			var check settings.Check
 
 			if err := json.Unmarshal(entry.Value(), &check); err != nil {
 				slog.Warn("Failed to unmarshal settings", entry.Key(), err)

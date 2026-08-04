@@ -9,13 +9,23 @@ import (
 	"github.com/andrew-aiken/checks/helper"
 )
 
+
+// Check is the values for a check json object
 type Check struct {
-	Name          string   `json:"name"`
-	Definition    any      `json:"definition"`
-	Description   string   `json:"description"`
+	// Parameters for the check
+	Definition any `json:"definition"`
+	// Additional information about the check
+	Description string `json:"description"`
+	// How often the check runs in seconds
+	Frequency uint16 `json:"frequency"`
+	// Fields in the definition that can be overwritten
 	MutableFields []string `json:"mutableFields"`
-	ScoreWeight   uint8    `json:"scoreWeight"`
-	Type          string   `json:"type"`
+	// Name of the check
+	Name string `json:"name"`
+	// How many points to assign the check
+	ScoreWeight uint8 `json:"scoreWeight"`
+	// Type of check
+	Type string `json:"type"`
 }
 
 func (c *Check) UnmarshalJSON(data []byte) error {

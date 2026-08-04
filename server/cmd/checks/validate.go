@@ -16,17 +16,26 @@ import (
 	natsnats "github.com/nats-io/nats.go"
 )
 
-// TODO have this struct centralized
-type Check struct {
-	Definition    json.RawMessage `json:"definition"`    // Parameters for the check
-	Description   string          `json:"description"`   // Additional information about the check
-	Frequency     uint16          `json:"frequency"`     // How often the check runs in seconds
-	MutableFields []string        `json:"mutableFields"` // Fields in the definition that can be overwritten
-	Name          string          `json:"name"`          // Name of the check
-	ScoreWeight   uint8           `json:"scoreWeight"`   // How many points to assign the check
-	Type          string          `json:"type"`          // Type of check
+// Check is a standardized form of input types for consumers
+// TODO: This in theory could be using the settings.Check but would require getting the check type and then unmarshal the definition
+type check struct {
+	// Parameters for the check
+	Definition json.RawMessage `json:"definition"`
+	// Additional information about the check
+	Description string `json:"description"`
+	// How often the check runs in seconds
+	Frequency uint16 `json:"frequency"`
+	// Fields in the definition that can be overwritten
+	MutableFields []string `json:"mutableFields"`
+	// Name of the check
+	Name string `json:"name"`
+	// How many points to assign the check
+	ScoreWeight uint8 `json:"scoreWeight"`
+	// Type of check
+	Type string `json:"type"`
 }
 
+// Validate checks if a check is in a valid structure
 func Validate(configFile string, checkName string) error {
 	logging.SetupLogging("warn")
 
@@ -70,7 +79,7 @@ func Validate(configFile string, checkName string) error {
 
 	data := key.Value()
 
-	var check Check
+	var check check
 	if err = json.Unmarshal(data, &check); err != nil {
 		return err
 	}
@@ -114,7 +123,7 @@ func Validate(configFile string, checkName string) error {
 	return nil
 }
 
-func validateCheck(check Check) error {
+func validateCheck(check check) error {
 	if check.Frequency == 0 {
 		slog.Warn("Frequency undefined, will default to 60 seconds")
 	}
