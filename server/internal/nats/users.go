@@ -13,23 +13,23 @@ import (
 // GetUser retrieves a user record by username from the users KV bucket.
 // Returns (nil, nil) if the user does not exist so callers can distinguish
 // "not found" from a real error.
-func GetUser(natsKV nats.KeyValue, username string) (*auth.User, error) {
+func GetUser(natsKV nats.KeyValue, username string) (auth.User, error) {
+	var user auth.User
 	key := "user." + username
 
 	entry, err := natsKV.Get(key)
 	if err != nil {
 		if err == nats.ErrKeyNotFound {
-			return nil, nil
+			return user, nil
 		}
-		return nil, fmt.Errorf("failed to get '%s' key: %w", key, err)
+		return user, fmt.Errorf("failed to get '%s' key: %w", key, err)
 	}
 
-	var user auth.User
 	if err := json.Unmarshal(entry.Value(), &user); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user: %w", err)
+		return user, fmt.Errorf("failed to unmarshal user: %w", err)
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 // PutUser writes (or overwrites) a user record in the users KV bucket.
@@ -93,5 +93,5 @@ func UserExists(natsKV nats.KeyValue, username string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return user != nil, nil
+	return user != auth.User{}, nil
 }

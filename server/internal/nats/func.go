@@ -41,8 +41,7 @@ func GetChecks(natsKV nats.KeyValue) (map[string]settings.Check, error) {
 	return checks, nil
 }
 
-// GetMutableFields returns a map of check names to their mutable fields
-// Only includes checks that have mutableFields defined
+// GetMutableFields returns checks that have mutableFields defined with a list of their mutable fields
 func GetMutableFields(natsKV nats.KeyValue) (map[string][]string, error) {
 	checks, err := GetChecks(natsKV)
 	if err != nil {
@@ -60,7 +59,6 @@ func GetMutableFields(natsKV nats.KeyValue) (map[string][]string, error) {
 }
 
 // GetTeamSettings retrieves team-specific settings from the KV bucket
-// The key format is "{teamNumber}.settings"
 func GetTeamSettings(natsKV nats.KeyValue, teamNumber string) (map[string]map[string]string, error) {
 	key := fmt.Sprintf("%s.settings", teamNumber)
 
@@ -82,7 +80,6 @@ func GetTeamSettings(natsKV nats.KeyValue, teamNumber string) (map[string]map[st
 }
 
 // PutTeamSettings writes team-specific settings to the KV bucket
-// The key format is "{teamNumber}.settings"
 func PutTeamSettings(natsKV nats.KeyValue, teamNumber string, settings map[string]map[string]string) error {
 	key := fmt.Sprintf("%s.settings", teamNumber)
 

@@ -62,12 +62,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// requests take a comparable code path/timing and return identical
 	// responses (no username enumeration).
 	hashToCompare := dummyBcryptHash
-	if user != nil {
+	if user != (auth.User{}) {
 		hashToCompare = user.PasswordHash
 	}
 	pwErr := auth.VerifyPassword(hashToCompare, req.Password)
 
-	if user == nil || pwErr != nil {
+	if user == (auth.User{}) || pwErr != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]string{"error": invalidCredentialsError})
 		return
