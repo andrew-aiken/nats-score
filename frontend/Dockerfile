@@ -15,6 +15,7 @@ COPY /src ./src
 
 # Development build
 FROM base AS development
+USER node:node
 CMD [ "npm", "run", "dev" ]
 
 
