@@ -3,7 +3,6 @@ package nats_test
 import (
 	"context"
 	"testing"
-	"time"
 
 	"server/internal/nats"
 	"server/internal/settings"
