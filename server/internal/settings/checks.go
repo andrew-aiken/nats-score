@@ -9,7 +9,6 @@ import (
 	"github.com/andrew-aiken/checks/helper"
 )
 
-
 // Check is the values for a check json object
 type Check struct {
 	// Parameters for the check

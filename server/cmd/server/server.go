@@ -16,12 +16,12 @@ import (
 	"server/internal/auth"
 	"server/internal/config"
 	"server/internal/cron"
-	"server/internal/settings"
 	"server/internal/handlers"
 	"server/internal/logging"
 	"server/internal/middleware"
 	"server/internal/nats"
 	"server/internal/routes"
+	"server/internal/settings"
 
 	"github.com/go-co-op/gocron/v2"
 	natsnats "github.com/nats-io/nats.go"

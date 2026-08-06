@@ -9,9 +9,9 @@ import (
 // User is the persisted record for a user login account
 type User struct {
 	// Username
-	Username     string `json:"username"`
+	Username string `json:"username"`
 	// "observer", or a team number string ("0", "1", ...).
-	Team         string `json:"team"`
+	Team string `json:"team"`
 	// bcrypt hash of the user's password
 	PasswordHash string `json:"password_hash"`
 }
