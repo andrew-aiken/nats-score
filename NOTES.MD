@@ -98,4 +98,6 @@ go test -coverprofile=coverage.out ./pkg/... && go tool cover -html=coverage.out
 
 
 # Other Scoring Projects
-https://github.com/Scorify/Scorify
+- https://github.com/Scorify/Scorify
+- https://github.com/dbaseqp/Quotient/
+- https://github.com/scorestack/scorestack

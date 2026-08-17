@@ -12,3 +12,4 @@
 - [ ] User custom setting changes triggers server checks to reload
 - Message when 0 checks returned
 - Handlers and routes combined
+- Load default values into team settings

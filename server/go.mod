@@ -2,7 +2,7 @@ module server
 
 go 1.26.5
 
-// replace github.com/andrew-aiken/checks => ../../checks
+replace github.com/andrew-aiken/checks => ../../checks
 
 require (
 	github.com/andrew-aiken/checks v0.0.0
