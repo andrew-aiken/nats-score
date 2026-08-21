@@ -1,3 +1,4 @@
 nats/nsc/*
 agent.creds
 coverage.out
+checks

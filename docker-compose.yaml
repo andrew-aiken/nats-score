@@ -1,7 +1,7 @@
 services:
   nats:
     image: nats:latest
-    container_name: nats-score-server
+    container_name: nats
     ports:
       - "4222:4222"
       - "8080:8080"
@@ -10,14 +10,35 @@ services:
       - ./nats/nsc/score/score.jwt:/etc/nats/operator.jwt:ro
     command: ["-c", "/etc/nats/nats-server.conf"]
 
-  frontend:
+  setup:
+    depends_on:
+      - nats
     build:
-      context: ./frontend
-      target: development
-    ports:
-      - "5173:5173"
+      context: ./
+      target: server
+    restart: no
     volumes:
-      - ./frontend/src:/app/src
-      - ./frontend/public:/app/public
-      - ./frontend/index.html:/app/index.html
-      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./config.json:/opt/config.json:ro
+      - ./startup.sh:/opt/startup.sh
+      - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
+      - ./checks:/checks:ro
+    entrypoint:
+      - bash
+      - /opt/startup.sh
+
+  server:
+    container_name: server
+    depends_on:
+      - setup
+    build:
+      context: ./
+    volumes:
+      - ./config.json:/opt/config.json:ro
+      - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
+    command:
+      - server
+      - --config
+      - /opt/config.json
+      - start
+    ports:
+      - "3000:3000"
