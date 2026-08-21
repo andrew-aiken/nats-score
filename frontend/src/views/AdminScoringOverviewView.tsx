@@ -29,12 +29,7 @@ export default function AdminScoringOverviewView() {
   const clearMessages = useNatsStore(s => s.clearMessages)
 
   useEffect(() => {
-    const run = async () => {
-      if (status === 'disconnected') {
-        await connect()
-      }
-    }
-    void run()
+    void connect()
   }, [])
 
   useEffect(() => {

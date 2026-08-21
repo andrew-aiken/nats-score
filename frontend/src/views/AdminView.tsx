@@ -56,12 +56,7 @@ export default function AdminView() {
 
   // Connect to NATS and subscribe to all teams' results
   useEffect(() => {
-    const connectAndSubscribe = async () => {
-      if (status === 'disconnected') {
-        await connect()
-      }
-    }
-    connectAndSubscribe()
+    connect()
   }, [])
 
   // Subscribe to all teams' results once connected

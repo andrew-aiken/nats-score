@@ -160,10 +160,7 @@ export default function HealthCheckView() {
   }
 
   useEffect(() => {
-    // Connect if not already connected
-    if (status === 'disconnected') {
-      connectToNats()
-    }
+    connectToNats()
   }, [])
 
   return (

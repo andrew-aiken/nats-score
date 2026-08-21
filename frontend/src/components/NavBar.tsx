@@ -1,10 +1,12 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { clearCredentials, getCredentials, getTeamIdFromJwt, isAdmin, isObserver } from '../services/auth'
+import { useNatsStore } from '../services/nats'
 import './NavBar.css'
 
 export default function NavBar() {
   const location = useLocation()
   const navigate = useNavigate()
+  const disconnect = useNatsStore(state => state.disconnect)
 
   // Get team ID from JWT
   const creds = getCredentials()
@@ -12,7 +14,8 @@ export default function NavBar() {
   const userIsAdmin = isAdmin()
   const userIsObserver = isObserver()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await disconnect()
     clearCredentials()
     navigate('/login', { replace: true })
   }
