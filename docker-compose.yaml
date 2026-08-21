@@ -19,9 +19,10 @@ services:
     restart: no
     volumes:
       - ./config.json:/opt/config.json:ro
-      - ./startup.sh:/opt/startup.sh
+      - ./startup.sh:/opt/startup.sh:ro
       - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
       - ./checks:/checks:ro
+      - shared:/shared
     entrypoint:
       - bash
       - /opt/startup.sh
@@ -29,16 +30,36 @@ services:
   server:
     container_name: server
     depends_on:
-      - setup
+      setup:
+        condition: service_completed_successfully
+    build:
+      context: ./
+    working_dir: /
+    volumes:
+      - ./config.json:/config.json:ro
+      - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
+    ports:
+      - "3000:3000"
+
+  agent:
+    container_name: agent
+    depends_on:
+      setup:
+        condition: service_completed_successfully
     build:
       context: ./
     volumes:
       - ./config.json:/opt/config.json:ro
-      - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
+      - shared:/shared:ro
     command:
-      - server
-      - --config
-      - /opt/config.json
-      - start
-    ports:
-      - "3000:3000"
+      - agent
+      - --team
+      - "0"
+      - --nats-address
+      - nats://localhost:4222
+      - --nats-creds
+      - /shared/agent.creds
+    network_mode: host
+
+volumes:
+  shared:

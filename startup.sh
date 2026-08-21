@@ -11,3 +11,5 @@
 /go/bin/score server --config /opt/config.json user add --username observer --team observer --password observer --force
 
 /go/bin/score server --config /opt/config.json checks import --directory /checks/
+
+/go/bin/score server --config /opt/config.json nats auth --standalone > /shared/agent.creds
