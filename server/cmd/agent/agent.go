@@ -109,11 +109,11 @@ func ParseTeams(s string) ([]uint16, error) {
 		}
 
 		if lo, hi, found := strings.Cut(part, "-"); found {
-			loN, err := strconv.ParseInt(strings.TrimSpace(lo), 10, 16)
+			loN, err := strconv.ParseUint(strings.TrimSpace(lo), 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("invalid range start %q: %w", lo, err)
 			}
-			hiN, err := strconv.ParseInt(strings.TrimSpace(hi), 10, 16)
+			hiN, err := strconv.ParseUint(strings.TrimSpace(hi), 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("invalid range end %q: %w", hi, err)
 			}
@@ -128,7 +128,7 @@ func ParseTeams(s string) ([]uint16, error) {
 				}
 			}
 		} else {
-			n, err := strconv.ParseInt(part, 10, 16)
+			n, err := strconv.ParseUint(part, 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("invalid team number %q: %w", part, err)
 			}
