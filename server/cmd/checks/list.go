@@ -54,7 +54,7 @@ func listChecks(configFile string, deleteKeys bool) error {
 
 			// Delete the check key if enabled
 			if deleteKeys {
-				fmt.Printf("Removing check %s", checkName)
+				fmt.Printf("Removing check %s\n", checkName)
 				kv.Delete(key)
 			} else {
 				fmt.Println(checkName)

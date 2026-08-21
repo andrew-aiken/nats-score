@@ -175,16 +175,12 @@ func monitorChecks(kvWatcher natsnats.KeyWatcher, cronScheduler gocron.Scheduler
 				continue
 			}
 
-			// Default check frequency is 60 seconds
-			if check.Frequency == 0 {
-				check.Frequency = 60
-			}
-
 			_, err := cron.AddCheckCron(cronScheduler, natsConnection, checkName, check.Frequency)
 			if err != nil {
 				slog.Warn("Failed to add check to cron", "error", err)
 				continue
 			}
+
 			slog.Info("Added check to cron", "name", checkName)
 
 		case "KeyValuePurgeOp":

@@ -16,13 +16,13 @@ type Check struct {
 	// Additional information about the check
 	Description string `json:"description"`
 	// How often the check runs in seconds
-	Frequency uint16 `json:"frequency"`
-	// Fields in the definition that can be overwritten
-	MutableFields []string `json:"mutableFields"`
+	Frequency uint16 `json:"frequency" default:"60"`
 	// Name of the check
 	Name string `json:"name"`
+	// Fields in the definition that can be overwritten
+	MutableFields []string `json:"mutableFields"`
 	// How many points to assign the check
-	ScoreWeight uint8 `json:"scoreWeight"`
+	ScoreWeight uint8 `json:"scoreWeight" default:"1"`
 	// Type of check
 	Type string `json:"type"`
 }
@@ -33,18 +33,22 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 		Name          string          `json:"name"`
 		Definition    json.RawMessage `json:"definition"`
 		Description   string          `json:"description"`
+		Frequency     uint16          `json:"frequency" default:"60"`
 		MutableFields []string        `json:"mutableFields"`
-		ScoreWeight   uint8           `json:"scoreWeight"`
+		ScoreWeight   uint8           `json:"scoreWeight" default:"1"`
 		Type          string          `json:"type"`
 	}
 
 	var raw ChecksRaw
+	defaults.Set(&raw)
+
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
 	c.Name = raw.Name
 	c.Description = raw.Description
+	c.Frequency = raw.Frequency
 	c.Type = raw.Type
 	c.MutableFields = raw.MutableFields
 	c.ScoreWeight = raw.ScoreWeight
