@@ -97,9 +97,8 @@ func Server(args ServerArgs) error {
 	})
 
 	authMiddleware := middleware.NewAuthMiddleware(natsAuthService)
-	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.FrontendURL, "http://localhost:5173"})
 
-	mux := routes.SetupRoutes(h, *corsMiddleware, *authMiddleware)
+	mux := routes.SetupRoutes(h, *authMiddleware)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:" + strconv.Itoa(cfg.HttpPort),

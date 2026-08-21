@@ -7,7 +7,6 @@ import (
 
 // Config holds the application configuration
 type Config struct {
-	FrontendURL        string `json:"frontend_url"`
 	AccountSigningSeed string `json:"account_signing_seed"`
 	AccountPublicKey   string `json:"account_public_key"`
 	NATSUrl            string `json:"nats_url"`
