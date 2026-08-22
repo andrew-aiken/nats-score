@@ -72,7 +72,7 @@ func Validate(configFile string, checkName string) error {
 
 	key, err := kv.Get(checkKey)
 	if err == natsnats.ErrKeyNotFound {
-		return errors.New("Check does not exist")
+		return errors.New("check does not exist")
 	} else if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func Validate(configFile string, checkName string) error {
 
 	// Skip unmarshalling if definition is empty or null
 	if len(check.Definition) == 0 || string(check.Definition) == "null" {
-		return fmt.Errorf("Definition not defined")
+		return fmt.Errorf("definition not defined")
 	}
 
 	checkDefinition, err := helper.NewDefinition(check.Type)
@@ -102,7 +102,10 @@ func Validate(configFile string, checkName string) error {
 		return fmt.Errorf("failed to unmarshal definition type %q: %w", check.Type, err)
 	}
 
-	defaults.Set(checkDefinition)
+	err = defaults.Set(checkDefinition)
+	if err != nil {
+		return err
+	}
 
 	type Validator interface {
 		Validate() (bool, string)
@@ -117,7 +120,7 @@ func Validate(configFile string, checkName string) error {
 	if passed {
 		fmt.Println("Check validation passed")
 	} else {
-		return fmt.Errorf("Check validation failed, error: %s", msg)
+		return fmt.Errorf("check validation failed, error: %s", msg)
 	}
 
 	return nil
@@ -133,11 +136,11 @@ func validateCheck(check check) error {
 	}
 
 	if check.ScoreWeight == 0 {
-		return fmt.Errorf("The checks weight is not defined.")
+		return fmt.Errorf("checks weight is not defined")
 	}
 
 	if check.Type == "" {
-		return fmt.Errorf("Check type not defined")
+		return fmt.Errorf("check type not defined")
 	}
 	return nil
 }

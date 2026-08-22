@@ -12,7 +12,7 @@ import (
 func TestPasswordHash(t *testing.T) {
 	plaintext := "gcp9dvr3xrw"
 
-	err, hash := auth.HashPassword(plaintext)
+	hash, err := auth.HashPassword(plaintext)
 	if err != nil {
 		t.Fatal("Failed to hash password")
 	}
@@ -27,7 +27,7 @@ func TestFailVerify(t *testing.T) {
 	plaintext := "goodValue"
 	badPlaintext := "incorrect"
 
-	err, hash := auth.HashPassword(plaintext)
+	hash, err := auth.HashPassword(plaintext)
 	if err != nil {
 		t.Fatal("Failed to hash password")
 	}

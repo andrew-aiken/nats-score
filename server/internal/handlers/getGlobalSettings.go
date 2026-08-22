@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 	"server/internal/nats"
@@ -13,14 +12,14 @@ func (h *Handler) GetChecks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
 	if h.NatsKVClient == nil {
 		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
+		encodeJson(w, map[string]string{"error": "NATS KV not available"})
 		return
 	}
 
@@ -29,9 +28,9 @@ func (h *Handler) GetChecks(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("Failed to get checks", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve checks"})
+		encodeJson(w, map[string]string{"error": "Failed to retrieve checks"})
 		return
 	}
 
-	json.NewEncoder(w).Encode(checks)
+	encodeJson(w, checks)
 }

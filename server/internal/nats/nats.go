@@ -129,7 +129,7 @@ func (n *NatsConnection) SetupKVWatcher(keys []string) error {
 	n.NatsKVWatcher, err = n.NatsKV.WatchFiltered(keys)
 
 	if err != nil {
-		return fmt.Errorf("Failed to start KV watcher: %v", err)
+		return fmt.Errorf("failed to start KV watcher: %v", err)
 	}
 
 	return nil
@@ -139,11 +139,11 @@ func (n *NatsConnection) SetupKVWatcher(keys []string) error {
 func (n *NatsConnection) SubjectSubscribe(ctx context.Context, settings *settings.Settings) error {
 	var err error
 
-	var scoreStream string = "events.score.>"
+	var scoreStream = "events.score.>"
 
 	n.natsStreamSub, err = n.NatsConn.Subscribe(scoreStream, score.HandleScoreEvent(ctx, settings, n.JetStreamConn))
 	if err != nil {
-		return fmt.Errorf("Failed to subscribe to stream %v", err)
+		return fmt.Errorf("failed to subscribe to stream %v", err)
 	}
 
 	slog.Debug(fmt.Sprintf("Subscribed to events on '%s'", scoreStream))
@@ -155,13 +155,17 @@ func (n *NatsConnection) SubjectSubscribe(ctx context.Context, settings *setting
 func (n *NatsConnection) Close() {
 	// Close KV watcher
 	if n.NatsKVWatcher != nil {
-		n.NatsKVWatcher.Stop()
+		if err := n.NatsKVWatcher.Stop(); err != nil {
+			slog.Error("Failed to stop key/value watcher", "error", err.Error())
+		}
 		n.NatsKVWatcher = nil
 	}
 
 	// Close stream subscription
 	if n.natsStreamSub != nil {
-		n.natsStreamSub.Unsubscribe()
+		if err := n.natsStreamSub.Unsubscribe(); err != nil {
+			slog.Error("Failed to unsubscribe from nats stream", "error", err.Error())
+		}
 		n.natsStreamSub = nil
 	}
 

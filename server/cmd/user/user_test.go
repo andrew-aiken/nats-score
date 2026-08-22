@@ -27,11 +27,14 @@ func TestUserLifeCycle(t *testing.T) {
 		NATSCredsFile: "",
 	})
 
-	initialize.Initialize(configFile)
+	err := initialize.Initialize(configFile)
+	if err != nil {
+		t.Error("Failed to initialize nats setup")
+	}
 
 	testUser := "testUser"
 
-	err := user.Add(configFile, testUser, "admin", "testPassword", false)
+	err = user.Add(configFile, testUser, "admin", "testPassword", false)
 	if err != nil {
 		t.Error("Failed to create user")
 	}

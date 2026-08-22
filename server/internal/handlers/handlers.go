@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"sort"
@@ -33,14 +34,14 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]bool{"valid": false})
+		encodeJson(w, map[string]bool{"valid": false})
 		return
 	}
 
@@ -48,7 +49,7 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(authHeader, " ")
 	if len(parts) != 2 || parts[0] != "Bearer" {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]bool{"valid": false})
+		encodeJson(w, map[string]bool{"valid": false})
 		return
 	}
 
@@ -56,11 +57,11 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	_, err := h.NatsAuthService.VerifyJWT(tokenString)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]bool{"valid": false})
+		encodeJson(w, map[string]bool{"valid": false})
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]bool{"valid": true})
+	encodeJson(w, map[string]bool{"valid": true})
 }
 
 // GetMutableFields returns a map of check names to their mutable fields
@@ -69,14 +70,14 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
 	if h.NatsKVClient == nil {
 		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
+		encodeJson(w, map[string]string{"error": "NATS KV not available"})
 		return
 	}
 
@@ -84,11 +85,11 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("Failed to get mutable fields", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve mutable fields"})
+		encodeJson(w, map[string]string{"error": "Failed to retrieve mutable fields"})
 		return
 	}
 
-	json.NewEncoder(w).Encode(mutableFields)
+	encodeJson(w, mutableFields)
 }
 
 // TeamSettings handles GET and PUT for team-specific settings in NATS KV
@@ -99,7 +100,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 	if h.NatsKVClient == nil {
 		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
+		encodeJson(w, map[string]string{"error": "NATS KV not available"})
 		return
 	}
 
@@ -107,7 +108,7 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 	claims := middleware.GetClaimsFromContext(r.Context())
 	if claims == nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Unauthorized"})
+		encodeJson(w, map[string]string{"error": "Unauthorized"})
 		return
 	}
 
@@ -120,17 +121,17 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			slog.Warn("Failed to get team settings", "team", teamNumber, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve settings"})
+			encodeJson(w, map[string]string{"error": "Failed to retrieve settings"})
 			return
 		}
-		json.NewEncoder(w).Encode(settings)
+		encodeJson(w, settings)
 
 	case http.MethodPut:
 		// Parse request body
 		var settings map[string]map[string]string
 		if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+			encodeJson(w, map[string]string{"error": "Invalid request body"})
 			return
 		}
 
@@ -138,19 +139,19 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 		if err := nats.PutTeamSettings(h.NatsKVClient, teamNumber, settings); err != nil {
 			slog.Warn("Failed to update team settings", "team", teamNumber, "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]string{"error": "Failed to save settings"})
+			encodeJson(w, map[string]string{"error": "Failed to save settings"})
 			return
 		}
 
 		slog.Info("Team settings updated", "team", teamNumber, "user", claims.UserID)
-		json.NewEncoder(w).Encode(map[string]any{
+		encodeJson(w, map[string]any{
 			"success": true,
 			"team":    teamNumber,
 		})
 
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 	}
 }
 
@@ -159,14 +160,14 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
 	if h.NatsKVClient == nil {
 		slog.Warn("NATS KV client not initialized")
 		w.WriteHeader(http.StatusServiceUnavailable)
-		json.NewEncoder(w).Encode(map[string]string{"error": "NATS KV not available"})
+		encodeJson(w, map[string]string{"error": "NATS KV not available"})
 		return
 	}
 
@@ -174,7 +175,7 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("Failed to get checks", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to retrieve checks"})
+		encodeJson(w, map[string]string{"error": "Failed to retrieve checks"})
 		return
 	}
 
@@ -184,5 +185,11 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Strings(names)
 
-	json.NewEncoder(w).Encode(names)
+	encodeJson(w, names)
+}
+
+func encodeJson(writer io.Writer, a any) {
+	if err := json.NewEncoder(writer).Encode(a); err != nil {
+		slog.Error("Failed to encode handler headers", "error", err.Error())
+	}
 }

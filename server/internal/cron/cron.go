@@ -14,7 +14,10 @@ func AddCheckCron(cron gocron.Scheduler, natsConnection *nats.Conn, checkName st
 		gocron.NewTask(
 			func(checkName string) {
 				slog.Debug("Published check trigger", "check", checkName)
-				natsConnection.Publish("events.score."+checkName, []byte{})
+				err := natsConnection.Publish("events.score."+checkName, []byte{})
+				if err != nil {
+					slog.Error("Failed to publish check trigger", "error", err.Error())
+				}
 			},
 			checkName,
 		),

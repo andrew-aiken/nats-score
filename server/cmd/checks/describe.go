@@ -45,7 +45,7 @@ func Describe(configFile string, checkName string) error {
 
 	key, err := kv.Get(checkKey)
 	if err == natsnats.ErrKeyNotFound {
-		return errors.New("Check does not exist")
+		return errors.New("check does not exist")
 	} else if err != nil {
 		return err
 	}

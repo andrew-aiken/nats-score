@@ -1,4 +1,5 @@
 nsc
 agent.creds
+config.json
 coverage.out
 /checks
