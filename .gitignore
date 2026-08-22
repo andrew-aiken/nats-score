@@ -1,4 +1,4 @@
-nats/nsc/*
+nsc
 agent.creds
 coverage.out
 /checks

@@ -6,9 +6,9 @@ services:
       - "4222:4222"
       - "8080:8080"
     volumes:
-      - ./nats/nats-server.conf:/etc/nats/nats-server.conf:ro
-      - ./nats/nsc/score/score.jwt:/etc/nats/operator.jwt:ro
-    command: ["-c", "/etc/nats/nats-server.conf"]
+      - ./nsc/nats.conf:/etc/nats/server.conf:ro
+      - ./nsc/score/score.jwt:/etc/nats/operator.jwt:ro
+    command: ["-c", "/etc/nats/server.conf"]
 
   setup:
     depends_on:
@@ -18,10 +18,10 @@ services:
       target: server
     restart: no
     volumes:
-      - ./config.json:/opt/config.json:ro
-      - ./startup.sh:/opt/startup.sh:ro
-      - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
-      - ./checks:/checks:ro
+      - ./scripts/startup.sh:/opt/startup.sh:ro
+      - ./nsc/config.json:/opt/config.json:ro
+      - ./nsc/creds/score/score/server.creds:/server.creds:ro
+      - ./example:/checks:ro
       - shared:/shared
     entrypoint:
       - bash
@@ -36,8 +36,8 @@ services:
       context: ./
     working_dir: /
     volumes:
-      - ./config.json:/config.json:ro
-      - /Users/aaiken/ccdc/nats-score/nats/nsc/creds/score/score/server.creds:/server.creds:ro
+      - ./nsc/config.json:/config.json:ro
+      - ./nsc/creds/score/score/server.creds:/server.creds:ro
     ports:
       - "3000:3000"
 
@@ -49,7 +49,7 @@ services:
     build:
       context: ./
     volumes:
-      - ./config.json:/opt/config.json:ro
+      - ./nsc/config.json:/opt/config.json:ro
       - shared:/shared:ro
     command:
       - agent

@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-KEY_DIR=~/ccdc/nats-score/nats/nsc
+KEY_DIR=/nsc
 
 nsc --all-dirs $KEY_DIR add operator -n score --sys --generate-signing-key
 
@@ -30,8 +30,21 @@ nsc --all-dirs $KEY_DIR add user --account score --name admin -K ${ACCOUNT_SIGNI
 
 nsc --all-dirs $KEY_DIR add user --account score --name server -K ${ACCOUNT_SIGNING_KEY}
 
+cp /scripts/nats.conf.tmpl /nsc/nats.conf
 
-echo System account id $SYS_ID
+SYS_JWT=$(nsc --all-dirs $KEY_DIR describe account SYS --raw | tr -d '\n')
 
-echo Account public key $ACCOUNT_PUBLIC_KEY
-echo Account signing key $ACCOUNT_SIGNING_KEY
+SCORE_JWT=$(nsc --all-dirs $KEY_DIR describe account score --raw | tr -d '\n')
+
+# Fill out the nats server configuration
+sed -i "s/SYS_ACCOUNT_ID/$SYS_ID/" /nsc/nats.conf
+sed -i "s/SYS_JWT/$SYS_JWT/" /nsc/nats.conf
+
+sed -i "s/SCORE_ACCOUNT_ID/$ACCOUNT_PUBLIC_KEY/" /nsc/nats.conf
+sed -i "s/SCORE_JWT/$SCORE_JWT/" /nsc/nats.conf
+
+# Fill out the score config
+cp /scripts/config.json.tmpl /nsc/config.json
+
+sed -i "s/ACCOUNT_PUBLIC_KEY/$ACCOUNT_PUBLIC_KEY/" /nsc/config.json
+sed -i "s/ACCOUNT_SIGNING_SEED/$ACCOUNT_SIGNING_KEY/" /nsc/config.json

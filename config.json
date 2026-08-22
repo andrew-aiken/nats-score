@@ -1,6 +1,0 @@
-{
-  "account_public_key": "ACAZUY774GKV27BNGEAPA6RFO2OMMLVLRG5TTZLAAJZDR5ZRORV6QCJ7",
-  "account_signing_seed": "SAAJAURE5C35ZJQUUQSSVKYZP5V5L3A6RFPMMNEFRLPDBP2GCMID5TZUXA",
-  "nats_url": "nats://nats:4222",
-  "nats_creds_file": "/server.creds"
-}
