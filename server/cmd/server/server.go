@@ -48,7 +48,7 @@ func Server(args ServerArgs) error {
 		slog.Error(fmt.Sprintf("Failed to create cron scheduler: %v", err))
 		return fmt.Errorf("create cron scheduler: %w", err)
 	}
-	defer func(){
+	defer func() {
 		err := cronScheduler.Shutdown()
 		if err != nil {
 			slog.Error("Error shutting down the cron scheduler", "error", err.Error())
@@ -87,7 +87,7 @@ func Server(args ServerArgs) error {
 		slog.Error("Failed to start KV watcher")
 		return err
 	}
-	defer func(){
+	defer func() {
 		err := kvWatcher.Stop()
 		if err != nil {
 			slog.Error("Error stopping NATS key watcher", "error", err.Error())

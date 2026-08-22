@@ -45,7 +45,7 @@ func listChecks(configFile string, deleteKeys bool) error {
 	if err != nil {
 		return nil
 	}
-	defer func(){
+	defer func() {
 		err := keys.Stop()
 		if err != nil {
 			slog.Error("Error stopping NATS key listener", "error", err.Error())
