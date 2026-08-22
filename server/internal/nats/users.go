@@ -3,6 +3,7 @@ package nats
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"server/internal/auth"
@@ -55,7 +56,12 @@ func ListUsers(natsKV nats.KeyValue) ([]auth.User, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
 	}
-	defer keys.Stop()
+	defer func() {
+		err := keys.Stop()
+		if err != nil {
+			slog.Error("Error stopping NATS key listener", "error", err.Error())
+		}
+	}()
 
 	for key := range keys.Keys() {
 		if !strings.HasPrefix(key, "user.") {

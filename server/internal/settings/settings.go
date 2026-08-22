@@ -43,7 +43,7 @@ func (s *Settings) GetCheck(name string) (Check, bool) {
 
 // MonitorSettings loops monitoring the nats KV for settings updates
 func (s *Settings) MonitorSettings(ctx context.Context, natsKVWatcher nats.KeyWatcher) {
-	var startUpCompleted bool = false
+	var startUpCompleted = false
 
 	for {
 		select {

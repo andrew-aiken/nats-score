@@ -244,7 +244,7 @@ func main() {
 									}
 
 									if hasCount && 0 > cmd.Int("count") {
-										return fmt.Errorf("Count must be a positive number")
+										return fmt.Errorf("count must be a positive number")
 									}
 
 									return auth.Auth(cmd.String("config"), cmd.Bool("standalone"), cmd.Int("count"))

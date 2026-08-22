@@ -30,7 +30,7 @@ func Export(configFile string, directory string) error {
 		}
 	} else {
 		if !info.IsDir() {
-			return fmt.Errorf("Output is not a directory")
+			return fmt.Errorf("output is not a directory")
 		}
 	}
 
@@ -60,10 +60,15 @@ func Export(configFile string, directory string) error {
 
 	// List check keys
 	keys, err := kv.ListKeys()
-	defer keys.Stop()
 	if err != nil {
 		return nil
 	}
+	defer func(){
+		err := keys.Stop()
+		if err != nil {
+			slog.Error("Error stopping NATS key listener", "error", err.Error())
+		}
+	}()
 
 	// Read keys from channel
 	for key := range keys.Keys() {
@@ -74,6 +79,9 @@ func Export(configFile string, directory string) error {
 				return err
 			}
 			checkJsonBtes, err := formatCheck(keyValue.Value())
+			if err != nil {
+				return err
+			}
 
 			checkPath := fmt.Sprintf("%s/%s.json", directory, checkName)
 

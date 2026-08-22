@@ -41,12 +41,16 @@ func listChecks(configFile string, deleteKeys bool) error {
 	// Get NATS key value handler
 	kv := natsClient.NatsKV
 
-	// Generate
 	keys, err := kv.ListKeys()
-	defer keys.Stop()
 	if err != nil {
 		return nil
 	}
+	defer func(){
+		err := keys.Stop()
+		if err != nil {
+			slog.Error("Error stopping NATS key listener", "error", err.Error())
+		}
+	}()
 
 	// Read keys from channel
 	for key := range keys.Keys() {
@@ -55,7 +59,11 @@ func listChecks(configFile string, deleteKeys bool) error {
 			// Delete the check key if enabled
 			if deleteKeys {
 				fmt.Printf("Removing check %s\n", checkName)
-				kv.Delete(key)
+				err = kv.Delete(key)
+				if err != nil {
+					slog.Error("Failed to delete checks nats key")
+					return err
+				}
 			} else {
 				fmt.Println(checkName)
 			}

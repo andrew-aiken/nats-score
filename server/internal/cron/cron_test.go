@@ -18,11 +18,14 @@ func TestRemoveCheckCron(t *testing.T) {
 
 	cronjobTag := "dummy"
 
-	s.NewJob(
+	_, err := s.NewJob(
 		gocron.DurationJob(3*time.Second),
 		gocron.NewTask(func() {}),
 		gocron.WithTags(cronjobTag),
 	)
+	if err != nil {
+		t.Error("Failed to create new job", "error", err.Error())
+	}
 
 	if len(s.Jobs()) != 1 {
 		t.Error("Should be only one job")
@@ -57,12 +60,15 @@ func TestAddCheckCron(t *testing.T) {
 		}
 		defer nc.Close()
 		if err = nc.Flush(); err != nil {
-			t.Errorf("Error when flushing nats connection: %v", err)
+			t.Errorf("error when flushing nats connection: %v", err)
 		}
 
 		// Setup a channel to follow score check
 		ch := make(chan *nats.Msg, 64)
 		_, err = nc.ChanSubscribe("events.score."+checkName, ch)
+		if err != nil {
+			t.Error(err)
+		}
 
 		job, err := cron.AddCheckCron(s, nc, checkName, checkFrequency)
 		if err != nil {

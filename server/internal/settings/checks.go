@@ -40,7 +40,10 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 	}
 
 	var raw ChecksRaw
-	defaults.Set(&raw)
+	err := defaults.Set(&raw)
+	if err != nil {
+		return err
+	}
 
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
@@ -63,7 +66,10 @@ func (c *Check) UnmarshalJSON(data []byte) error {
 	}
 
 	// Set default values
-	defaults.Set(def)
+	err = defaults.Set(def)
+	if err != nil {
+		return err
+	}
 
 	if err := json.Unmarshal(raw.Definition, &def); err != nil {
 		return fmt.Errorf("failed to unmarshal unknown definition type %q: %w", raw.Type, err)

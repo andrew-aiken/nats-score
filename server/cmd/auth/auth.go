@@ -71,14 +71,14 @@ func createAgentCredentials(conf config.Config, streamIndex string) error {
 	userClaim.IssuerAccount = conf.AccountPublicKey
 
 	// Apply permissions
-	userClaim.Permissions.Pub.Allow.Add("results." + streamIndex + ".>")
+	userClaim.Pub.Allow.Add("results." + streamIndex + ".>")
 
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.KV_settings")
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*") // This is a known risk. Allows any agent to view settings of other users
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.KV_settings.*")
+	userClaim.Pub.Allow.Add("$JS.API.STREAM.INFO.KV_settings")
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*") // This is a known risk. Allows any agent to view settings of other users
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.KV_settings.*")
 
-	userClaim.Permissions.Sub.Allow.Add("events.score.>")
-	userClaim.Permissions.Sub.Allow.Add("_INBOX." + streamIndex + ".>")
+	userClaim.Sub.Allow.Add("events.score.>")
+	userClaim.Sub.Allow.Add("_INBOX." + streamIndex + ".>")
 
 	// Sign with account key
 	accountKP, err := nkeys.FromSeed([]byte(conf.AccountSigningSeed))

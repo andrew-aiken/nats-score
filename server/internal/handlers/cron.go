@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
 	"log/slog"
 	"net/http"
 )
@@ -11,7 +10,7 @@ func (h *Handler) StartScoringCron(w http.ResponseWriter, r *http.Request) {
 	// Only accept PUT requests
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
@@ -19,7 +18,7 @@ func (h *Handler) StartScoringCron(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("Starting check cron")
 
-	json.NewEncoder(w).Encode("Started Scoring CronJob")
+	encodeJson(w, "Started Scoring CronJob")
 }
 
 // StopScoringCron handles starting and stopping the scoring cronjob
@@ -27,7 +26,7 @@ func (h *Handler) StopScoringCron(w http.ResponseWriter, r *http.Request) {
 	// Only accept PUT requests
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
@@ -36,11 +35,11 @@ func (h *Handler) StopScoringCron(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Failed to stop check cronjob", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to stop scoring cronjob"})
+		encodeJson(w, map[string]string{"error": "Failed to stop scoring cronjob"})
 		return
 	}
 
 	slog.Info("Stopping check cron")
 
-	json.NewEncoder(w).Encode("Stopped Scoring CronJob")
+	encodeJson(w, "Stopped Scoring CronJob")
 }

@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"log/slog"
 	"os"
 )
 
@@ -19,12 +20,18 @@ var defaultConfig = Config{
 }
 
 // Load loads the configuration from the specified JSON file
-func Load(path string) (Config, error) {
+func Load(path string) (conf Config, error error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return Config{}, err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			slog.Error("Error closing config file", "error", err.Error())
+			error = err
+		}
+	}()
 
 	// var cfg Config
 	decoder := json.NewDecoder(file)

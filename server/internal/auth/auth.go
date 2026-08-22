@@ -99,8 +99,8 @@ func (s *NATSAuthService) GenerateCredentials(userID string, team string) (*Cred
 func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, team string) {
 	// Check for admin role - full access
 	if team == "admin" {
-		userClaim.Permissions.Pub.Allow.Add(">")
-		userClaim.Permissions.Sub.Allow.Add(">")
+		userClaim.Pub.Allow.Add(">")
+		userClaim.Sub.Allow.Add(">")
 		return
 	}
 
@@ -117,17 +117,17 @@ func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, team strin
 		teamSubject = "results.>"
 	}
 
-	userClaim.Permissions.Pub.Allow.Add("_INBOX.>")
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.INFO")
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.NAMES")
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.STREAM.INFO.results")
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.results.*." + teamSubject)
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.MSG.NEXT.results.*")
-	userClaim.Permissions.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.results.*")
-	userClaim.Permissions.Pub.Allow.Add("$JS.ACK.results.>")
+	userClaim.Pub.Allow.Add("_INBOX.>")
+	userClaim.Pub.Allow.Add("$JS.API.INFO")
+	userClaim.Pub.Allow.Add("$JS.API.STREAM.NAMES")
+	userClaim.Pub.Allow.Add("$JS.API.STREAM.INFO.results")
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.results.*." + teamSubject)
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.MSG.NEXT.results.*")
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.results.*")
+	userClaim.Pub.Allow.Add("$JS.ACK.results.>")
 
-	userClaim.Permissions.Sub.Allow.Add(teamSubject)
-	userClaim.Permissions.Sub.Allow.Add("_INBOX." + team + ".>")
+	userClaim.Sub.Allow.Add(teamSubject)
+	userClaim.Sub.Allow.Add("_INBOX." + team + ".>")
 }
 
 // VerifyJWT validates a NATS JWT and returns the user claims
@@ -165,10 +165,10 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 
 	// Extract permissions
 	var pubAllow, subAllow []string
-	for _, perm := range claim.Permissions.Pub.Allow {
+	for _, perm := range claim.Pub.Allow {
 		pubAllow = append(pubAllow, perm)
 	}
-	for _, perm := range claim.Permissions.Sub.Allow {
+	for _, perm := range claim.Sub.Allow {
 		subAllow = append(subAllow, perm)
 	}
 

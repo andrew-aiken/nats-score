@@ -101,7 +101,7 @@ func applyOverrides(definition any, overrides map[string]string) error {
 	}
 
 	val := reflect.ValueOf(definition)
-	if val.Kind() != reflect.Ptr || val.IsNil() {
+	if val.Kind() != reflect.Pointer || val.IsNil() {
 		return fmt.Errorf("definition must be a non-nil pointer")
 	}
 

@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -45,14 +46,20 @@ func (m *AuthMiddleware) RequireAdminAuth(next http.HandlerFunc) http.HandlerFun
 		if !result.Authorized {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(result)
+			err := json.NewEncoder(w).Encode(result)
+			if err != nil {
+				slog.Error("Failed to encode admin route non-authenticated headers", "error", err.Error())
+			}
 			return
 		}
 
 		if claims.TeamID != "admin" {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
-			json.NewEncoder(w).Encode(result)
+			err := json.NewEncoder(w).Encode(result)
+			if err != nil {
+				slog.Error("Failed to encode admin route non-authorized headers", "error", err.Error())
+			}
 			return
 		}
 
@@ -69,7 +76,10 @@ func (m *AuthMiddleware) RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 		if !result.Authorized {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
-			json.NewEncoder(w).Encode(result)
+			err := json.NewEncoder(w).Encode(result)
+			if err != nil {
+				slog.Error("Failed to encode authenticated route headers", "error", err.Error())
+			}
 			return
 		}
 

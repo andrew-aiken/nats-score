@@ -18,7 +18,7 @@ type LoginRequest struct {
 // dummyBcryptHash is a fixed valid bcrypt hash used to keep timing/behavior
 // identical between "unknown user" and "wrong password" cases, preventing
 // username enumeration.
-var _, dummyBcryptHash = auth.HashPassword("dummy-password-for-timing-safety")
+var dummyBcryptHash, _ = auth.HashPassword("dummy-password-for-timing-safety")
 
 const invalidCredentialsError = "Invalid username or password"
 
@@ -29,14 +29,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		encodeJson(w, map[string]string{"error": "Method not allowed"})
 		return
 	}
 
 	var req LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+		encodeJson(w, map[string]string{"error": "Invalid request body"})
 		return
 	}
 
@@ -45,7 +45,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			slog.Warn("NATS users KV client not initialized")
 		}
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": invalidCredentialsError})
+		encodeJson(w, map[string]string{"error": invalidCredentialsError})
 		return
 	}
 
@@ -53,7 +53,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Warn("Failed to look up user", "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": invalidCredentialsError})
+		encodeJson(w, map[string]string{"error": invalidCredentialsError})
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if user == (auth.User{}) || pwErr != nil {
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]string{"error": invalidCredentialsError})
+		encodeJson(w, map[string]string{"error": invalidCredentialsError})
 		return
 	}
 
@@ -77,9 +77,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		slog.Error("Failed to generate NATS credentials", "username", req.Username, "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to generate credentials"})
+		encodeJson(w, map[string]string{"error": "Failed to generate credentials"})
 		return
 	}
 
-	json.NewEncoder(w).Encode(creds)
+	encodeJson(w, creds)
 }

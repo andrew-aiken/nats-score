@@ -3,6 +3,7 @@ package nats
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"server/internal/settings"
@@ -15,10 +16,15 @@ func GetChecks(natsKV nats.KeyValue) (map[string]settings.Check, error) {
 	checks := map[string]settings.Check{}
 
 	keys, err := natsKV.ListKeys()
-	defer keys.Stop()
 	if err != nil {
 		return checks, nil
 	}
+	defer func() {
+		err := keys.Stop()
+		if err != nil {
+			slog.Error("Error stopping NATS key listener", "error", err.Error())
+		}
+	}()
 
 	// Read keys from channel
 	for key := range keys.Keys() {

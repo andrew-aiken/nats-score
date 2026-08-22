@@ -48,7 +48,12 @@ func Server(args ServerArgs) error {
 		slog.Error(fmt.Sprintf("Failed to create cron scheduler: %v", err))
 		return fmt.Errorf("create cron scheduler: %w", err)
 	}
-	defer cronScheduler.Shutdown()
+	defer func(){
+		err := cronScheduler.Shutdown()
+		if err != nil {
+			slog.Error("Error shutting down the cron scheduler", "error", err.Error())
+		}
+	}()
 
 	// Initialize NATS auth service
 	natsAuthService, err := auth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
@@ -82,7 +87,12 @@ func Server(args ServerArgs) error {
 		slog.Error("Failed to start KV watcher")
 		return err
 	}
-	defer kvWatcher.Stop()
+	defer func(){
+		err := kvWatcher.Stop()
+		if err != nil {
+			slog.Error("Error stopping NATS key watcher", "error", err.Error())
+		}
+	}()
 
 	// Watch for check updates in background
 	go monitorChecks(kvWatcher, cronScheduler, natsClient.NatsConn)
@@ -138,7 +148,11 @@ func Server(args ServerArgs) error {
 	// Stop KV watcher if running
 	if kvWatcher != nil {
 		slog.Debug("Stopping KV watcher")
-		kvWatcher.Stop()
+		err = kvWatcher.Stop()
+		if err != nil {
+			slog.Error("Error stopping NATS KV watcher")
+			return err
+		}
 	}
 
 	// Shutdown HTTP server

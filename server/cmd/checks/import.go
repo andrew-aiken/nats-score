@@ -99,7 +99,11 @@ func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnectio
 			return err
 		}
 
-		natsClient.NatsKV.Put(checkName, dst.Bytes())
+		_, err = natsClient.NatsKV.Put(checkName, dst.Bytes())
+		if err != nil {
+			return err
+		}
+
 	}
 
 	fmt.Println("All Checks written to NATS KV")
