@@ -15,15 +15,20 @@ type PublishedResults struct {
 	Points uint8 `json:"points"`
 }
 
+const (
+	ScorePassed uint8 = iota
+	ScoreFailed
+)
+
 func publishResults(streamName string, results checks.Results, scoreWeight uint8, js nats.JetStreamContext) error {
 	// No points for failed check
-	scoredPoints := uint8(0)
-	passedSubject := 0
+	var scoredPoints uint8 = 0
+	passedSubject := ScoreFailed
 
 	// If the check passed, award the weighter point value
 	if results.Passed {
 		scoredPoints = scoreWeight
-		passedSubject = 1
+		passedSubject = ScorePassed
 	}
 
 	publishedResults := PublishedResults{
@@ -36,13 +41,11 @@ func publishResults(streamName string, results checks.Results, scoreWeight uint8
 		slog.Error("Failed to marshal results object")
 		return err
 	}
-	_, err = js.Publish(
-		fmt.Sprintf("%s.%d", streamName, passedSubject),
-		bytes,
-	)
 
+	scoreSubject := fmt.Sprintf("%s.%d", streamName, passedSubject)
+	_, err = js.Publish(scoreSubject, bytes)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed publish to stream %s", streamName))
+		slog.Error(fmt.Sprintf("Failed publish to results stream %s", streamName))
 		return err
 	}
 

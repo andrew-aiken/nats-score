@@ -113,15 +113,22 @@ func ParseTeams(s string) ([]uint16, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid range start %q: %w", lo, err)
 			}
+
 			hiN, err := strconv.ParseUint(strings.TrimSpace(hi), 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("invalid range end %q: %w", hi, err)
 			}
+
 			if loN > hiN {
 				return nil, fmt.Errorf("range %q has start greater than end", part)
 			}
+
+			if loN > 65535 || hiN > 65535 {
+				return nil, fmt.Errorf("team number is to large")
+			}
+
 			for n := loN; n <= hiN; n++ {
-				t := uint16(n)
+				t := uint16(n) // #nosec G115
 				if _, dup := seen[t]; !dup {
 					seen[t] = struct{}{}
 					result = append(result, t)
@@ -132,7 +139,12 @@ func ParseTeams(s string) ([]uint16, error) {
 			if err != nil {
 				return nil, fmt.Errorf("invalid team number %q: %w", part, err)
 			}
-			t := uint16(n)
+
+			if n > 65535 {
+				return nil, fmt.Errorf("team number is to large: %d", n)
+			}
+
+			t := uint16(n) // #nosec G115
 			if _, dup := seen[t]; !dup {
 				seen[t] = struct{}{}
 				result = append(result, t)

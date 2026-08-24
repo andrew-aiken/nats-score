@@ -87,7 +87,7 @@ func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnectio
 
 		filePath := fmt.Sprintf("%s/%s", directory, file)
 
-		data, err := os.ReadFile(filePath)
+		data, err := os.ReadFile(filePath) // #nosec G304 - fine with importing checks from anywhere on the system
 		if err != nil {
 			slog.Error("Failed to read check file", "name", file, "error", err)
 			return err

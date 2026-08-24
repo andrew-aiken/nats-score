@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/andrew-aiken/checks"
+
 	"github.com/nats-io/nats.go"
 )
 

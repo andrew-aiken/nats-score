@@ -10,13 +10,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/nats-io/nats.go"
-
 	"server/internal/settings"
 
 	"github.com/andrew-aiken/checks"
+
+	"github.com/nats-io/nats.go"
 )
 
+// HandleScoreEvent returns a handler for nats that triggers whenever a scorsing event is triggered
 func HandleScoreEvent(ctx context.Context, settings *settings.Settings, js nats.JetStreamContext) nats.MsgHandler {
 	return func(msg *nats.Msg) {
 		checkName := strings.TrimPrefix(msg.Subject, "events.score.")
@@ -50,6 +51,7 @@ func HandleScoreEvent(ctx context.Context, settings *settings.Settings, js nats.
 	}
 }
 
+// runTeamCheck triggers a score check for a single team
 func runTeamCheck(ctx context.Context, teamNum uint16, teamState *settings.TeamState, checkName string, value settings.Check, defBytes []byte, js nats.JetStreamContext) {
 	defCopy := reflect.New(reflect.TypeOf(value.Definition).Elem()).Interface()
 	if err := json.Unmarshal(defBytes, defCopy); err != nil {

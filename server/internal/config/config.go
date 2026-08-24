@@ -21,7 +21,7 @@ var defaultConfig = Config{
 
 // Load loads the configuration from the specified JSON file
 func Load(path string) (conf Config, error error) {
-	file, err := os.Open(path)
+	file, err := os.Open(path) // #nosec G304 - fine with reading the config from anywhere on the system
 	if err != nil {
 		return Config{}, err
 	}

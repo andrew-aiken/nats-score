@@ -1,8 +1,299 @@
 package score
 
 import (
+	"bytes"
+	"context"
+	"log/slog"
+	"server/internal/settings"
+	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	"github.com/andrew-aiken/checks"
+	"github.com/andrew-aiken/checks/noop"
+
+	natsserver "github.com/nats-io/nats-server/v2/test"
+	"github.com/nats-io/nats.go"
 )
+
+// syncBuffer is safe for the concurrent writes (from NATS callback goroutines)
+// and reads (from the polling test goroutine) that captureLogs enables.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (s *syncBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *syncBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
+
+func captureLogs(t *testing.T) *syncBuffer {
+	t.Helper()
+	buf := &syncBuffer{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	return buf
+}
+
+// waitForLog polls buf until it contains substr or timeout elapses, returning
+// the buffer's contents either way. Handler goroutines run async relative to
+// nc.Publish, so asserting on logs.String() immediately after publishing is a race.
+func waitForLog(buf *syncBuffer, substr string, timeout time.Duration) string {
+	deadline := time.Now().Add(timeout)
+	for {
+		got := buf.String()
+		if strings.Contains(got, substr) || time.Now().After(deadline) {
+			return got
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestHandleScoreEvent(t *testing.T) {
+	scoreSubject := "events.score.noop"
+
+	opts := natsserver.DefaultTestOptions
+	opts.JetStream = true
+	opts.Port = -1
+	opts.StoreDir = t.TempDir()
+
+	server := natsserver.RunServer(&opts)
+	defer server.Shutdown()
+
+	nc, err := nats.Connect(server.Addr().String())
+	if err != nil {
+		t.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		t.Fatalf("Failed to connect to JetStream: %v", err)
+	}
+
+	ctx := context.Background()
+	defer ctx.Done()
+
+	noopCheck := settings.Check{
+		Name:          "noop",
+		Type:          "noop",
+		ScoreWeight:   1,
+		MutableFields: []string{},
+		Definition: &noop.Definition{
+			Pass: true,
+		},
+	}
+
+	team := settings.TeamState{
+		StaticConf: checks.StaticConf{
+			TeamNumber: 0,
+		},
+		Attributes: map[string]map[string]string{
+			"noop": {
+				"pass": "true",
+			},
+		},
+	}
+
+	// Tests if the nats result stream does not exist
+	t.Run("MissingSubject", func(t *testing.T) {
+		logs := captureLogs(t)
+
+		settings := settings.Settings{
+			Checks: map[string]settings.Check{
+				"noop": noopCheck,
+			},
+			Teams: map[uint16]*settings.TeamState{
+				0: &team,
+			},
+		}
+
+		sub, err := nc.Subscribe(scoreSubject, HandleScoreEvent(ctx, &settings, js))
+		if err != nil {
+			t.Fatalf("failed to subscribe to stream %v", err)
+		}
+		t.Cleanup(func() { _ = sub.Unsubscribe() })
+
+		err = nc.Publish(scoreSubject, []byte(""))
+		if err != nil {
+			t.Fatalf("failed to publish score trigger %v", err)
+		}
+
+		expectedError := "Failed publish to results stream results.0.noop"
+		got := waitForLog(logs, expectedError, 1*time.Second)
+		if !strings.Contains(got, expectedError) {
+			t.Errorf("expected \"%s\" to be logged, got:\n%s", expectedError, got)
+		}
+	})
+
+	resultsStream := nats.StreamConfig{
+		Name:        "results",
+		Description: "Stream of score update events",
+		Subjects:    []string{"results.>"},
+		MaxAge:      30 * 24 * time.Hour, // 30 days
+		Replicas:    1,
+		MaxMsgs:     -1,
+		MaxBytes:    -1,
+		MaxMsgSize:  -1,
+		DenyDelete:  true,
+		DenyPurge:   true,
+		AllowRollup: false,
+		Duplicates:  2 * time.Minute,
+	}
+
+	_, err = js.AddStream(&resultsStream)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Valid", func(t *testing.T) {
+		logs := captureLogs(t)
+
+		settings := settings.Settings{
+			Checks: map[string]settings.Check{
+				"noop": noopCheck,
+			},
+			Teams: map[uint16]*settings.TeamState{
+				0: &team,
+				1: &team,
+			},
+		}
+
+		sub, err := nc.Subscribe(scoreSubject, HandleScoreEvent(ctx, &settings, js))
+		if err != nil {
+			t.Fatalf("failed to subscribe to stream %v", err)
+		}
+		t.Cleanup(func() { _ = sub.Unsubscribe() })
+
+		err = nc.Publish(scoreSubject, []byte(""))
+		if err != nil {
+			t.Fatalf("failed to publish score trigger %v", err)
+		}
+
+		got := waitForLog(logs, "DNE", 1*time.Second)
+		if strings.Contains(got, "ERROR") {
+			t.Errorf("Expected no errors:\n%s", got)
+		}
+
+		// if strings.Contains(logs.String(), "ERROR") {
+		// 	t.Errorf("unexpected error logged:\n%s", logs.String())
+		// }
+	})
+
+	// Tests if the Settings object contains the check subject triggered in nats
+	t.Run("MissingCheck", func(t *testing.T) {
+		logs := captureLogs(t)
+
+		settings := settings.Settings{
+			Checks: map[string]settings.Check{},
+			Teams: map[uint16]*settings.TeamState{
+				0: &team,
+			},
+		}
+
+		sub, err := nc.Subscribe(scoreSubject, HandleScoreEvent(ctx, &settings, js))
+		if err != nil {
+			t.Fatalf("failed to subscribe to stream %v", err)
+		}
+		t.Cleanup(func() { _ = sub.Unsubscribe() })
+
+		err = nc.Publish(scoreSubject, []byte(""))
+		if err != nil {
+			t.Fatalf("failed to publish score trigger %v", err)
+		}
+
+		expectedError := "Check noop not found"
+		got := waitForLog(logs, expectedError, 1*time.Second)
+		if !strings.Contains(got, expectedError) {
+			t.Errorf("expected \"%s\" to be logged, got:\n%s", expectedError, got)
+		}
+	})
+
+	// Tests if the checker object contains its interface
+	t.Run("NoCheckerInterface", func(t *testing.T) {
+		logs := captureLogs(t)
+
+		settings := settings.Settings{
+			Checks: map[string]settings.Check{
+				"noop": settings.Check{
+					Name:        "noop",
+					Type:        "noop",
+					ScoreWeight: 1,
+					Definition:  "any-not-def",
+				},
+			},
+			Teams: map[uint16]*settings.TeamState{
+				0: &team,
+			},
+		}
+
+		sub, err := nc.Subscribe(scoreSubject, HandleScoreEvent(ctx, &settings, js))
+		if err != nil {
+			t.Fatalf("failed to subscribe to stream %v", err)
+		}
+		t.Cleanup(func() { _ = sub.Unsubscribe() })
+
+		err = nc.Publish(scoreSubject, []byte(""))
+		if err != nil {
+			t.Fatalf("failed to publish score trigger %v", err)
+		}
+
+		expectedError := "Check noop definition does not implement Checker interface"
+		got := waitForLog(logs, expectedError, 1*time.Second)
+		if !strings.Contains(got, expectedError) {
+			t.Errorf("expected \"%s\" to be logged, got:\n%s", expectedError, got)
+		}
+	})
+
+	// Tests if the check definition has unmarshalable json objects
+	t.Run("Unmarshalable", func(t *testing.T) {
+		logs := captureLogs(t)
+
+		settings := settings.Settings{
+			Checks: map[string]settings.Check{
+				"noop": {
+					Name:        "noop",
+					Type:        "noop",
+					ScoreWeight: 1,
+					MutableFields: []string{
+						"pass",
+					},
+					Definition: &foo{},
+				},
+			},
+			Teams: map[uint16]*settings.TeamState{
+				0: &team,
+			},
+		}
+
+		sub, err := nc.Subscribe(scoreSubject, HandleScoreEvent(ctx, &settings, js))
+		if err != nil {
+			t.Fatalf("failed to subscribe to stream %v", err)
+		}
+		t.Cleanup(func() { _ = sub.Unsubscribe() })
+
+		err = nc.Publish(scoreSubject, []byte(""))
+		if err != nil {
+			t.Fatalf("failed to publish score trigger %v", err)
+		}
+
+		expectedError := "Failed to marshal definition for check noop: json: unsupported type: chan int"
+		got := waitForLog(logs, expectedError, 1*time.Second)
+		if !strings.Contains(got, expectedError) {
+			t.Errorf("expected \"%s\" to be logged, got:\n%s", expectedError, got)
+		}
+	})
+}
 
 func TestCleanTemplateString(t *testing.T) {
 	tests := []struct {
@@ -66,6 +357,7 @@ func TestApplyOverrides(t *testing.T) {
 		Port    int
 		Enabled bool
 		Score   float64
+		Object  struct{}
 	}
 
 	t.Run("string field", func(t *testing.T) {
@@ -158,4 +450,44 @@ func TestApplyOverrides(t *testing.T) {
 			t.Error("Host should not have changed")
 		}
 	})
+
+	t.Run("bool field not a bool", func(t *testing.T) {
+		s := &target{}
+		err := applyOverrides(s, map[string]string{"Enabled": "not-bool"})
+
+		if !strings.Contains(err.Error(), "failed to parse bool value for field") {
+			t.Fatal("Got wrong error when parsing incorrect boolean value")
+		}
+	})
+
+	t.Run("float field not a float", func(t *testing.T) {
+		s := &target{}
+		err := applyOverrides(s, map[string]string{"Score": "string"})
+
+		if !strings.Contains(err.Error(), "failed to parse float value for field Score") {
+			t.Fatal("Got wrong error when parsing incorrect float value")
+		}
+	})
+
+	t.Run("unsupported field", func(t *testing.T) {
+		s := &target{}
+		err := applyOverrides(s, map[string]string{"Object": "string"})
+
+		if !strings.Contains(err.Error(), "unsupported field type struct for field Object") {
+			t.Fatalf("Got wrong error when parsing incorrect float value: %s", err.Error())
+		}
+	})
+}
+
+// foo is a dummy method that implements the expected Check structure
+type foo struct {
+	Pass chan int
+}
+
+func (foo) Run(ctx context.Context, static checks.StaticConf) checks.Results {
+	return checks.Results{}
+}
+
+func (foo) Validate() (passed bool, message string) {
+	return true, ""
 }
