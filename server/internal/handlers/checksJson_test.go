@@ -1,0 +1,65 @@
+package handlers_test
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+func TestChecksJSON(t *testing.T) {
+	natsHandler := setupNatsHandler(t)
+
+	tests := []testObj{
+		{
+			Name: "WrongMethod",
+			Request: request{
+				Method: "POST",
+			},
+			ExpectedCode:     http.StatusMethodNotAllowed,
+			MessageSubstring: `{"error":"Method not allowed"}`,
+		},
+		{
+			Name: "NoNATS",
+			Request: request{
+				Method: "GET",
+			},
+			ExpectedCode:     http.StatusServiceUnavailable,
+			MessageSubstring: `{"error":"NATS KV not available"}`,
+		},
+		{
+			Name: "Test",
+			Request: request{
+				Method: "GET",
+			},
+			Handler:          natsHandler,
+			ExpectedCode:     http.StatusOK,
+			MessageSubstring: `{}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			req, err := http.NewRequest(tt.Request.Method, "/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for k, v := range tt.Headers {
+				req.Header.Set(k, v)
+			}
+
+			rr := httptest.NewRecorder()
+			handler := http.HandlerFunc(tt.Handler.ChecksJSON)
+
+			handler.ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tt.ExpectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.ExpectedCode)
+			}
+
+			if tt.MessageSubstring != "" && !strings.Contains(rr.Body.String(), tt.MessageSubstring) {
+				t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), tt.MessageSubstring)
+			}
+		})
+	}
+}

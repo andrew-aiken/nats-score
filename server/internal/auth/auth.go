@@ -97,23 +97,14 @@ func (s *NATSAuthService) GenerateCredentials(userID string, team string) (*Cred
 
 // applyPermissions sets NATS pub/sub permissions based on the user's team
 func (s *NATSAuthService) applyPermissions(userClaim *jwt.UserClaims, team string) {
-	// Check for admin role - full access
-	if team == "admin" {
+	teamSubject := "results." + team + ".>"
+
+	switch team {
+	case "admin":
 		userClaim.Pub.Allow.Add(">")
 		userClaim.Sub.Allow.Add(">")
 		return
-	}
-
-	teamSubject := "results." + team + ".>"
-
-	if team == "observer" {
-		// Must match the literal filter subject the frontend requests
-		// (AdminScoringOverviewView/AdminView hardcode "results.>") since
-		// that filter is embedded verbatim in the JetStream consumer-create
-		// authorization subject ($JS.API.CONSUMER.CREATE.results.*.<filter>).
-		// "results.*.>" is a narrower pattern than "results.>" and would
-		// fail that permission check even though it covers every real
-		// result subject.
+	case "observer":
 		teamSubject = "results.>"
 	}
 

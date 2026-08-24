@@ -13,12 +13,20 @@ import (
 )
 
 func TestRemoveCheckCron(t *testing.T) {
-	s, _ := gocron.NewScheduler()
-	defer func() { _ = s.Shutdown() }()
+	s, err := gocron.NewScheduler()
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	defer func() {
+		err := s.Shutdown()
+		if err != nil {
+			t.Fatalf("Failed to stop cron scheduler: %s", err.Error())
+		}
+	}()
 
 	cronjobTag := "dummy"
 
-	_, err := s.NewJob(
+	_, err = s.NewJob(
 		gocron.DurationJob(3*time.Second),
 		gocron.NewTask(func() {}),
 		gocron.WithTags(cronjobTag),
@@ -42,8 +50,16 @@ func TestAddCheckCron(t *testing.T) {
 	const checkName string = "example"
 
 	t.Run("Expected functionality", func(t *testing.T) {
-		s, _ := gocron.NewScheduler()
-		defer func() { _ = s.Shutdown() }()
+		s, err := gocron.NewScheduler()
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		defer func() {
+			err := s.Shutdown()
+			if err != nil {
+				t.Fatalf("Failed to stop cron scheduler: %s", err.Error())
+			}
+		}()
 
 		var checkFrequency uint16 = 30000 // This is set high so it never triggers naturally
 

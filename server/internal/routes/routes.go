@@ -36,7 +36,7 @@ func SetupRoutes(serverConfig *handlers.Handler, authMiddleware middleware.AuthM
 	mux.HandleFunc("/api/checks", serverConfig.Checks)
 	mux.HandleFunc("/api/settings", authMiddleware.RequireAuth(serverConfig.TeamSettings))
 
-	mux.HandleFunc("/api/admin/settings", authMiddleware.RequireAdminAuth(serverConfig.GetChecks))
+	mux.HandleFunc("/api/admin/settings", authMiddleware.RequireAdminAuth(serverConfig.ChecksJSON))
 	mux.HandleFunc("/api/admin/cron/start", authMiddleware.RequireAdminAuth(serverConfig.StartScoringCron))
 	mux.HandleFunc("/api/admin/cron/stop", authMiddleware.RequireAdminAuth(serverConfig.StopScoringCron))
 
