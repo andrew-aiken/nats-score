@@ -7,7 +7,9 @@ import (
 	"testing"
 )
 func TestChecksJSON(t *testing.T) {
-	natsHandler := setupNatsHandler(t)
+	natsHandler, nc, s := setupNatsHandler(t)
+	defer s.Shutdown()
+	defer nc.Close()
 
 	tests := []testObj{
 		{

@@ -1,14 +1,17 @@
 package handlers_test
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"server/internal/auth"
 	"server/internal/handlers"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
+	natsserverserver "github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 )
 
@@ -23,6 +26,7 @@ type testObj struct {
 	Handler          handlers.Handler
 	Request          request
 	Headers          headers
+	Body             string
 	MessageSubstring string
 	ExpectedCode     int
 }
@@ -98,7 +102,9 @@ func TestVerify(t *testing.T) {
 }
 
 func TestGetMutableFields(t *testing.T) {
-	natsHandler := setupNatsHandler(t)
+	natsHandler, nc, s := setupNatsHandler(t)
+	defer s.Shutdown()
+	defer nc.Close()
 
 	tests := []testObj{
 		{
@@ -156,7 +162,9 @@ func TestGetMutableFields(t *testing.T) {
 }
 
 func TestChecks(t *testing.T) {
-	natsHandler := setupNatsHandler(t)
+	natsHandler, nc, s := setupNatsHandler(t)
+	defer s.Shutdown()
+	defer nc.Close()
 
 	tests := []testObj{
 		{
@@ -213,14 +221,13 @@ func TestChecks(t *testing.T) {
 	}
 }
 
-func setupNatsHandler(t *testing.T) handlers.Handler {
+func setupNatsHandler(t *testing.T) (handlers.Handler, *nats.Conn, *natsserverserver.Server) {
 	opts := natsserver.DefaultTestOptions
 	opts.JetStream = true
 	opts.Port = -1
 	opts.StoreDir = t.TempDir()
 
 	server := natsserver.RunServer(&opts)
-	defer server.Shutdown()
 
 	natsServerAddress := server.Addr().String()
 
@@ -228,14 +235,13 @@ func setupNatsHandler(t *testing.T) handlers.Handler {
 	if err != nil {
 		t.Fatalf("Failed to connect to NATS: %v", err)
 	}
-	defer nc.Close()
 
 	js, err := nc.JetStream()
 	if err != nil {
 		t.Fatalf("Failed to connect to JetStream: %v", err)
 	}
 
-	bucket, err := js.CreateKeyValue(&nats.KeyValueConfig{
+	settingsBucket, err := js.CreateKeyValue(&nats.KeyValueConfig{
 		Bucket:       "settings",
 		Description:  "Check & configuration storage",
 		History:      5,
@@ -247,12 +253,61 @@ func setupNatsHandler(t *testing.T) handlers.Handler {
 		t.Fatal(err)
 	}
 
-	kv, err := js.KeyValue(bucket.Bucket())
+	kv, err := js.KeyValue(settingsBucket.Bucket())
 	if err != nil {
 		t.Fatalf("Failed to connect to key value: %v", err)
 	}
 
-	return handlers.Handler{
-		NatsKVClient: kv,
+	usersBucket, err := js.CreateKeyValue(&nats.KeyValueConfig{
+		Bucket:       "users",
+		Description:  "Username/password login account storage",
+		History:      5,
+		TTL:          0,
+		MaxValueSize: -1,
+		MaxBytes:     -1,
+	})
+	if err != nil {
+		t.Fatalf("Failed to connect to user key value: %v", err)
 	}
+
+	userKV, err := js.KeyValue(usersBucket.Bucket())
+	if err != nil {
+		t.Fatalf("Failed to connect to key value: %v", err)
+	}
+
+	userPassword, err := auth.HashPassword("dummyPasswd")
+	if err != nil {
+		t.Fatalf("Failed hash user password: %v", err)
+	}
+
+	userPayload, err := json.Marshal(auth.User{
+		Username:     "foo",
+		Team:         "0",
+		PasswordHash: userPassword,
+	})
+	if err != nil {
+		t.Fatalf("Failed marshal user payload: %v", err)
+	}
+
+	_, err = userKV.Put("user.foo", userPayload)
+	if err != nil {
+		t.Fatalf("Failed write test user data: %v", err)
+	}
+
+
+	badUserPayload, err := json.Marshal(`{`)
+	if err != nil {
+		t.Fatalf("Failed marshal user payload: %v", err)
+	}
+
+	_, err = userKV.Put("user.bad", badUserPayload)
+	if err != nil {
+		t.Fatalf("Failed write test user data: %v", err)
+	}
+
+	return handlers.Handler{
+		NatsKVClient:      kv,
+		NatsUsersKVClient: userKV,
+		NatsAuthService: &auth.NATSAuthService{},
+	}, nc, server
 }
