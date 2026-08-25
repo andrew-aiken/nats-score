@@ -1,7 +1,5 @@
-// Package static serves the frontend's production build, embedded into the
-// server binary at compile time. The dist/ directory is populated by
-// building the frontend (npm run build) and copying its output here before
-// running go build.
+// This package serves the frontend's static build, embedded into the server binary.
+// The dist/ directory is populated by building the frontend and copying over before compile.
 package static
 
 import (
@@ -15,9 +13,8 @@ import (
 //go:embed all:dist
 var distFS embed.FS
 
-// Handler serves the embedded frontend build. Requests for paths that don't
-// match a file in the build (e.g. client-side routes like /settings) fall
-// back to index.html so the SPA's router can take over.
+// Handler serves the embedded frontend build.
+// Requests for paths that don't match a file in the dist director fall back to index.html
 func Handler() (http.Handler, error) {
 	sub, err := fs.Sub(distFS, "dist")
 	if err != nil {
