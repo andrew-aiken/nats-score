@@ -99,12 +99,12 @@ func Server(args ServerArgs) error {
 	slog.Info("Watching KV for check changes")
 
 	// Create handler
-	h := handlers.NewHandler(&handlers.Handler{
+	h := &handlers.Handler{
 		NatsAuthService:   natsAuthService,
 		NatsKVClient:      natsClient.NatsKV,
 		NatsUsersKVClient: natsClient.NatsUsersKV,
 		CronScheduler:     cronScheduler,
-	})
+	}
 
 	authMiddleware := middleware.NewAuthMiddleware(natsAuthService)
 

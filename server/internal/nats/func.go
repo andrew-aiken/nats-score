@@ -68,16 +68,17 @@ func GetMutableFields(natsKV nats.KeyValue) (map[string][]string, error) {
 func GetTeamSettings(natsKV nats.KeyValue, teamNumber string) (map[string]map[string]string, error) {
 	key := fmt.Sprintf("%s.settings", teamNumber)
 
+	settings := make(map[string]map[string]string)
+
 	entry, err := natsKV.Get(key)
 	if err != nil {
 		// Return empty map if key doesn't exist
 		if err == nats.ErrKeyNotFound {
-			return make(map[string]map[string]string), nil
+			return settings, nil
 		}
 		return nil, fmt.Errorf("failed to get '%s' key: %w", key, err)
 	}
 
-	var settings map[string]map[string]string
 	if err := json.Unmarshal(entry.Value(), &settings); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal team settings: %w", err)
 	}

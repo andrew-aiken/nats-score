@@ -73,6 +73,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.NatsAuthService == nil {
+		slog.Warn("nats auth service not initialized")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		encodeJson(w, map[string]string{"error": "nats auth service not initialized"})
+		return
+	}
+
 	creds, err := h.NatsAuthService.GenerateCredentials(req.Username, user.Team)
 	if err != nil {
 		slog.Error("Failed to generate NATS credentials", "username", req.Username, "error", err)

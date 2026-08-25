@@ -24,11 +24,6 @@ type Handler struct {
 	CronScheduler     gocron.Scheduler
 }
 
-// NewHandler creates a new Handler with the given dependencies
-func NewHandler(handler *Handler) *Handler {
-	return handler
-}
-
 // Verify validates a NATS JWT token from the Authorization header
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
