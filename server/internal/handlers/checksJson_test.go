@@ -41,7 +41,7 @@ func TestChecksJSON(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.Name, func(t *testing.T) {
-			req, err := http.NewRequest(tt.Request.Method, "/", nil)
+			req, err := http.NewRequest(tt.Request.Method, "/", strings.NewReader(tt.Body))
 			if err != nil {
 				t.Fatal(err)
 			}
