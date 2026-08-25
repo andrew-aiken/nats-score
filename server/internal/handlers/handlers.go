@@ -175,7 +175,7 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	names := make([]string, 0, len(checks))
-	for name, _ := range checks {
+	for name := range checks {
 		names = append(names, name)
 	}
 	sort.Strings(names)

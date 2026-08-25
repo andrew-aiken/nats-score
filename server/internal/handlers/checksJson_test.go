@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 )
+
 func TestChecksJSON(t *testing.T) {
 	natsHandler, nc, s := setupNatsHandler(t)
 	defer s.Shutdown()
