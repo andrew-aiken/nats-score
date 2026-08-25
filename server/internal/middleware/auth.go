@@ -124,12 +124,6 @@ func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *auth.UserCl
 	}, claims
 }
 
-// GetAuthResult returns the auth result for the current request (for test endpoints)
-func (m *AuthMiddleware) GetAuthResult(r *http.Request) AuthResult {
-	result, _ := m.authenticate(r)
-	return result
-}
-
 // GetClaimsFromContext retrieves claims from request context
 func GetClaimsFromContext(ctx context.Context) *auth.UserClaims {
 	if claims, ok := ctx.Value(ClaimsContextKey).(*auth.UserClaims); ok {
