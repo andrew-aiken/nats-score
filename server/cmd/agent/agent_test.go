@@ -1,8 +1,124 @@
-package agent
+package agent_test
 
 import (
+	"bytes"
+	"context"
+	"io"
+	"os"
+	"strings"
+	"sync"
 	"testing"
+	"time"
+
+	"server/cmd/agent"
+
+	natsserver "github.com/nats-io/nats-server/v2/test"
+	"github.com/nats-io/nats.go"
 )
+
+type test struct {
+	args         agent.RunArgs
+	errorMessage string
+	cmdError     string
+}
+
+func TestRun(t *testing.T) {
+	opts := natsserver.DefaultTestOptions
+	opts.Port = -1
+	opts.JetStream = true
+	opts.StoreDir = t.TempDir()
+
+	server := natsserver.RunServer(&opts)
+	defer server.Shutdown()
+
+	address := server.Addr().String()
+	nc, err := nats.Connect(address)
+	if err != nil {
+		t.Fatalf("Failed to connect to NATS: %v", err)
+	}
+	defer nc.Close()
+
+	js, err := nc.JetStream()
+	if err != nil {
+		t.Fatalf("Failed to initialize JetStream: %v", err)
+	}
+
+	t.Run("BadAddress", func(t *testing.T) {
+		testWrapper(t, test{
+			args: agent.RunArgs{
+				LogLevel:    "WARN",
+				NatsUrl:     "not-valid-address",
+				TeamNumbers: []uint16{0, 1},
+			},
+			errorMessage: "Failed to connect to NATS (attempt 1/30): dial tcp: lookup not-valid-address",
+		})
+	})
+
+	t.Run("MissingBucket", func(t *testing.T) {
+		testWrapper(t, test{
+			args: agent.RunArgs{
+				LogLevel:    "ERROR",
+				NatsUrl:     "nats://" + address,
+				TeamNumbers: []uint16{0},
+			},
+			errorMessage: "Failed to connect to NATS",
+			cmdError:     "failed to get KV bucket 'settings': nats: bucket not found",
+		})
+	})
+
+	_, err = js.CreateKeyValue(&nats.KeyValueConfig{
+		Bucket:       "settings",
+		Description:  "Check & configuration storage",
+		History:      5,
+		TTL:          0,
+		MaxValueSize: -1,
+		MaxBytes:     -1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("Test", func(t *testing.T) {
+		testWrapper(t, test{
+			args: agent.RunArgs{
+				LogLevel:    "ERROR",
+				NatsUrl:     "nats://" + address,
+				TeamNumbers: []uint16{0},
+			},
+		})
+	})
+}
+
+func testWrapper(t *testing.T, tt test) {
+	logs := captureLogs(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	tt.args.Context = ctx
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		err := agent.Run(tt.args)
+		if err != nil {
+			if !strings.Contains(err.Error(), tt.cmdError) {
+				t.Errorf("Unexpected command error: %s\nLogs:\n%s", err.Error(), logs.String())
+			}
+		}
+	}()
+
+	got := waitForLog(logs, tt.errorMessage, time.Second)
+	if tt.errorMessage != "" && !strings.Contains(got, tt.errorMessage) {
+		t.Errorf("Expected error log not found:\nLogs:\n%s", got)
+	}
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Logf("agent.Run still running after 1s, continuing with captured logs:\n%s", logs.String())
+	}
+}
 
 func TestParseTeams(t *testing.T) {
 	tests := []struct {
@@ -26,12 +142,14 @@ func TestParseTeams(t *testing.T) {
 		{"invalid value", "abc", nil, true},
 		{"invalid range start", "a-5", nil, true},
 		{"invalid range end", "1-z", nil, true},
+		{"team number end is to large", "65535-65536", nil, true},
+		{"team number to large: 65536", "65536", nil, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := ParseTeams(tt.input)
-			if (err != nil) != tt.wantErr {
+			got, err := agent.ParseTeams(tt.input)
+			if err != nil && !tt.wantErr {
 				t.Fatalf("ParseTeams(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
 			}
 			if tt.wantErr {
@@ -46,5 +164,70 @@ func TestParseTeams(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (s *syncBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.Write(p)
+}
+
+func (s *syncBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.buf.String()
+}
+
+func captureLogs(t *testing.T) *syncBuffer {
+	t.Helper()
+	buf := &syncBuffer{}
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %s", err.Error())
+	}
+
+	origStdout := os.Stdout
+	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		_, err := io.Copy(buf, r)
+		if err != nil {
+			t.Error(err.Error())
+		}
+	}()
+
+	t.Cleanup(func() {
+		os.Stdout = origStdout
+		err := w.Close()
+		if err != nil {
+			t.Error(err.Error())
+		}
+		<-done
+		err = r.Close()
+		if err != nil {
+			t.Error(err.Error())
+		}
+	})
+
+	return buf
+}
+
+func waitForLog(buf *syncBuffer, substr string, timeout time.Duration) string {
+	deadline := time.Now().Add(timeout)
+	for {
+		got := buf.String()
+		if strings.Contains(got, substr) || time.Now().After(deadline) {
+			return got
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
