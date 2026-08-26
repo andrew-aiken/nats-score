@@ -2,7 +2,8 @@ package agent_test
 
 import (
 	"bytes"
-	"log/slog"
+	"io"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -83,8 +84,6 @@ func TestRun(t *testing.T) {
 				NatsUrl:     "nats://" + address,
 				TeamNumbers: []uint16{0},
 			},
-			errorMessage: "XX",
-			cmdError:     "XXX",
 		})
 	})
 }
@@ -96,14 +95,14 @@ func testWrapper(t *testing.T, tt test) {
 		err := agent.Run(tt.args)
 		if err != nil {
 			if !strings.Contains(err.Error(), tt.cmdError) {
-				t.Error(err.Error())
+				t.Errorf("Unexpected command error: %s\nLogs:\n%s", err.Error(), logs.String())
 			}
 		}
 	}()
 
-	got := waitForLog(logs, tt.args.LogLevel, time.Second)
+	got := waitForLog(logs, tt.errorMessage, time.Second)
 	if tt.errorMessage != "" && !strings.Contains(got, tt.errorMessage) {
-		t.Errorf("Expected no errors:\n%s", got)
+		t.Errorf("Expected error log not found:\nLogs:\n%s", got)
 	}
 }
 
@@ -174,9 +173,28 @@ func (s *syncBuffer) String() string {
 func captureLogs(t *testing.T) *syncBuffer {
 	t.Helper()
 	buf := &syncBuffer{}
-	prev := slog.Default()
-	slog.SetDefault(slog.New(slog.NewTextHandler(buf, nil)))
-	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %s", err.Error())
+	}
+
+	origStdout := os.Stdout
+	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		io.Copy(buf, r)
+	}()
+
+	t.Cleanup(func() {
+		os.Stdout = origStdout
+		w.Close()
+		<-done
+		r.Close()
+	})
+
 	return buf
 }
 

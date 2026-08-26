@@ -3,7 +3,7 @@ package server_test
 import (
 	"bytes"
 	"encoding/json"
-	"log/slog"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,11 +59,23 @@ func TestServer(t *testing.T) {
 		}
 	})
 
+	t.Run("MissingKeys", func(t *testing.T) {
+		testWrapper(t, test{
+			config: config.Config{
+				NATSUrl:  address,
+				HttpPort: 1337,
+			},
+			errorMessage: "Failed to initialize NATS auth service: invalid account seed: nkeys: invalid encoded key",
+		})
+	})
+
 	t.Run("BadAddress", func(t *testing.T) {
 		testWrapper(t, test{
 			config: config.Config{
 				NATSUrl:  "not-valid-address",
 				HttpPort: 1337,
+				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
+				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
 			},
 			errorMessage: "Failed to connect to NATS (attempt 1/30): dial tcp: lookup not-valid-address: no such host",
 		})
@@ -102,7 +114,7 @@ func TestServer(t *testing.T) {
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
 			},
-			errorMessage: "Failed to initialize NATS KV client",
+			errorMessage: "Failed to initialize NATS users KV client",
 			cmdError:     "failed to get KV bucket 'users': nats: bucket not found",
 		})
 	})
@@ -124,7 +136,7 @@ func TestServer(t *testing.T) {
 		t.Fatalf("Failed to connect to key value: %v", err)
 	}
 
-	t.Run("Run", func(t *testing.T) {
+	t.Run("CheckAdd", func(t *testing.T) {
 		check := settings.Check{
 			Name:       "Noop",
 			Type:       "noop",
@@ -141,6 +153,28 @@ func TestServer(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		time.Sleep(5*time.Millisecond)
+
+		testWrapper(t, test{
+			config: config.Config{
+				NATSUrl:            address,
+				HttpPort:           1337,
+				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
+				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
+			},
+		})
+	})
+
+	time.Sleep(5*time.Millisecond)
+
+	t.Run("CheckDelete", func(t *testing.T) {
+		err = kv.Delete("check.noop")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		time.Sleep(5*time.Millisecond)
 
 		testWrapper(t, test{
 			config: config.Config{
@@ -202,14 +236,14 @@ func testWrapper(t *testing.T, tt test) {
 		err := server.Server(args)
 		if err != nil {
 			if !strings.Contains(err.Error(), tt.cmdError) {
-				t.Error(err.Error())
+				t.Errorf("Unexpected command error: %s\nLogs:\n%s", err.Error(), logs.String())
 			}
 		}
 	}()
 
 	got := waitForLog(logs, tt.errorMessage, time.Second)
 	if tt.errorMessage != "" && !strings.Contains(got, tt.errorMessage) {
-		t.Errorf("Got unexpected error:\n%s", got)
+		t.Errorf("Expected error log not found:\nLogs:\n%s", got)
 	}
 }
 
@@ -233,9 +267,28 @@ func (s *syncBuffer) String() string {
 func captureLogs(t *testing.T) *syncBuffer {
 	t.Helper()
 	buf := &syncBuffer{}
-	prev := slog.Default()
-	slog.SetDefault(slog.New(slog.NewTextHandler(buf, nil)))
-	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("Failed to create pipe: %s", err.Error())
+	}
+
+	origStdout := os.Stdout
+	os.Stdout = w
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		io.Copy(buf, r)
+	}()
+
+	t.Cleanup(func() {
+		os.Stdout = origStdout
+		w.Close()
+		<-done
+		r.Close()
+	})
+
 	return buf
 }
 
