@@ -30,11 +30,17 @@ import (
 type ServerArgs struct {
 	LogLevel       string
 	ConfigFilePath string
+	Context        context.Context
 }
 
 // Server setups the initial connection to NATS, watches checks that get loaded into cron, and runs the webserver
 func Server(args ServerArgs) error {
 	logging.SetupLogging(args.LogLevel)
+
+	parent := args.Context
+	if parent == nil {
+		parent = context.Background()
+	}
 
 	// Load configuration
 	cfg, err := config.Load(args.ConfigFilePath)
@@ -139,6 +145,8 @@ func Server(args ServerArgs) error {
 		return nil
 	case sig := <-sigChan:
 		slog.Info("Received shutting down trigger...", "signal", sig)
+	case <-parent.Done():
+		slog.Info("Received shutdown trigger from context")
 	}
 
 	// Create shutdown context with timeout

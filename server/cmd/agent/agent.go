@@ -22,12 +22,18 @@ type RunArgs struct {
 	NatsUrl       string
 	NatsCredsFile string
 	TeamNumbers   []uint16
+	Context       context.Context
 }
 
 func Run(args RunArgs) error {
 	logging.SetupLogging(args.LogLevel)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	parent := args.Context
+	if parent == nil {
+		parent = context.Background()
+	}
+
+	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 
 	var connName string

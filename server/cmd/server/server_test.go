@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"os"
@@ -227,12 +228,18 @@ func testWrapper(t *testing.T, tt test) {
 		t.Fatalf("Failed to write test file: %s", err.Error())
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	args := server.ServerArgs{
 		LogLevel:       "DEBUG",
 		ConfigFilePath: configFile,
+		Context:        ctx,
 	}
 
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		err := server.Server(args)
 		if err != nil {
 			if !strings.Contains(err.Error(), tt.cmdError) {
@@ -244,6 +251,13 @@ func testWrapper(t *testing.T, tt test) {
 	got := waitForLog(logs, tt.errorMessage, time.Second)
 	if tt.errorMessage != "" && !strings.Contains(got, tt.errorMessage) {
 		t.Errorf("Expected error log not found:\nLogs:\n%s", got)
+	}
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Logf("server.Server still running after 1s, continuing with captured logs:\n%s", logs.String())
 	}
 }
 

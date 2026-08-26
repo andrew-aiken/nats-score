@@ -2,6 +2,7 @@ package agent_test
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"os"
 	"strings"
@@ -91,7 +92,13 @@ func TestRun(t *testing.T) {
 func testWrapper(t *testing.T, tt test) {
 	logs := captureLogs(t)
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	tt.args.Context = ctx
+
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		err := agent.Run(tt.args)
 		if err != nil {
 			if !strings.Contains(err.Error(), tt.cmdError) {
@@ -103,6 +110,13 @@ func testWrapper(t *testing.T, tt test) {
 	got := waitForLog(logs, tt.errorMessage, time.Second)
 	if tt.errorMessage != "" && !strings.Contains(got, tt.errorMessage) {
 		t.Errorf("Expected error log not found:\nLogs:\n%s", got)
+	}
+
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Logf("agent.Run still running after 1s, continuing with captured logs:\n%s", logs.String())
 	}
 }
 
