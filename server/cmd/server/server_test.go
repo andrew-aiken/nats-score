@@ -72,8 +72,8 @@ func TestServer(t *testing.T) {
 	t.Run("BadAddress", func(t *testing.T) {
 		testWrapper(t, test{
 			config: config.Config{
-				NATSUrl:  "not-valid-address",
-				HttpPort: 1337,
+				NATSUrl:            "not-valid-address",
+				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
 			},
@@ -154,7 +154,7 @@ func TestServer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		time.Sleep(5*time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 
 		testWrapper(t, test{
 			config: config.Config{
@@ -166,7 +166,7 @@ func TestServer(t *testing.T) {
 		})
 	})
 
-	time.Sleep(5*time.Millisecond)
+	time.Sleep(5 * time.Millisecond)
 
 	t.Run("CheckDelete", func(t *testing.T) {
 		err = kv.Delete("check.noop")
@@ -174,7 +174,7 @@ func TestServer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		time.Sleep(5*time.Millisecond)
+		time.Sleep(5 * time.Millisecond)
 
 		testWrapper(t, test{
 			config: config.Config{
@@ -279,14 +279,23 @@ func captureLogs(t *testing.T) *syncBuffer {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		io.Copy(buf, r)
+		_, err := io.Copy(buf, r)
+		if err != nil {
+			t.Error(err.Error())
+		}
 	}()
 
 	t.Cleanup(func() {
 		os.Stdout = origStdout
-		w.Close()
+		err := w.Close()
+		if err != nil {
+			t.Error(err.Error())
+		}
 		<-done
-		r.Close()
+		err = r.Close()
+		if err != nil {
+			t.Error(err.Error())
+		}
 	})
 
 	return buf

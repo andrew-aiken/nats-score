@@ -185,14 +185,23 @@ func captureLogs(t *testing.T) *syncBuffer {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		io.Copy(buf, r)
+		_, err := io.Copy(buf, r)
+		if err != nil {
+			t.Error(err.Error())
+		}
 	}()
 
 	t.Cleanup(func() {
 		os.Stdout = origStdout
-		w.Close()
+		err := w.Close()
+		if err != nil {
+			t.Error(err.Error())
+		}
 		<-done
-		r.Close()
+		err = r.Close()
+		if err != nil {
+			t.Error(err.Error())
+		}
 	})
 
 	return buf
