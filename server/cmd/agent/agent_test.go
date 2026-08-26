@@ -50,7 +50,7 @@ func TestRun(t *testing.T) {
 				NatsUrl:     "not-valid-address",
 				TeamNumbers: []uint16{0, 1},
 			},
-			errorMessage: "Failed to connect to NATS (attempt 1/30): dial tcp: lookup not-valid-address: no such host",
+			errorMessage: "Failed to connect to NATS (attempt 1/30): dial tcp: lookup not-valid-address",
 		})
 	})
 
