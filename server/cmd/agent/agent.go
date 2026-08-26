@@ -46,6 +46,7 @@ func Run(args RunArgs) error {
 
 	err := natsCon.SetupConnection()
 	if err != nil {
+		slog.Error("Failed to connect to NATS")
 		return err
 	}
 	defer natsCon.Close()
@@ -53,12 +54,11 @@ func Run(args RunArgs) error {
 	watchList := []string{"check.*"}
 	for _, n := range args.TeamNumbers {
 		watchList = append(watchList, fmt.Sprintf("%d.settings", n))
-		if args.LogLevel == "debug" {
-			slog.Debug("Team Loaded", "team", n)
-		}
+		slog.Debug("Team Loaded", "team", n)
 	}
 
 	if err = natsCon.SetupKVWatcher(watchList); err != nil {
+		slog.Error("Failed to start NATS KV Watcher")
 		return err
 	}
 
@@ -123,10 +123,6 @@ func ParseTeams(s string) ([]uint16, error) {
 				return nil, fmt.Errorf("range %q has start greater than end", part)
 			}
 
-			if loN > 65535 || hiN > 65535 {
-				return nil, fmt.Errorf("team number is to large")
-			}
-
 			for n := loN; n <= hiN; n++ {
 				t := uint16(n) // #nosec G115
 				if _, dup := seen[t]; !dup {
@@ -138,10 +134,6 @@ func ParseTeams(s string) ([]uint16, error) {
 			n, err := strconv.ParseUint(part, 10, 16)
 			if err != nil {
 				return nil, fmt.Errorf("invalid team number %q: %w", part, err)
-			}
-
-			if n > 65535 {
-				return nil, fmt.Errorf("team number is to large: %d", n)
 			}
 
 			t := uint16(n) // #nosec G115
