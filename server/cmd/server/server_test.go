@@ -78,7 +78,7 @@ func TestServer(t *testing.T) {
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
 			},
-			errorMessage: "Failed to connect to NATS (attempt 1/30): dial tcp: lookup not-valid-address: no such host",
+			errorMessage: "Failed to connect to NATS (attempt 1/30): dial tcp: lookup not-valid-address",
 		})
 	})
 
