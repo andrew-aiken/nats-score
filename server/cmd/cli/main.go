@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"os"
 
+	"server/cmd/agent"
 	"server/cmd/auth"
 	"server/cmd/checks"
 	"server/cmd/initialize"
 	"server/cmd/server"
 	"server/cmd/user"
-
-	"server/cmd/agent"
 
 	"github.com/urfave/cli/v3"
 )
@@ -243,11 +242,11 @@ func main() {
 										return fmt.Errorf("one of --standalone or --count is required")
 									}
 
-									if hasCount && 0 > cmd.Int("count") {
-										return fmt.Errorf("count must be a positive number")
-									}
-
-									return auth.Auth(cmd.String("config"), cmd.Bool("standalone"), cmd.Int("count"))
+									return auth.Auth(auth.CliParameters{
+										ConfigFile: cmd.String("config"),
+										Standalone: cmd.Bool("standalone"),
+										Teams: cmd.Uint16("count"),
+									})
 								},
 							},
 							{

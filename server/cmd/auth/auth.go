@@ -13,14 +13,20 @@ import (
 	"github.com/nats-io/nkeys"
 )
 
-func Auth(configFile string, standalone bool, teams int) error {
+type CliParameters struct {
+	ConfigFile string
+	Standalone bool
+	Teams      uint16
+}
+
+func Auth(args CliParameters) error {
 	logging.SetupLogging("warn")
 
 	// Adds one to team list so index of 1 team include team 0
-	offsetTeams := teams + 1
+	offsetTeams := args.Teams + 1
 
 	// Load configuration
-	cfg, err := config.Load(configFile)
+	cfg, err := config.Load(args.ConfigFile)
 	if err != nil {
 		slog.Error("Failed to load config")
 		return err
@@ -28,11 +34,11 @@ func Auth(configFile string, standalone bool, teams int) error {
 
 	for team := range offsetTeams {
 		// If its standalone only one set of credentials is needed so it returns one wildcard credential
-		if standalone {
+		if args.Standalone {
 			return createAgentCredentials(cfg, "*")
 		}
 
-		if err := createAgentCredentials(cfg, strconv.Itoa(team)); err != nil {
+		if err := createAgentCredentials(cfg, strconv.FormatUint(uint64(team), 10)); err != nil {
 			return err
 		}
 	}
