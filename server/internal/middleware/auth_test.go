@@ -103,6 +103,7 @@ func runMiddlewareTest(t *testing.T, tt testObj, mw func(http.HandlerFunc) http.
 
 func TestRequireAuth(t *testing.T) {
 	svc := newTestAuthService(t)
+	adminToken := generateToken(t, svc, "admin")
 	validToken := generateToken(t, svc, "0")
 	am := middleware.NewAuthMiddleware(svc)
 
@@ -131,9 +132,24 @@ func TestRequireAuth(t *testing.T) {
 			ExpectNextCalled: false,
 		},
 		{
+			Name:             "Unauthenticated",
+			Request:          request{Method: "GET"},
+			Headers:          headers{"Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJlZDI1NTE5LW5rZXkifQ.eyJleHAiOjE3ODc5NjY2NjUsImp0aSI6IkhBUENLTk5PNTNZM1YyM0NRVUlVV0VOSUpIU1VSQ0laSTZJWjVTS0YzNVUzWFRWSEJXTUEiLCJpYXQiOjE3ODc4ODAyNjUsImlzcyI6IkFEWjNDSUJCS0pSUEFEWEZNNEJQNUZLVFlLUkZMUzdCWTI2UTJHU0xQM1E2M01BTURQS1lNUkxMIiwibmFtZSI6ImFkbWluIiwic3ViIjoiVUNGUkpaUUlRSEpIUEtMNUdVWDRWVVJaVVZLREpNQUhWN1IyVldMUUhXQUVYRU4zWDJFUUdBNDQiLCJuYXRzIjp7InB1YiI6eyJhbGxvdyI6WyJcdTAwM2UiXX0sInN1YiI6eyJhbGxvdyI6WyJcdTAwM2UiXX0sInN1YnMiOi0xLCJkYXRhIjotMSwicGF5bG9hZCI6LTEsImlzc3Vlcl9hY2NvdW50IjoiQURaM0NJQkJLSlJQQURYRk00QlA1RktUWUtSRkxTN0JZMjZRMkdTTFAzUTYzTUFNRFBLWU1STEwiLCJ0YWdzIjpbInVzZXJfaWQ6ZHVtbXkiLCJ0ZWFtX2lkOmFkbWluIl0sInR5cGUiOiJ1c2VyIiwidmVyc2lvbiI6Mn19.DXJ1u5Vb3kmU9QC2fRGkjaC_ZovKsVggBWV5ghRirEuMvgIBvAgD3qv4AMq7sbdRnUMyM4NJjVRLBw8XY_a5AQ"},
+			ExpectedCode:     http.StatusUnauthorized,
+			MessageSubstring: `{"authorized":false,"error":"invalid or expired token: invalid issuer"}`,
+			ExpectNextCalled: false,
+		},
+		{
 			Name:             "ValidToken",
 			Request:          request{Method: "GET"},
 			Headers:          headers{"Authorization": "Bearer " + validToken},
+			ExpectedCode:     http.StatusOK,
+			ExpectNextCalled: true,
+		},
+		{
+			Name:             "AdminTeam",
+			Request:          request{Method: "GET"},
+			Headers:          headers{"Authorization": "Bearer " + adminToken},
 			ExpectedCode:     http.StatusOK,
 			ExpectNextCalled: true,
 		},
@@ -158,6 +174,14 @@ func TestRequireAdminAuth(t *testing.T) {
 			Request:          request{Method: "GET"},
 			ExpectedCode:     http.StatusUnauthorized,
 			MessageSubstring: `"authorized":false`,
+			ExpectNextCalled: false,
+		},
+		{
+			Name:             "Unauthenticated",
+			Request:          request{Method: "GET"},
+			Headers:          headers{"Authorization": "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJlZDI1NTE5LW5rZXkifQ.eyJleHAiOjE3ODc5NjY2NjUsImp0aSI6IkhBUENLTk5PNTNZM1YyM0NRVUlVV0VOSUpIU1VSQ0laSTZJWjVTS0YzNVUzWFRWSEJXTUEiLCJpYXQiOjE3ODc4ODAyNjUsImlzcyI6IkFEWjNDSUJCS0pSUEFEWEZNNEJQNUZLVFlLUkZMUzdCWTI2UTJHU0xQM1E2M01BTURQS1lNUkxMIiwibmFtZSI6ImFkbWluIiwic3ViIjoiVUNGUkpaUUlRSEpIUEtMNUdVWDRWVVJaVVZLREpNQUhWN1IyVldMUUhXQUVYRU4zWDJFUUdBNDQiLCJuYXRzIjp7InB1YiI6eyJhbGxvdyI6WyJcdTAwM2UiXX0sInN1YiI6eyJhbGxvdyI6WyJcdTAwM2UiXX0sInN1YnMiOi0xLCJkYXRhIjotMSwicGF5bG9hZCI6LTEsImlzc3Vlcl9hY2NvdW50IjoiQURaM0NJQkJLSlJQQURYRk00QlA1RktUWUtSRkxTN0JZMjZRMkdTTFAzUTYzTUFNRFBLWU1STEwiLCJ0YWdzIjpbInVzZXJfaWQ6ZHVtbXkiLCJ0ZWFtX2lkOmFkbWluIl0sInR5cGUiOiJ1c2VyIiwidmVyc2lvbiI6Mn19.DXJ1u5Vb3kmU9QC2fRGkjaC_ZovKsVggBWV5ghRirEuMvgIBvAgD3qv4AMq7sbdRnUMyM4NJjVRLBw8XY_a5AQ"},
+			ExpectedCode:     http.StatusUnauthorized,
+			MessageSubstring: `{"authorized":false,"error":"invalid or expired token: invalid issuer"}`,
 			ExpectNextCalled: false,
 		},
 		{

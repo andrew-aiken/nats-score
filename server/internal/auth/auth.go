@@ -129,6 +129,11 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 		return nil, fmt.Errorf("failed to decode JWT: %w", err)
 	}
 
+	// Verify the issuer matches
+	if claim.Issuer != s.accountPubKey {
+		return nil, fmt.Errorf("invalid issuer")
+	}
+
 	// Verify the issuer account matches
 	if claim.IssuerAccount != s.accountPubKey {
 		return nil, fmt.Errorf("invalid issuer account")

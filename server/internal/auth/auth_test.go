@@ -3,7 +3,9 @@ package auth
 import (
 	"slices"
 	"testing"
+	"time"
 
+	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
 )
 
@@ -65,12 +67,6 @@ func TestGenerateCredentials_Observer(t *testing.T) {
 	svc := newTestAuthService(t)
 	claims := generateClaims(t, svc, "observer")
 
-	// Must be the literal "results.>" (not e.g. "results.*.>") since the
-	// frontend's JetStream consumer-create call embeds this exact filter
-	// subject into its authorization check
-	// ($JS.API.CONSUMER.CREATE.results.*.<filter>) — a narrower pattern
-	// would be permission-denied even though it covers every real result
-	// subject semantically.
 	if !slices.Contains(claims.SubAllow, "results.>") {
 		t.Errorf("expected observer SubAllow to contain \"results.>\" (read access to all teams), got %v", claims.SubAllow)
 	}
@@ -78,9 +74,6 @@ func TestGenerateCredentials_Observer(t *testing.T) {
 		t.Errorf("observer PubAllow must not contain \">\" (would grant admin-level publish), got %v", claims.PubAllow)
 	}
 
-	// Observer's publish permissions should be the same fixed
-	// request-reply/JetStream-API entries a regular team gets, scoped to
-	// the observer's own subject filter — never a broader publish grant.
 	for _, want := range []string{
 		"_INBOX.>",
 		"$JS.API.INFO",
@@ -112,5 +105,47 @@ func TestGenerateCredentials_Team(t *testing.T) {
 	}
 	if slices.Contains(claims.PubAllow, ">") {
 		t.Errorf("expected team PubAllow to NOT contain \">\", got %v", claims.PubAllow)
+	}
+}
+
+// TestVerifyJWT_RejectsForgedIssuer demonstrates that VerifyJWT must reject a token that is NOT signed by the trusted account key
+func TestVerifyJWT_RejectsForgedIssuer(t *testing.T) {
+	svc := newTestAuthService(t)
+
+	attackerKP, err := nkeys.CreateAccount()
+	if err != nil {
+		t.Fatalf("failed to create attacker keypair: %v", err)
+	}
+
+	userKP, err := nkeys.CreateUser()
+	if err != nil {
+		t.Fatalf("failed to create user keypair: %v", err)
+	}
+	userPub, err := userKP.PublicKey()
+	if err != nil {
+		t.Fatalf("failed to get user public key: %v", err)
+	}
+
+	forged := jwt.NewUserClaims(userPub)
+	forged.Name = "admin"
+	forged.IssuedAt = time.Now().Unix()
+	forged.Expires = time.Now().Add(time.Hour).Unix()
+
+	// Known nats server public key
+	forged.IssuerAccount = svc.accountPubKey
+	forged.Tags.Add("user_id:attacker")
+	forged.Tags.Add("team_id:admin")
+	forged.Pub.Allow.Add(">")
+	forged.Sub.Allow.Add(">")
+
+	// Signed with the attacker's own throwaway key, NOT svc's account seed.
+	forgedJWT, err := forged.Encode(attackerKP)
+	if err != nil {
+		t.Fatalf("failed to encode forged JWT: %v", err)
+	}
+
+	claims, err := svc.VerifyJWT(forgedJWT)
+	if err == nil {
+		t.Fatalf("VerifyJWT accepted a token not signed by the trusted account key (forged issuer_account field); got claims=%+v", claims)
 	}
 }
