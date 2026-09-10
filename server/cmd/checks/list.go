@@ -45,12 +45,6 @@ func listChecks(configFile string, deleteKeys bool) error {
 	if err != nil {
 		return nil
 	}
-	defer func() {
-		err := keys.Stop()
-		if err != nil {
-			slog.Error("Error stopping NATS key listener", "error", err.Error())
-		}
-	}()
 
 	// Read keys from channel
 	for key := range keys.Keys() {

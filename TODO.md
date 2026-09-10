@@ -1,7 +1,5 @@
 # TODO
-- [ ] HTTPS
 - [ ] Dynamic Timeout per check
-- [ ] Setup command to generate server config file
 
 ## Agent
 

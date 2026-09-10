@@ -3,3 +3,6 @@ agent.creds
 config.json
 coverage.out
 /checks
+
+caddy/certs/*.key
+caddy/certs/*.crt

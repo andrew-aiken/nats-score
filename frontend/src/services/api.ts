@@ -1,6 +1,6 @@
 import { getCredentials } from './auth'
 
-const API_SERVER = 'http://localhost:3000'
+const API_SERVER = 'https://localhost'
 
 /**
  * Fetch all configured check names from the server (NATS KV `check.*` keys).
@@ -182,5 +182,3 @@ export async function getGlobalSettings(): Promise<any> {
 
   return response.json()
 }
-
-

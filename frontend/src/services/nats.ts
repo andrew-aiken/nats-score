@@ -18,7 +18,7 @@ function redirectToLogin(): void {
 }
 
 const NATS_CONFIG = {
-  servers: "ws://localhost:8080",
+  servers: "wss://localhost:8080",
 };
 
 const sc = StringCodec();

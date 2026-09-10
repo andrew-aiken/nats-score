@@ -8,7 +8,11 @@ services:
     volumes:
       - ./nsc/nats.conf:/etc/nats/server.conf:ro
       - ./nsc/score/score.jwt:/etc/nats/operator.jwt:ro
+      - ./caddy/certs:/etc/nats/certs:ro
     command: ["-c", "/etc/nats/server.conf"]
+    networks:
+      - internal
+      - proxy
 
   setup:
     depends_on:
@@ -26,6 +30,8 @@ services:
     entrypoint:
       - bash
       - /opt/startup.sh
+    networks:
+      - internal
 
   server:
     container_name: server
@@ -38,8 +44,24 @@ services:
     volumes:
       - ./nsc/config.json:/config.json:ro
       - ./nsc/creds/score/score/server.creds:/server.creds:ro
+    networks:
+      - internal
+      - proxy
+
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: caddy
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - proxy
 
   agent:
     container_name: agent
@@ -62,4 +84,11 @@ services:
     network_mode: host
 
 volumes:
+  caddy_config:
+  caddy_data:
   shared:
+
+networks:
+  internal:
+  proxy:
+    external: false

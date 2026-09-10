@@ -29,19 +29,25 @@ type UserClaims struct {
 type NATSAuthService struct {
 	accountSeed   []byte
 	accountPubKey string
+	signingPubKey string
 }
 
 // NewNATSAuthService creates a new NATS auth service
 func NewNATSAuthService(accountSeed, accountPubKey string) (*NATSAuthService, error) {
-	// Validate the account seed
-	_, err := nkeys.FromSeed([]byte(accountSeed))
+	kp, err := nkeys.FromSeed([]byte(accountSeed))
 	if err != nil {
 		return nil, fmt.Errorf("invalid account seed: %w", err)
+	}
+
+	signingPubKey, err := kp.PublicKey()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get signing public key: %w", err)
 	}
 
 	return &NATSAuthService{
 		accountSeed:   []byte(accountSeed),
 		accountPubKey: accountPubKey,
+		signingPubKey: signingPubKey,
 	}, nil
 }
 
@@ -129,8 +135,8 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 		return nil, fmt.Errorf("failed to decode JWT: %w", err)
 	}
 
-	// Verify the issuer matches
-	if claim.Issuer != s.accountPubKey {
+	// Verify the issuer matches the signing key this server uses to sign JWTs
+	if claim.Issuer != s.signingPubKey {
 		return nil, fmt.Errorf("invalid issuer")
 	}
 

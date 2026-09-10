@@ -1,7 +1,7 @@
 import type { NatsCredentials } from '../types'
 
 const STORAGE_KEY = 'nats_credentials'
-const AUTH_SERVER = 'http://localhost:3000'
+const AUTH_SERVER = 'https://localhost'
 
 /**
  * Login using a username and password
