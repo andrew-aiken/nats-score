@@ -69,7 +69,7 @@ func createAgentCredentials(conf config.Config, streamIndex string) error {
 
 	userClaim.Name = fmt.Sprint("agent-" + streamIndex)
 	if streamIndex == "*" {
-		userClaim.Name = "agent-standalong"
+		userClaim.Name = "agent-standalone"
 	}
 
 	userClaim.IssuedAt = time.Now().Unix()

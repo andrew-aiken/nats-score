@@ -47,7 +47,7 @@ services:
       - --db
       - --db-path=/data/results.db
       - --log-level
-      - info
+      - debug
     volumes:
       - ./nsc/config.json:/config.json:ro
       - ./nsc/creds/score/score/server.creds:/server.creds:ro

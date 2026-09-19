@@ -4,13 +4,10 @@
 ## Agent
 
 ## Frontend
-- [ ] Grouping NATS data points. Must be a better way
+- Grouping NATS data points. Must be a better way
 
 ## Server
-- [ ] User custom setting changes triggers server checks to reload
-- Message when 0 checks returned
+- User custom setting changes triggers server checks to reload
 - Handlers and routes combined
 - Load default values into team settings
-
-
-- Runbook if the database gets deleted. Resetting the consumers "read head"
+- Move NATS URL & credsPath out of config file
