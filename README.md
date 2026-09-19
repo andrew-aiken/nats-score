@@ -4,9 +4,12 @@
 ![Tests](https://img.shields.io/github/actions/workflow/status/andrew-aiken/nats-score/gotest.yaml)
 
 
-# Quick Start
+## Quick Start
 
 ```bash
+# Pull the code locally
+git clone https://github.com/andrew-aiken/nats-score.git
+
 # Initialize new certificates for user signing and nats server authentication
 docker run --rm -it -v $(pwd)/scripts/:/scripts:ro -v $(pwd)/nsc:/nsc --entrypoint '/scripts/setup.sh' natsio/nats-box:latest
 
@@ -43,7 +46,7 @@ go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 ```
 
 
-# Similar Projects
+## Similar Projects
 - https://github.com/scorestack/scorestack
 - https://github.com/dbaseqp/Quotient/
 - https://github.com/Scorify/Scorify
