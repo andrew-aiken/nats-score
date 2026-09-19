@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"server/cmd/agent"
 	"server/cmd/auth"
 	"server/cmd/checks"
 	"server/cmd/initialize"
+	"server/cmd/query"
 	"server/cmd/server"
 	"server/cmd/user"
+	"server/internal/sink"
 
 	"github.com/urfave/cli/v3"
 )
@@ -142,6 +145,8 @@ func main() {
 							return server.Server(server.ServerArgs{
 								ConfigFilePath: cmd.String("config"),
 								LogLevel:       cmd.String("log-level"),
+								DB:             cmd.Bool("db"),
+								DBPath:         cmd.String("db-path"),
 							})
 						},
 						Flags: []cli.Flag{
@@ -151,6 +156,16 @@ func main() {
 								Usage:    "Sets the program log level",
 								Required: false,
 								Value:    "info",
+							},
+							&cli.BoolFlag{
+								Name:  "db",
+								Usage: "Store NATS results messages into a sqlite database for simpler querying",
+							},
+							&cli.StringFlag{
+								Name:     "db-path",
+								Usage:    "Path to sqlite database file",
+								Required: false,
+								Value:    "results.db",
 							},
 						},
 					},
@@ -262,6 +277,39 @@ func main() {
 				},
 			},
 			{
+				Name:  "query",
+				Usage: "Query prints summed team points over a time range",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:     "db-path",
+						Usage:    "Path to sqlite database file",
+						Required: false,
+						Value:    "results.db",
+					},
+					&cli.TimestampFlag{
+						Name:   "start",
+						Usage:  "Start of the time range (RFC3339); defaults to 24 hours ago",
+						Config: cli.TimestampConfig{Layouts: []string{time.RFC3339}},
+					},
+					&cli.TimestampFlag{
+						Name:   "end",
+						Usage:  "End of the time range (RFC3339); defaults to now",
+						Config: cli.TimestampConfig{Layouts: []string{time.RFC3339}},
+					},
+					&cli.Uint16Flag{
+						Name:  "team",
+						Usage: "Filter to a single team ID",
+					},
+					&cli.StringFlag{
+						Name:  "check",
+						Usage: "Filter to a single check name",
+					},
+				},
+				Action: func(ctx context.Context, cmd *cli.Command) error {
+					return query.List(os.Stdout, cmd.String("db-path"), buildScoreQuery(cmd))
+				},
+			},
+			{
 				Name:  "agent",
 				Usage: "a distributed scoring service",
 				Flags: []cli.Flag{
@@ -329,4 +377,31 @@ func main() {
 		fmt.Printf("%s\n", err)
 		os.Exit(1)
 	}
+}
+
+// buildScoreQuery builds a sink.ScoreQuery from the "query" command's
+// shared flags, applying the --start/--end defaults and the --team
+// IsSet check shared by both "query total" and "query graph".
+func buildScoreQuery(cmd *cli.Command) sink.ScoreQuery {
+	start := cmd.Timestamp("start")
+	if start.IsZero() {
+		start = time.Now().Add(-24 * time.Hour)
+	}
+
+	end := cmd.Timestamp("end")
+	if end.IsZero() {
+		end = time.Now()
+	}
+
+	query := sink.ScoreQuery{
+		Start:     start,
+		End:       end,
+		CheckName: cmd.String("check"),
+	}
+	if cmd.IsSet("team") {
+		team := cmd.Uint16("team")
+		query.TeamID = &team
+	}
+
+	return query
 }

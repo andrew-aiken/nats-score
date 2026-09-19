@@ -2,6 +2,8 @@ nsc
 agent.creds
 config.json
 coverage.out
+database.sql
+database.sql-*
 /checks
 
 caddy/certs/*.key

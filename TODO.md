@@ -11,3 +11,6 @@
 - Message when 0 checks returned
 - Handlers and routes combined
 - Load default values into team settings
+
+
+- Runbook if the database gets deleted. Resetting the consumers "read head"

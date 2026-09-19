@@ -41,9 +41,17 @@ services:
     build:
       context: ./
     working_dir: /
+    command:
+      - server
+      - start
+      - --db
+      - --db-path=/data/results.db
+      - --log-level
+      - debug
     volumes:
       - ./nsc/config.json:/config.json:ro
       - ./nsc/creds/score/score/server.creds:/server.creds:ro
+      - ./database.sql:/data/results.db
     networks:
       - internal
       - proxy
@@ -75,8 +83,8 @@ services:
       - shared:/shared:ro
     command:
       - agent
-      - --team
-      - "0"
+      - --teams
+      - "0-9"
       - --nats-address
       - nats://localhost:4222
       - --nats-creds
