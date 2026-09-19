@@ -9,12 +9,11 @@ import (
 	"os"
 	"strings"
 
-	"server/internal/config"
 	"server/internal/logging"
 	"server/internal/nats"
 )
 
-func Export(configFile string, directory string) error {
+func Export(natsAddress string, natsCreds string, directory string) error {
 	logging.SetupLogging("warn")
 
 	// Check if directory exists if not create
@@ -34,17 +33,10 @@ func Export(configFile string, directory string) error {
 		}
 	}
 
-	// Load configuration
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
-
 	// Connect to NATS settings KV
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {

@@ -28,10 +28,15 @@ func main() {
 				Usage: "Control plane for distributed scoring",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    "config",
+						Name:    "nats-address",
+						Aliases: []string{"n"},
+						Usage:   "NATS server address",
+						Value:   "nats://nats:4222",
+					},
+					&cli.StringFlag{
+						Name:    "nats-creds",
 						Aliases: []string{"c"},
-						Usage:   "path to the score server configuration file",
-						Value:   "config.json",
+						Usage:   "NATS score server credentials",
 					},
 				},
 				Commands: []*cli.Command{
@@ -44,7 +49,7 @@ func main() {
 								Aliases: []string{"ls"},
 								Usage:   "Displays loaded checks",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.List(cmd.String("config"))
+									return checks.List(cmd.String("nats-address"), cmd.String("nats-creds"))
 								},
 							},
 							{
@@ -60,7 +65,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Import(cmd.String("config"), cmd.String("directory"))
+									return checks.Import(cmd.String("nats-address"), cmd.String("nats-creds"), cmd.String("directory"))
 								},
 							},
 							{
@@ -75,7 +80,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Export(cmd.String("config"), cmd.String("directory"))
+									return checks.Export(cmd.String("nats-address"), cmd.String("nats-creds"), cmd.String("directory"))
 								},
 							},
 							{
@@ -90,7 +95,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Purge(cmd.String("config"), cmd.Bool("force"))
+									return checks.Purge(cmd.String("nats-address"), cmd.String("nats-creds"), cmd.Bool("force"))
 								},
 							},
 							{
@@ -108,7 +113,7 @@ func main() {
 										return nil
 									}
 
-									return checks.Remove(cmd.String("config"), checkName)
+									return checks.Remove(cmd.String("nats-address"), cmd.String("nats-creds"), checkName)
 								},
 							},
 							{
@@ -125,7 +130,7 @@ func main() {
 										return nil
 									}
 
-									return checks.Describe(cmd.String("config"), checkName)
+									return checks.Describe(cmd.String("nats-address"), cmd.String("nats-creds"), checkName)
 								},
 							},
 							{
@@ -133,7 +138,7 @@ func main() {
 								Usage:     "Validates that a check if formatted correctly",
 								ArgsUsage: "check",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return checks.Validate(cmd.String("config"), cmd.Args().First())
+									return checks.Validate(cmd.String("nats-address"), cmd.String("nats-creds"), cmd.Args().First())
 								},
 							},
 						},
@@ -143,6 +148,8 @@ func main() {
 						Usage: "Run the scoring controller",
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							return server.Server(server.ServerArgs{
+								NatsAddress:    cmd.String("nats-address"),
+								NatsCreds:      cmd.String("nats-creds"),
 								ConfigFilePath: cmd.String("config"),
 								LogLevel:       cmd.String("log-level"),
 								DB:             cmd.Bool("db"),
@@ -166,6 +173,12 @@ func main() {
 								Usage:    "Path to sqlite database file",
 								Required: false,
 								Value:    "results.db",
+							},
+							&cli.StringFlag{
+								Name:    "config",
+								Aliases: []string{"c"},
+								Usage:   "path to the score server configuration file",
+								Value:   "config.json",
 							},
 						},
 					},
@@ -203,7 +216,7 @@ func main() {
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return user.Add(cmd.String("config"), cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
+									return user.Add(cmd.String("nats-address"), cmd.String("nats-creds"), cmd.String("username"), cmd.String("team"), cmd.String("password"), cmd.Bool("force"))
 								},
 							},
 							{
@@ -211,7 +224,7 @@ func main() {
 								Aliases: []string{"ls"},
 								Usage:   "Lists all registered login accounts",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return user.List(cmd.String("config"))
+									return user.List(cmd.String("nats-address"), cmd.String("nats-creds"))
 								},
 							},
 							{
@@ -220,7 +233,7 @@ func main() {
 								Usage:     "Removes a login account",
 								ArgsUsage: "username",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return user.Remove(cmd.String("config"), cmd.Args().First())
+									return user.Remove(cmd.String("nats-address"), cmd.String("nats-creds"), cmd.Args().First())
 								},
 							},
 						},
@@ -244,6 +257,12 @@ func main() {
 										Aliases:  []string{"c"},
 										Usage:    "Number of indivitual agent certs to generate",
 										Required: false,
+									},
+									&cli.StringFlag{
+										Name:    "config",
+										Aliases: []string{"c"},
+										Usage:   "path to the score server configuration file",
+										Value:   "config.json",
 									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -269,7 +288,7 @@ func main() {
 								Aliases: []string{"init"},
 								Usage:   "Initialize NATS KV and streams",
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									return initialize.Initialize(cmd.String("config"))
+									return initialize.Initialize(cmd.String("nats-address"), cmd.String("nats-creds"))
 								},
 							},
 						},

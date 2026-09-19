@@ -44,8 +44,7 @@ func TestServerWithResultsDB(t *testing.T) {
 		t.Fatalf("Failed to initialize JetStream: %v", err)
 	}
 
-	// Mirror cmd/initialize/initialize.go's setup for the buckets/stream/consumer
-	// this server needs.
+	// Mirror cmd/initialize/initialize.go's setup
 	if _, err := js.CreateKeyValue(&nats.KeyValueConfig{Bucket: "settings"}); err != nil {
 		t.Fatalf("Failed to create settings KV: %v", err)
 	}
@@ -72,7 +71,6 @@ func TestServerWithResultsDB(t *testing.T) {
 	testDir := t.TempDir()
 
 	cfg := config.Config{
-		NATSUrl:            address,
 		HttpPort:           1338,
 		AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 		AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -92,6 +90,7 @@ func TestServerWithResultsDB(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	args := server.ServerArgs{
+		NatsAddress:    address,
 		LogLevel:       "DEBUG",
 		ConfigFilePath: configFile,
 		Context:        ctx,

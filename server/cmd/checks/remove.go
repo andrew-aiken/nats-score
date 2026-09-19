@@ -4,29 +4,21 @@ import (
 	"fmt"
 	"log/slog"
 
-	"server/internal/config"
 	"server/internal/logging"
 	"server/internal/nats"
 
 	natsnats "github.com/nats-io/nats.go"
 )
 
-func Remove(configFile string, checkName string) error {
+func Remove(natsAddress string, natsCreds string, checkName string) error {
 	logging.SetupLogging("warn")
-
-	// Load configuration
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
 
 	// Connect to NATS settings KV
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
-	err = natsClient.SetupConnection()
+	err := natsClient.SetupConnection()
 	if err != nil {
 		slog.Warn("Failed to initialize NATS KV client")
 		return err

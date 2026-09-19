@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"server/internal/config"
 	"server/internal/logging"
 	"server/internal/nats"
 
@@ -36,7 +35,7 @@ type check struct {
 }
 
 // Validate checks if a check is in a valid structure
-func Validate(configFile string, checkName string) error {
+func Validate(natsAddress string, natsCreds string, checkName string) error {
 	logging.SetupLogging("warn")
 
 	if checkName == "" {
@@ -44,19 +43,12 @@ func Validate(configFile string, checkName string) error {
 		return nil
 	}
 
-	// Load configuration
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
-
 	// Connect to NATS settings KV
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
-	err = natsClient.SetupConnection()
+	err := natsClient.SetupConnection()
 	if err != nil {
 		slog.Warn("Failed to initialize NATS KV client")
 		return err

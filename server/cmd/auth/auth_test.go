@@ -10,7 +10,6 @@ import (
 	"server/cmd/auth"
 	"server/internal/config"
 
-	natsserver "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nkeys"
 )
 
@@ -21,7 +20,6 @@ type test struct {
 }
 
 func TestAuth(t *testing.T) {
-
 	kp, err := nkeys.CreateAccount()
 	if err != nil {
 		t.Fatalf("failed to create account keypair: %v", err)
@@ -37,14 +35,6 @@ func TestAuth(t *testing.T) {
 		t.Fatalf("failed to get account public key: %v", err)
 	}
 
-	opts := natsserver.DefaultTestOptions
-	opts.Port = -1
-	opts.JetStream = true
-	opts.StoreDir = t.TempDir()
-
-	server := natsserver.RunServer(&opts)
-	defer server.Shutdown()
-
 	tests := []test{
 		{
 			name: "Valid",
@@ -52,8 +42,6 @@ func TestAuth(t *testing.T) {
 				ConfigFile: testGenerateConfigFile(t, config.Config{
 					AccountSigningSeed: string(seed),
 					AccountPublicKey:   string(pubKey),
-					NATSUrl:            server.Addr().String(),
-					NATSCredsFile:      "",
 				}),
 				Standalone: false,
 				Teams:      1,
@@ -65,8 +53,6 @@ func TestAuth(t *testing.T) {
 				ConfigFile: testGenerateConfigFile(t, config.Config{
 					AccountSigningSeed: string(seed),
 					AccountPublicKey:   string(pubKey),
-					NATSUrl:            server.Addr().String(),
-					NATSCredsFile:      "",
 				}),
 				Standalone: true,
 				Teams:      0,
@@ -87,8 +73,6 @@ func TestAuth(t *testing.T) {
 				ConfigFile: testGenerateConfigFile(t, config.Config{
 					AccountSigningSeed: "XXX",
 					AccountPublicKey:   string(pubKey),
-					NATSUrl:            server.Addr().String(),
-					NATSCredsFile:      "",
 				}),
 				Standalone: false,
 				Teams:      0,

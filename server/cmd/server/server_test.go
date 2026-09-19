@@ -23,6 +23,7 @@ import (
 
 type test struct {
 	config       config.Config
+	natsAddress  string
 	errorMessage string
 	cmdError     string
 }
@@ -62,8 +63,8 @@ func TestServer(t *testing.T) {
 
 	t.Run("MissingKeys", func(t *testing.T) {
 		testWrapper(t, test{
+			natsAddress: address,
 			config: config.Config{
-				NATSUrl:  address,
 				HttpPort: 1337,
 			},
 			errorMessage: "Failed to initialize NATS auth service: invalid account seed: nkeys: invalid encoded key",
@@ -72,8 +73,8 @@ func TestServer(t *testing.T) {
 
 	t.Run("BadAddress", func(t *testing.T) {
 		testWrapper(t, test{
+			natsAddress: "not-valid-address",
 			config: config.Config{
-				NATSUrl:            "not-valid-address",
 				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -84,8 +85,8 @@ func TestServer(t *testing.T) {
 
 	t.Run("MissingSettingsBucket", func(t *testing.T) {
 		testWrapper(t, test{
+			natsAddress: address,
 			config: config.Config{
-				NATSUrl:            address,
 				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -109,8 +110,8 @@ func TestServer(t *testing.T) {
 
 	t.Run("MissingUsersBucket", func(t *testing.T) {
 		testWrapper(t, test{
+			natsAddress: address,
 			config: config.Config{
-				NATSUrl:            address,
 				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -158,8 +159,8 @@ func TestServer(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 
 		testWrapper(t, test{
+			natsAddress: address,
 			config: config.Config{
-				NATSUrl:            address,
 				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -178,8 +179,8 @@ func TestServer(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 
 		testWrapper(t, test{
+			natsAddress: address,
 			config: config.Config{
-				NATSUrl:            address,
 				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -199,8 +200,8 @@ func TestServer(t *testing.T) {
 		}
 
 		testWrapper(t, test{
+			natsAddress: address,
 			config: config.Config{
-				NATSUrl:            address,
 				HttpPort:           1337,
 				AccountSigningSeed: "SAAFFOSIG6JRRWW3N3OX54TQBYCUAZAI4LAX2OXBCOO52PXM3CGLPSMFAM",
 				AccountPublicKey:   "ACTQ6KLZTMWN46EM6QVXBBGE45UTAKJIZUXYB3ULTSFLMMM2C63MPNWO",
@@ -234,6 +235,7 @@ func testWrapper(t *testing.T, tt test) {
 	args := server.ServerArgs{
 		LogLevel:       "DEBUG",
 		ConfigFilePath: configFile,
+		NatsAddress:    tt.natsAddress,
 		Context:        ctx,
 	}
 

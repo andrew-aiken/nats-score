@@ -9,12 +9,17 @@ import (
 )
 
 // List prints each team's summed points over a time range
-func List(w io.Writer, dbPath string, q sink.ScoreQuery) error {
+func List(w io.Writer, dbPath string, q sink.ScoreQuery) (err error) {
 	db, err := sink.Open(dbPath)
 	if err != nil {
 		return fmt.Errorf("unable to open results database: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		dbCloseErr := db.Close()
+		if err == nil && dbCloseErr != nil {
+			err = dbCloseErr
+		}
+	}()
 
 	teamScores, err := db.TeamScores(context.Background(), q)
 	if err != nil {
@@ -22,7 +27,10 @@ func List(w io.Writer, dbPath string, q sink.ScoreQuery) error {
 	}
 
 	for _, score := range teamScores {
-		fmt.Fprintf(w, "Team %d: %d points\n", score.TeamID, score.Points)
+		_, err = fmt.Fprintf(w, "Team %d: %d points\n", score.TeamID, score.Points)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

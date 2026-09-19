@@ -6,33 +6,26 @@ import (
 	"time"
 
 	"server/cmd/user"
-	"server/internal/config"
 	"server/internal/logging"
 
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
 
-func Initialize(configPath string) error {
+func Initialize(natsAddress string, natsCreds string) error {
 	logging.SetupLogging("info")
-
-	cfg, err := config.Load(configPath)
-	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		return err
-	}
 
 	opts := []nats.Option{
 		nats.Name("score-server"),
 	}
 
 	// Use credentials file if provided
-	if cfg.NATSCredsFile != "" {
-		opts = append(opts, nats.UserCredentials(cfg.NATSCredsFile))
+	if natsCreds != "" {
+		opts = append(opts, nats.UserCredentials(natsCreds))
 	}
 
 	// Connect to NATS
-	nc, err := nats.Connect(cfg.NATSUrl, opts...)
+	nc, err := nats.Connect(natsAddress, opts...)
 	if err != nil {
 		return fmt.Errorf("failed to connect to NATS: %w", err)
 	}
@@ -109,7 +102,7 @@ func Initialize(configPath string) error {
 	password := fmt.Sprint(uuid.New())
 
 	// Add admin user
-	err = user.Add(configPath, "admin", "admin", password, true)
+	err = user.Add(natsAddress, natsCreds, "admin", "admin", password, true)
 	if err != nil {
 		return err
 	}

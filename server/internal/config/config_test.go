@@ -17,7 +17,7 @@ func TestLoad(t *testing.T) {
 			t.Errorf("Failed to load data: %v", err)
 		}
 
-		if appConfig.NATSUrl != "dummy" {
+		if appConfig.HttpPort != 8080 {
 			t.Error("Json value does not match expected result")
 		}
 	})

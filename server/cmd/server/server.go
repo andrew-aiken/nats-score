@@ -29,9 +29,11 @@ import (
 )
 
 type ServerArgs struct {
+	Context        context.Context
 	LogLevel       string
 	ConfigFilePath string
-	Context        context.Context
+	NatsAddress    string
+	NatsCreds      string
 	DB             bool
 	DBPath         string
 }
@@ -73,8 +75,8 @@ func Server(args ServerArgs) error {
 
 	// Initialize NATS KV client (optional - only if NATS URL is configured)
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       args.NatsAddress,
+		NatsCredsFile: args.NatsCreds,
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {

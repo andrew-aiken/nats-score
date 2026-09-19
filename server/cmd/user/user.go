@@ -7,13 +7,12 @@ import (
 	"strings"
 
 	"server/internal/auth"
-	"server/internal/config"
 	"server/internal/logging"
 	"server/internal/nats"
 )
 
 // Add creates a new user login account in the NATS "users" KV bucket.
-func Add(configFile string, username, team, password string, force bool) error {
+func Add(natsAddress string, natsCreds string, username, team, password string, force bool) error {
 	logging.SetupLogging("warn")
 
 	username = strings.TrimSpace(username)
@@ -29,15 +28,9 @@ func Add(configFile string, username, team, password string, force bool) error {
 		return fmt.Errorf("password must not be empty")
 	}
 
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
-
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
 	if err := natsClient.SetupConnection(); err != nil {
 		slog.Warn("Failed to initialize NATS KV client")
@@ -77,18 +70,12 @@ func Add(configFile string, username, team, password string, force bool) error {
 }
 
 // List prints all teams and their registered users.
-func List(configFile string) error {
+func List(natsAddress string, natsCreds string) error {
 	logging.SetupLogging("warn")
 
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
-
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
 	if err := natsClient.SetupConnection(); err != nil {
 		slog.Warn("Failed to initialize NATS KV client")
@@ -128,7 +115,7 @@ func List(configFile string) error {
 }
 
 // Remove deletes a user login account from the NATS "users" KV bucket.
-func Remove(configFile string, username string) error {
+func Remove(natsAddress string, natsCreds string, username string) error {
 	logging.SetupLogging("warn")
 
 	username = strings.TrimSpace(username)
@@ -136,15 +123,9 @@ func Remove(configFile string, username string) error {
 		return fmt.Errorf("username must not be empty")
 	}
 
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
-
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
 	if err := natsClient.SetupConnection(); err != nil {
 		slog.Warn("Failed to initialize NATS KV client")

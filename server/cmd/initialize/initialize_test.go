@@ -1,35 +1,19 @@
 package initialize_test
 
 import (
-	"encoding/json"
-	"errors"
-	"io/fs"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"server/cmd/initialize"
-	"server/internal/config"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 )
 
-func TestMissingConfigFile(t *testing.T) {
-	err := initialize.Initialize("config.json")
-
-	_, ok := errors.AsType[*fs.PathError](err)
-	if !ok {
-		t.FailNow()
-	}
-}
+var NO_NATS_AUTH_FILE = ""
 
 func TestUninitializedNATS(t *testing.T) {
-	configFile := testGenerateConfigFile(t, config.Config{
-		NATSUrl:       "nats://localhost:6001", // Non-default nats port
-		NATSCredsFile: "",
-	})
+	natsAddress := "nats://localhost:6001" // Non-default nats port
 
-	err := initialize.Initialize(configFile)
+	err := initialize.Initialize(natsAddress, NO_NATS_AUTH_FILE)
 
 	if err.Error() != "failed to connect to NATS: nats: no servers available for connection" {
 		t.Fatal("Returned the incorrect error message")
@@ -45,31 +29,11 @@ func TestConnection(t *testing.T) {
 	server := natsserver.RunServer(&opts)
 	defer server.Shutdown()
 
-	configFile := testGenerateConfigFile(t, config.Config{
-		NATSUrl:       server.Addr().String(),
-		NATSCredsFile: "",
-	})
+	natsAddress := server.Addr().String()
 
-	err := initialize.Initialize(configFile)
+	err := initialize.Initialize(natsAddress, NO_NATS_AUTH_FILE)
 
 	if err != nil {
 		t.Fatal("Normal startup operations failed")
 	}
-}
-
-func testGenerateConfigFile(t *testing.T, config config.Config) string {
-	tmpDir := t.TempDir()
-
-	tmpConfigFile := filepath.Join(tmpDir, "config.json")
-
-	content, err := json.Marshal(config)
-	if err != nil {
-		t.FailNow()
-	}
-
-	if err := os.WriteFile(tmpConfigFile, content, 0644); err != nil {
-		t.Fatalf("failed to write temp file: %v", err)
-	}
-
-	return tmpConfigFile
 }

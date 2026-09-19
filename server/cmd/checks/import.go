@@ -8,20 +8,12 @@ import (
 	"os"
 	"strings"
 
-	"server/internal/config"
 	"server/internal/logging"
 	"server/internal/nats"
 )
 
-func Import(configFile string, directory string) error {
+func Import(natsAddress string, natsCreds string, directory string) error {
 	logging.SetupLogging("warn")
-
-	// Load configuration
-	cfg, err := config.Load(configFile)
-	if err != nil {
-		slog.Error("Failed to load config")
-		return err
-	}
 
 	// Validate check directory
 	if err := validateDirectory(directory); err != nil {
@@ -30,10 +22,10 @@ func Import(configFile string, directory string) error {
 
 	// Connect to NATS settings KV
 	natsClient := nats.NatsConnection{
-		NatsUrl:       cfg.NATSUrl,
-		NatsCredsFile: cfg.NATSCredsFile,
+		NatsUrl:       natsAddress,
+		NatsCredsFile: natsCreds,
 	}
-	err = natsClient.SetupConnection()
+	err := natsClient.SetupConnection()
 	if err != nil {
 		slog.Warn("Failed to initialize NATS KV client")
 		return err

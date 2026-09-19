@@ -1,17 +1,15 @@
 package user_test
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"server/cmd/initialize"
 	"server/cmd/user"
-	"server/internal/config"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 )
+
+var NO_NATS_AUTH_FILE = ""
 
 func TestUserLifeCycle(t *testing.T) {
 	opts := natsserver.DefaultTestOptions
@@ -22,29 +20,25 @@ func TestUserLifeCycle(t *testing.T) {
 	server := natsserver.RunServer(&opts)
 	defer server.Shutdown()
 
-	configFile := testGenerateConfigFile(t, config.Config{
-		NATSUrl:       server.Addr().String(),
-		NATSCredsFile: "",
-	})
+	testUser := "testUser"
+	serverAddress := server.Addr().String()
 
-	err := initialize.Initialize(configFile)
+	err := initialize.Initialize(serverAddress, NO_NATS_AUTH_FILE)
 	if err != nil {
 		t.Error("Failed to initialize nats setup")
 	}
 
-	testUser := "testUser"
-
-	err = user.Add(configFile, testUser, "admin", "testPassword", false)
+	err = user.Add(serverAddress, NO_NATS_AUTH_FILE, testUser, "admin", "testPassword", false)
 	if err != nil {
 		t.Error("Failed to create user")
 	}
 
-	err = user.List(configFile)
+	err = user.List(serverAddress, NO_NATS_AUTH_FILE)
 	if err != nil {
 		t.Error("Failed to list users")
 	}
 
-	err = user.Remove(configFile, testUser)
+	err = user.Remove(serverAddress, NO_NATS_AUTH_FILE, testUser)
 	if err != nil {
 		t.Error("Failed to remove users")
 	}
@@ -52,7 +46,7 @@ func TestUserLifeCycle(t *testing.T) {
 
 func TestAddUser(t *testing.T) {
 	t.Run("Missing username", func(t *testing.T) {
-		err := user.Add("dne", "", "admin", "testPassword", false)
+		err := user.Add("dne", NO_NATS_AUTH_FILE, "", "admin", "testPassword", false)
 
 		if err.Error() != "username must not be empty" {
 			t.Fatal(err)
@@ -60,7 +54,7 @@ func TestAddUser(t *testing.T) {
 	})
 
 	t.Run("Missing team", func(t *testing.T) {
-		err := user.Add("dne", "admin", "", "testPassword", false)
+		err := user.Add("dne", NO_NATS_AUTH_FILE, "admin", "", "testPassword", false)
 
 		if err.Error() != "team must not be empty" {
 			t.Fatal(err)
@@ -68,37 +62,10 @@ func TestAddUser(t *testing.T) {
 	})
 
 	t.Run("Missing password", func(t *testing.T) {
-		err := user.Add("dne", "admin", "admin", "", false)
+		err := user.Add("dne", NO_NATS_AUTH_FILE, "admin", "admin", "", false)
 
 		if err.Error() != "password must not be empty" {
 			t.Fatal(err)
 		}
 	})
-
-	t.Run("Invalid config", func(t *testing.T) {
-		configFileName := "bad-config.json"
-
-		err := user.Add(configFileName, "admin", "admin", "password", false)
-
-		if err.Error() != "open "+configFileName+": no such file or directory" {
-			t.Fatal(err)
-		}
-	})
-}
-
-func testGenerateConfigFile(t *testing.T, config config.Config) string {
-	tmpDir := t.TempDir()
-
-	tmpConfigFile := filepath.Join(tmpDir, "config.json")
-
-	content, err := json.Marshal(config)
-	if err != nil {
-		t.FailNow()
-	}
-
-	if err := os.WriteFile(tmpConfigFile, content, 0644); err != nil {
-		t.Fatalf("failed to write temp file: %v", err)
-	}
-
-	return tmpConfigFile
 }

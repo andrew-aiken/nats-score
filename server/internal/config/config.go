@@ -10,8 +10,6 @@ import (
 type Config struct {
 	AccountSigningSeed string `json:"account_signing_seed"`
 	AccountPublicKey   string `json:"account_public_key"`
-	NATSUrl            string `json:"nats_url"`
-	NATSCredsFile      string `json:"nats_creds_file"`
 	HttpPort           int    `json:"port"`
 }
 

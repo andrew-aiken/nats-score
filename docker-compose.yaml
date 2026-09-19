@@ -43,6 +43,10 @@ services:
     working_dir: /
     command:
       - server
+      - --nats-address
+      - nats://nats:4222
+      - --nats-creds
+      - /server.creds
       - start
       - --db
       - --db-path=/data/results.db
