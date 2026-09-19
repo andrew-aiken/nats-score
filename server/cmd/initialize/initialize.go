@@ -95,7 +95,10 @@ func Initialize(configPath string) error {
 		Name:          "results-watcher",
 		Description:   "Consumer for reading score results",
 		DeliverPolicy: nats.DeliverAllPolicy,
-		AckPolicy:     nats.AckAllPolicy,
+		AckPolicy:     nats.AckExplicitPolicy,
+		AckWait:       30 * time.Second,
+		MaxDeliver:    5,
+		MaxAckPending: 500,
 	})
 	if err != nil {
 		return err

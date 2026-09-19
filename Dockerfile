@@ -26,12 +26,14 @@ COPY server/internal/ ./internal
 COPY --from=frontend /app/dist ./internal/static/dist
 
 RUN CGO_ENABLED=0 go build -o /go/bin/score ./cmd/cli/main.go
+RUN mkdir /data
 
 
 FROM gcr.io/distroless/static-debian13:nonroot
 USER nonroot:nonroot
 
 COPY --from=server --chown=nonroot:nonroot --chmod=500 /go/bin/score /
+COPY --from=server --chown=nonroot:nonroot /data /data
 
 ENTRYPOINT ["/score"]
 CMD [ "server", "start" ]

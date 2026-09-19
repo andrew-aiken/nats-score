@@ -22,6 +22,7 @@ import (
 	"server/internal/nats"
 	"server/internal/routes"
 	"server/internal/settings"
+	"server/internal/sink"
 
 	"github.com/go-co-op/gocron/v2"
 	natsnats "github.com/nats-io/nats.go"
@@ -31,6 +32,8 @@ type ServerArgs struct {
 	LogLevel       string
 	ConfigFilePath string
 	Context        context.Context
+	DB             bool
+	DBPath         string
 }
 
 // Server setups the initial connection to NATS, watches checks that get loaded into cron, and runs the webserver
@@ -85,6 +88,25 @@ func Server(args ServerArgs) error {
 	if err := natsClient.SetupUsersKV(); err != nil {
 		slog.Error("Failed to initialize NATS users KV client")
 		return err
+	}
+
+	consumerErrCh := make(chan error, 1)
+	var resultsDB *sink.DB
+	consumerCtx, cancelConsumer := context.WithCancel(parent)
+	defer cancelConsumer()
+
+	if args.DB {
+		resultsDB, err = sink.Open(args.DBPath)
+		if err != nil {
+			slog.Error("Failed to open results database", "error", err.Error())
+			return fmt.Errorf("open results database: %w", err)
+		}
+		defer resultsDB.Close()
+
+		go func() {
+			consumerErrCh <- sink.Consume(consumerCtx, natsClient.JetStreamConn, resultsDB)
+		}()
+		slog.Info("Consuming results stream into SQLite", "path", args.DBPath)
 	}
 
 	kv := natsClient.NatsKV
@@ -143,6 +165,11 @@ func Server(args ServerArgs) error {
 			return err
 		}
 		return nil
+	case err := <-consumerErrCh:
+		if err != nil {
+			return err
+		}
+		return nil
 	case sig := <-sigChan:
 		slog.Info("Received shutting down trigger...", "signal", sig)
 	case <-parent.Done():
@@ -167,6 +194,17 @@ func Server(args ServerArgs) error {
 	if err := server.Shutdown(ctx); err != nil {
 		slog.Error("Shutting down http server")
 		return err
+	}
+
+	// Stop the results consumer, if running, and wait for it to drain
+	if args.DB {
+		cancelConsumer()
+		if err := <-consumerErrCh; err != nil {
+			slog.Error("Error stopping results consumer", "error", err.Error())
+		}
+		if err := resultsDB.Close(); err != nil {
+			slog.Error("Error closing results database", "error", err.Error())
+		}
 	}
 
 	slog.Info("Server stopped")
