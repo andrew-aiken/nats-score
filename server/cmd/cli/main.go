@@ -31,7 +31,7 @@ func main() {
 						Name:    "nats-address",
 						Aliases: []string{"n"},
 						Usage:   "NATS server address",
-						Value:   "nats://nats:4222",
+						Value:   "nats://localhost:4222",
 					},
 					&cli.StringFlag{
 						Name:    "nats-creds",

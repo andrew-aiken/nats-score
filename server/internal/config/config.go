@@ -31,7 +31,6 @@ func Load(path string) (conf Config, error error) {
 		}
 	}()
 
-	// var cfg Config
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&defaultConfig); err != nil {
 		return Config{}, err

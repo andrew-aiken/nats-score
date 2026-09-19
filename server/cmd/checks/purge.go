@@ -8,7 +8,7 @@ import (
 )
 
 func Purge(natsAddress string, natsCreds string, force bool) error {
-	if !force && askForConfirmation("Are you sure you want to proceed?") {
+	if force || askForConfirmation("Are you sure you want to proceed?") {
 	} else {
 		fmt.Println("Aborting")
 		return nil
@@ -17,6 +17,7 @@ func Purge(natsAddress string, natsCreds string, force bool) error {
 	return listChecks(natsAddress, natsCreds, true)
 }
 
+// askForConfirmation returns the bool of the users input
 func askForConfirmation(s string) bool {
 	reader := bufio.NewReader(os.Stdin)
 
