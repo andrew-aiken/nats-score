@@ -9,5 +9,5 @@ docker run --rm -it -v $(pwd)/scripts/:/scripts:ro -v $(pwd)/nsc:/nsc --entrypoi
 # Launch the docker compose stack
 docker compose up --build
 
-# Open http://localhost:3000
+# Open https://localhost
 ```
