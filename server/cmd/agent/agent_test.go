@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -86,6 +87,40 @@ func TestRun(t *testing.T) {
 				TeamNumbers: []uint16{0},
 			},
 		})
+	})
+
+	// Exercises the actual SIGINT/SIGTERM shutdown path
+	// (as opposed to parent-context cancellation, which every other subtest here uses)
+	t.Run("SignalShutdown", func(t *testing.T) {
+		logs := captureLogs(t)
+
+		done := make(chan error, 1)
+		go func() {
+			done <- agent.Run(agent.RunArgs{
+				LogLevel:    "ERROR",
+				NatsUrl:     "nats://" + address,
+				TeamNumbers: []uint16{0},
+			})
+		}()
+
+		time.Sleep(50 * time.Millisecond)
+
+		if err := syscall.Kill(syscall.Getpid(), syscall.SIGINT); err != nil {
+			t.Fatalf("Failed to send SIGINT: %v", err)
+		}
+
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Fatalf("agent.Run returned an error: %v", err)
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatal("agent.Run did not return after SIGINT")
+		}
+
+		if strings.Contains(logs.String(), "NATS KV watcher failed") {
+			t.Fatalf("Clean shutdown was misreported as a watcher failure:\n%s", logs.String())
+		}
 	})
 }
 

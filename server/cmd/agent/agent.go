@@ -88,12 +88,15 @@ func Run(args RunArgs) error {
 	// Handle graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 
 	go func() {
-		<-sigChan
-		slog.Info("Shutting down...")
-		cancel()
-		natsCon.Close()
+		select {
+		case <-sigChan:
+			slog.Info("Shutting down...")
+			cancel()
+		case <-ctx.Done():
+		}
 	}()
 
 	// Process KV settings updates
