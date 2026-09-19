@@ -23,12 +23,17 @@ const (
 )
 
 // Consume binds to the durable "results-watcher" pull consumer on the "results" stream and inserts every message into sqlite database
-func Consume(ctx context.Context, js nats.JetStreamContext, db *DB) error {
+func Consume(ctx context.Context, js nats.JetStreamContext, db *DB) (err error) {
 	sub, err := js.PullSubscribe("", "", nats.Bind(streamName, consumerName))
 	if err != nil {
 		return err
 	}
-	defer sub.Unsubscribe()
+	defer func() {
+		natsUnsubErr := sub.Unsubscribe()
+		if err != nil && natsUnsubErr != nil {
+			err = natsUnsubErr
+		}
+	}()
 
 	for {
 		if ctx.Err() != nil {

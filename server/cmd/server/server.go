@@ -39,7 +39,7 @@ type ServerArgs struct {
 }
 
 // Server setups the initial connection to NATS, watches checks that get loaded into cron, and runs the webserver
-func Server(args ServerArgs) error {
+func Server(args ServerArgs) (err error) {
 	logging.SetupLogging(args.LogLevel)
 
 	parent := args.Context
@@ -103,7 +103,12 @@ func Server(args ServerArgs) error {
 			slog.Error("Failed to open results database", "error", err.Error())
 			return fmt.Errorf("open results database: %w", err)
 		}
-		defer resultsDB.Close()
+		defer func() {
+			dbCloseErr := resultsDB.Close()
+			if err == nil && dbCloseErr != nil {
+				err = dbCloseErr
+			}
+		}()
 
 		go func() {
 			consumerErrCh <- sink.Consume(consumerCtx, natsClient.JetStreamConn, resultsDB)

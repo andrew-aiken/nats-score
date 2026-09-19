@@ -17,7 +17,9 @@ func openTestDB(t *testing.T) *sink.DB {
 	if err != nil {
 		t.Fatalf("Failed to open results database: %v", err)
 	}
-	t.Cleanup(func() { db.Close() })
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
 
 	return db
 }
@@ -96,9 +98,7 @@ func TestTeamScores(t *testing.T) {
 	ctx := context.Background()
 
 	rows := []sink.Row{
-		// Half a second after the query's start boundary: must still be
-		// included, exercising the datetime() normalization fix for
-		// RFC3339Nano's fractional-second suffix.
+		// Half a second after the query's start boundary: must still be included, exercising the datetime() normalization fix for RFC3339Nano's fractional-second suffix.
 		{StreamSeq: 1, Subject: "results.0.noop.0", TeamID: 0, CheckName: "noop", Passed: true, Points: 5, Timestamp: "2026-01-01T12:00:00.5Z"},
 		{StreamSeq: 2, Subject: "results.0.ping.0", TeamID: 0, CheckName: "ping", Passed: true, Points: 3, Timestamp: "2026-01-01T12:00:10Z"},
 		{StreamSeq: 3, Subject: "results.1.noop.0", TeamID: 1, CheckName: "noop", Passed: true, Points: 7, Timestamp: "2026-01-01T12:00:05Z"},

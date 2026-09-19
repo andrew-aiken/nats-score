@@ -80,7 +80,12 @@ func countResultRows(t *testing.T, dbPath string) int {
 	if err != nil {
 		t.Fatalf("Failed to open results database for verification: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			t.Fatalf("Failed to close database connection: %s", err.Error())
+		}
+	}()
 
 	var count int
 	if err := conn.QueryRow("SELECT count(*) FROM results").Scan(&count); err != nil {
@@ -123,7 +128,7 @@ func TestConsumePicksUpMessagesPublishedBeforeStart(t *testing.T) {
 		t.Fatalf("Failed to open results database: %v", err)
 	}
 	t.Cleanup(func() {
-		db.Close()
+		_ = db.Close()
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -150,7 +155,12 @@ func TestConsumePicksUpMessagesPublishedBeforeStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to open results database for verification: %v", err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			t.Fatalf("Failed to close database connection: %s", err.Error())
+		}
+	}()
 
 	var teamID int
 	var checkName string
@@ -182,7 +192,7 @@ func TestConsumeSkipsUnparseableSubject(t *testing.T) {
 		t.Fatalf("Failed to open results database: %v", err)
 	}
 	t.Cleanup(func() {
-		db.Close()
+		_ = db.Close()
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -219,7 +229,7 @@ func TestConsumeStopsOnContextCancellation(t *testing.T) {
 		t.Fatalf("Failed to open results database: %v", err)
 	}
 	t.Cleanup(func() {
-		db.Close()
+		_ = db.Close()
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())

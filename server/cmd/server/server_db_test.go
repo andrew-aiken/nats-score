@@ -137,7 +137,10 @@ func waitForResultRow(t *testing.T, dbPath string, timeout time.Duration) {
 			if err == nil {
 				var count int
 				scanErr := conn.QueryRow("SELECT count(*) FROM results").Scan(&count)
-				conn.Close()
+				err := conn.Close()
+				if err != nil {
+					t.Fatalf("Failed to close database connection: %s", err.Error())
+				}
 				if scanErr == nil && count >= 1 {
 					return
 				}

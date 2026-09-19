@@ -78,7 +78,7 @@ CREATE INDEX IF NOT EXISTS results_team_check_idx ON results (team_id, check_nam
 }
 
 // InsertBatch inserts rows in a single transaction
-func (db *DB) InsertBatch(ctx context.Context, rows []Row) error {
+func (db *DB) InsertBatch(ctx context.Context, rows []Row) (err error) {
 	if len(rows) == 0 {
 		return nil
 	}
@@ -87,13 +87,23 @@ func (db *DB) InsertBatch(ctx context.Context, rows []Row) error {
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		rollbackErr := tx.Rollback()
+		if err != nil && rollbackErr != nil {
+			err = rollbackErr
+		}
+	}()
 
 	stmt, err := tx.PrepareContext(ctx, "INSERT OR IGNORE INTO results (stream_seq, subject, team_id, check_name, message, passed, points, details, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("prepare insert: %w", err)
 	}
-	defer stmt.Close()
+	defer func() {
+		stmtErr := stmt.Close()
+		if err != nil && stmtErr != nil {
+			err = stmtErr
+		}
+	}()
 
 	for _, row := range rows {
 		details, err := json.Marshal(row.Details)
@@ -149,14 +159,19 @@ func filterClause(q ScoreQuery) (string, []any) {
 }
 
 // TeamScores sums points per team_id over a time range
-func (db *DB) TeamScores(ctx context.Context, q ScoreQuery) ([]TeamScore, error) {
+func (db *DB) TeamScores(ctx context.Context, q ScoreQuery) (teamScores []TeamScore, err error) {
 	where, args := filterClause(q)
 
 	rows, err := db.conn.QueryContext(ctx, "SELECT team_id, SUM(points) FROM results WHERE "+where+" GROUP BY team_id ORDER BY team_id", args...) // #nosec G202
 	if err != nil {
 		return nil, fmt.Errorf("query team scores: %w", err)
 	}
-	defer rows.Close()
+	defer func() {
+		closeRowErr := rows.Close()
+		if err != nil && closeRowErr != nil {
+			err = closeRowErr
+		}
+	}()
 
 	var scores []TeamScore
 	for rows.Next() {
