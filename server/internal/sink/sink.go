@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -42,7 +43,10 @@ func Open(path string) (*DB, error) {
 		"PRAGMA synchronous=NORMAL",
 	} {
 		if _, err := conn.Exec(pragma); err != nil {
-			conn.Close()
+			connCloseErr := conn.Close()
+			if connCloseErr != nil {
+				slog.Error("Issue closing database connection", "error", connCloseErr.Error())
+			}
 			return nil, fmt.Errorf("set %q: %w", pragma, err)
 		}
 	}
@@ -63,7 +67,10 @@ CREATE TABLE IF NOT EXISTS results (
 CREATE INDEX IF NOT EXISTS results_team_check_idx ON results (team_id, check_name);`
 
 	if _, err := conn.Exec(schema); err != nil {
-		conn.Close()
+		connCloseErr := conn.Close()
+		if connCloseErr != nil {
+			slog.Error("Issue closing database connection", "error", connCloseErr.Error())
+		}
 		return nil, fmt.Errorf("create results table: %w", err)
 	}
 
@@ -145,7 +152,7 @@ func filterClause(q ScoreQuery) (string, []any) {
 func (db *DB) TeamScores(ctx context.Context, q ScoreQuery) ([]TeamScore, error) {
 	where, args := filterClause(q)
 
-	rows, err := db.conn.QueryContext(ctx, "SELECT team_id, SUM(points) FROM results WHERE "+where+" GROUP BY team_id ORDER BY team_id", args...)
+	rows, err := db.conn.QueryContext(ctx, "SELECT team_id, SUM(points) FROM results WHERE "+where+" GROUP BY team_id ORDER BY team_id", args...) // #nosec G202
 	if err != nil {
 		return nil, fmt.Errorf("query team scores: %w", err)
 	}

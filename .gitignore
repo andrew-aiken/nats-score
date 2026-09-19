@@ -1,9 +1,9 @@
-nsc
 agent.creds
 config.json
 coverage.out
-database.sql
-database.sql-*
+
+/nsc
+/outputs
 /checks
 
 caddy/certs/*.key

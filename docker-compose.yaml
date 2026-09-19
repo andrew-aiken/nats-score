@@ -51,7 +51,7 @@ services:
     volumes:
       - ./nsc/config.json:/config.json:ro
       - ./nsc/creds/score/score/server.creds:/server.creds:ro
-      - ./database.sql:/data/results.db
+      - ./outputs/:/data/
     networks:
       - internal
       - proxy

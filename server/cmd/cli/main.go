@@ -260,7 +260,7 @@ func main() {
 									return auth.Auth(auth.CliParameters{
 										ConfigFile: cmd.String("config"),
 										Standalone: cmd.Bool("standalone"),
-										Teams: cmd.Uint16("count"),
+										Teams:      cmd.Uint16("count"),
 									})
 								},
 							},

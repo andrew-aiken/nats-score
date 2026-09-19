@@ -1,4 +1,8 @@
 
+![License](https://img.shields.io/badge/License-GLP%203.0-blue.svg)
+![GitHub Release](https://img.shields.io/github/v/release/andrew-aiken/nats-score)
+![Tests](https://img.shields.io/github/actions/workflow/status/andrew-aiken/nats-score/gotest.yaml)
+
 
 # Quick Start
 
@@ -11,3 +15,35 @@ docker compose up --build
 
 # Open https://localhost
 ```
+
+## Contributing
+
+### Testing
+
+```bash
+# Verify formatting is correct
+gofmt -l .
+
+# Lint
+golangci-lint run
+
+# Check for security findings, findings are allowed to be suppressed but need to be documented
+gosec ./...
+
+# Verify the tests all are functioning or just target a specific check being modified
+go test -v -race ./...
+```
+
+#### Coverage
+
+Checks should aim to have ~80% or more test coverage
+
+```bash
+go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
+```
+
+
+# Similar Projects
+- https://github.com/scorestack/scorestack
+- https://github.com/dbaseqp/Quotient/
+- https://github.com/Scorify/Scorify
