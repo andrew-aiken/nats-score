@@ -47,6 +47,8 @@ go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 
 
 ## Similar Projects
-- https://github.com/scorestack/scorestack
-- https://github.com/dbaseqp/Quotient/
-- https://github.com/Scorify/Scorify
+- [Quotient](https://github.com/dbaseqp/Quotient)
+- [Scorestack](https://github.com/scorestack/scorestack)
+- [Scorify](https://github.com/Scorify/Scorify)
+- [Scoring Engine](https://github.com/scoringengine/scoringengine) <!-- cli commands & bash scripts for checks -->
+- [Scoring-Engine (C2 Games)](https://gitlab.com/c2-games/scoring) <!-- Not going to lie, this one is all over the place -->
