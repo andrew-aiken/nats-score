@@ -53,7 +53,7 @@ func Export(natsAddress string, natsCreds string, directory string) error {
 	// List check keys
 	keys, err := kv.ListKeys()
 	if err != nil {
-		return nil
+		return fmt.Errorf("failed to list checks: %w", err)
 	}
 
 	// Read keys from channel

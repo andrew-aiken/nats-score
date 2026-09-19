@@ -35,7 +35,7 @@ func listChecks(natsAddress string, natsCreds string, deleteKeys bool) error {
 
 	keys, err := kv.ListKeys()
 	if err != nil {
-		return nil
+		return fmt.Errorf("failed to list checks: %w", err)
 	}
 
 	// Read keys from channel

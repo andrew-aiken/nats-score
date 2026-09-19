@@ -16,20 +16,20 @@ func GetChecks(natsKV nats.KeyValue) (map[string]settings.Check, error) {
 
 	keys, err := natsKV.ListKeys()
 	if err != nil {
-		return checks, nil
+		return checks, fmt.Errorf("failed to list checks: %w", err)
 	}
 
 	// Read keys from channel
 	for key := range keys.Keys() {
 		if checkName, prefix := strings.CutPrefix(key, "check."); prefix {
-			key, err := natsKV.Get(key)
+			entry, err := natsKV.Get(key)
 			if err != nil {
-				continue
+				return checks, fmt.Errorf("failed to get check %q: %w", checkName, err)
 			}
 
 			checkValue := settings.Check{}
 
-			if err := json.Unmarshal(key.Value(), &checkValue); err != nil {
+			if err := json.Unmarshal(entry.Value(), &checkValue); err != nil {
 				return checks, fmt.Errorf("failed to unmarshal settings: %w", err)
 			}
 
