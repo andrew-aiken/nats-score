@@ -152,11 +152,6 @@ func (s *NATSAuthService) VerifyJWT(jwtString string) (*UserClaims, error) {
 		return nil, fmt.Errorf("JWT validation failed: %v", vr.Errors())
 	}
 
-	// Check if expired
-	if claim.Expires > 0 && time.Now().Unix() > claim.Expires {
-		return nil, fmt.Errorf("JWT has expired")
-	}
-
 	// Extract user ID from tags
 	var userID string
 	for _, tag := range claim.Tags {
