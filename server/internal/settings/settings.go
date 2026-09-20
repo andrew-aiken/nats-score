@@ -31,7 +31,7 @@ func (ts *TeamState) GetAttributes(checkName string) map[string]string {
 type Settings struct {
 	mu     sync.RWMutex
 	Checks map[string]Check
-	Teams  map[uint16]*TeamState
+	Teams map[uint16]*TeamState
 }
 
 // GetCheck returns the named check, safe for concurrent use.
@@ -112,7 +112,7 @@ func (s *Settings) MonitorSettings(ctx context.Context, natsKVWatcher nats.KeyWa
 					continue
 				}
 
-				if ts, exists := s.Teams[uint16(teamID)]; exists {
+				if teamState, exists := s.Teams[uint16(teamID)]; exists {
 					// If the nats change updates the setting update the stored value
 					if entry.Operation() == nats.KeyValuePut {
 						var teamSettings map[string]map[string]string
@@ -121,9 +121,9 @@ func (s *Settings) MonitorSettings(ctx context.Context, natsKVWatcher nats.KeyWa
 							continue
 						}
 
-						ts.mu.Lock()
-						ts.Attributes = teamSettings
-						ts.mu.Unlock()
+						teamState.mu.Lock()
+						teamState.Attributes = teamSettings
+						teamState.mu.Unlock()
 						slog.Info(fmt.Sprintf("Team %d settings update", teamID))
 					} else { // If not updating its removing: drop the attributes key
 						// If initial startup has not completed skip removing checks
@@ -131,9 +131,9 @@ func (s *Settings) MonitorSettings(ctx context.Context, natsKVWatcher nats.KeyWa
 							continue
 						}
 
-						s.mu.Lock()
-						ts.Attributes = nil
-						s.mu.Unlock()
+						teamState.mu.Lock()
+						teamState.Attributes = nil
+						teamState.mu.Unlock()
 						slog.Info(fmt.Sprintf("Removed settings for team %d", teamID))
 					}
 				} else {

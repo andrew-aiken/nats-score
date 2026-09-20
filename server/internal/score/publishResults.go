@@ -45,7 +45,7 @@ func publishResults(streamName string, results checks.Results, scoreWeight uint8
 	scoreSubject := fmt.Sprintf("%s.%d", streamName, passedSubject)
 	_, err = js.Publish(scoreSubject, bytes)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed publish to results stream %s", streamName))
+		slog.Error("Failed publish to results", "stream", streamName)
 		return err
 	}
 

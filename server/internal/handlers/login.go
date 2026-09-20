@@ -82,7 +82,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	creds, err := h.NatsAuthService.GenerateCredentials(req.Username, user.Team)
 	if err != nil {
-		slog.Error("Failed to generate NATS credentials", "username", req.Username, "error", err)
+		slog.Error("Failed to generate NATS credentials", "username", req.Username, "error", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		encodeJson(w, map[string]string{"error": "Failed to generate credentials"})
 		return

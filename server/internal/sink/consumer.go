@@ -68,27 +68,27 @@ func insertBatch(ctx context.Context, db *DB, msgs []*nats.Msg) error {
 
 		// Convert the nats objects into a golang object
 		if err := json.Unmarshal(msg.Data, &results); err != nil {
-			slog.Error("Failed to unmarshal published results, dropping message", "subject", msg.Subject, "error", err)
+			slog.Error("Failed to unmarshal published results, dropping message", "subject", msg.Subject, "error", err.Error())
 			if termErr := msg.Term(); termErr != nil {
-				slog.Error("Failed to terminate, unable to parse message", "subject", msg.Subject, "error", termErr)
+				slog.Error("Failed to terminate, unable to parse message", "subject", msg.Subject, "error", termErr.Error())
 			}
 			continue
 		}
 
 		meta, err := msg.Metadata()
 		if err != nil {
-			slog.Error("Failed to read message metadata, dropping message", "subject", msg.Subject, "error", err)
+			slog.Error("Failed to read message metadata, dropping message", "subject", msg.Subject, "error", err.Error())
 			if termErr := msg.Term(); termErr != nil {
-				slog.Error("Failed to terminate message with missing metadata", "subject", msg.Subject, "error", termErr)
+				slog.Error("Failed to terminate message with missing metadata", "subject", msg.Subject, "error", termErr.Error())
 			}
 			continue
 		}
 
 		teamID, checkName, err := parseSubject(msg.Subject)
 		if err != nil {
-			slog.Error("Failed to parse subject, dropping message", "subject", msg.Subject, "error", err)
+			slog.Error("Failed to parse subject, dropping message", "subject", msg.Subject, "error", err.Error())
 			if termErr := msg.Term(); termErr != nil {
-				slog.Error("Failed to terminate message, unable to parse subject", "subject", msg.Subject, "error", termErr)
+				slog.Error("Failed to terminate message, unable to parse subject", "subject", msg.Subject, "error", termErr.Error())
 			}
 			continue
 		}
@@ -113,7 +113,7 @@ func insertBatch(ctx context.Context, db *DB, msgs []*nats.Msg) error {
 
 	for _, msg := range toAck {
 		if err := msg.Ack(); err != nil {
-			slog.Error("Failed to ack message after insert", "subject", msg.Subject, "error", err)
+			slog.Error("Failed to ack message after insert", "subject", msg.Subject, "error", err.Error())
 		}
 	}
 

@@ -47,7 +47,7 @@ func (h *Handler) StopScoringCron(w http.ResponseWriter, r *http.Request) {
 	err := h.CronScheduler.StopJobs()
 
 	if err != nil {
-		slog.Error("Failed to stop check cronjob", "error", err)
+		slog.Error("Failed to stop check cronjob", "error", err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		encodeJson(w, map[string]string{"error": "Failed to stop scoring cronjob"})
 		return

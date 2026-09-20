@@ -37,7 +37,7 @@ func HandleScoreEvent(ctx context.Context, settings *settings.Settings, js nats.
 		// Marshal the definition once; each goroutine unmarshals into its own struct.
 		defBytes, err := json.Marshal(value.Definition)
 		if err != nil {
-			slog.Error(fmt.Sprintf("Failed to marshal definition for check %s: %v", checkName, err))
+			slog.Error(fmt.Sprintf("Failed to marshal definition for check %s", checkName), "error", err.Error())
 			return
 		}
 
@@ -55,7 +55,7 @@ func HandleScoreEvent(ctx context.Context, settings *settings.Settings, js nats.
 func runTeamCheck(ctx context.Context, teamNum uint16, teamState *settings.TeamState, checkName string, value settings.Check, defBytes []byte, js nats.JetStreamContext) {
 	defCopy := reflect.New(reflect.TypeOf(value.Definition).Elem()).Interface()
 	if err := json.Unmarshal(defBytes, defCopy); err != nil {
-		slog.Error(fmt.Sprintf("Failed to unmarshal definition copy for check %s team %d: %v", checkName, teamNum, err))
+		slog.Error(fmt.Sprintf("Failed to unmarshal definition copy for check %s team %d", checkName, teamNum), "error", err.Error())
 		return
 	}
 
@@ -73,7 +73,7 @@ func runTeamCheck(ctx context.Context, teamNum uint16, teamState *settings.TeamS
 
 	streamName := fmt.Sprintf("results.%d.%s", teamNum, checkName)
 	if err := publishResults(streamName, result, value.ScoreWeight, js); err != nil {
-		slog.Error(fmt.Sprintf("Failed to publish results for team %d: %v", teamNum, err))
+		slog.Error(fmt.Sprintf("Failed to publish results for team %d", teamNum), "error", err.Error())
 	}
 
 	slog.Info(fmt.Sprintf("Check %s team %d result: %v", checkName, teamNum, result.Passed))

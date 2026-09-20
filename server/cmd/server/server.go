@@ -50,13 +50,13 @@ func Server(args ServerArgs) (err error) {
 	// Load configuration
 	cfg, err := config.Load(args.ConfigFilePath)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to load configuration: %v", err))
+		slog.Error("Failed to load configuration", "error", err.Error())
 		return fmt.Errorf("load config: %w", err)
 	}
 
 	cronScheduler, err := gocron.NewScheduler()
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to create cron scheduler: %v", err))
+		slog.Error("Failed to create cron scheduler", "error", err.Error())
 		return fmt.Errorf("create cron scheduler: %w", err)
 	}
 	defer func() {
@@ -69,7 +69,7 @@ func Server(args ServerArgs) (err error) {
 	// Initialize NATS auth service
 	natsAuthService, err := auth.NewNATSAuthService(cfg.AccountSigningSeed, cfg.AccountPublicKey)
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to initialize NATS auth service: %v", err))
+		slog.Error("Failed to initialize NATS auth service", "error", err.Error())
 		return fmt.Errorf("initialize NATS auth service: %w", err)
 	}
 

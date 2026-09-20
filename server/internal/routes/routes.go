@@ -12,7 +12,7 @@ import (
 
 func StartServer(server *http.Server) error {
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error(fmt.Sprintf("Failed to start http server: %v", err))
+		slog.Error("Failed to start http server", "error", err.Error())
 		return fmt.Errorf("start http server: %w", err)
 	}
 
@@ -24,7 +24,7 @@ func SetupRoutes(serverConfig *handlers.Handler, authMiddleware middleware.AuthM
 
 	staticHandler, err := static.Handler()
 	if err != nil {
-		slog.Error(fmt.Sprintf("Failed to set up static file handler: %v", err))
+		slog.Error("Failed to set up static file handler", "error", err.Error())
 	} else {
 		mux.Handle("/", staticHandler)
 	}
