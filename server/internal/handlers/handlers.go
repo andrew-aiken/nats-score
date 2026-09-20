@@ -69,13 +69,6 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.NatsKVClient == nil {
-		slog.Warn("NATS KV client not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "NATS KV not available"})
-		return
-	}
-
 	mutableFields, err := nats.GetMutableFields(h.NatsKVClient)
 	if err != nil {
 		slog.Warn("Failed to get mutable fields", "error", err)
@@ -91,13 +84,6 @@ func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 // The team number is extracted from the user's JWT roles
 func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	if h.NatsKVClient == nil {
-		slog.Warn("NATS KV client not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "NATS KV not available"})
-		return
-	}
 
 	// Get claims from context (set by auth middleware)
 	claims := middleware.GetClaimsFromContext(r.Context())
@@ -156,13 +142,6 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		encodeJson(w, map[string]string{"error": "Method not allowed"})
-		return
-	}
-
-	if h.NatsKVClient == nil {
-		slog.Warn("NATS KV client not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "NATS KV not available"})
 		return
 	}
 

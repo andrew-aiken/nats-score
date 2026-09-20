@@ -120,14 +120,6 @@ func TestGetMutableFields(t *testing.T) {
 			MessageSubstring: `{"error":"Method not allowed"}`,
 		},
 		{
-			Name: "NoNATS",
-			Request: request{
-				Method: "GET",
-			},
-			ExpectedCode:     http.StatusServiceUnavailable,
-			MessageSubstring: `{"error":"NATS KV not available"}`,
-		},
-		{
 			Name: "FailMutableFields",
 			Request: request{
 				Method: "GET",
@@ -178,14 +170,6 @@ func TestChecks(t *testing.T) {
 			},
 			ExpectedCode:     http.StatusMethodNotAllowed,
 			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
-			Name: "NoNATS",
-			Request: request{
-				Method: "GET",
-			},
-			ExpectedCode:     http.StatusServiceUnavailable,
-			MessageSubstring: `{"error":"NATS KV not available"}`,
 		},
 		{
 			Name: "Test",
@@ -249,14 +233,6 @@ func TestTeamSettings(t *testing.T) {
 	}
 
 	tests := []testObj{
-		{
-			Name: "NoNATS",
-			Request: request{
-				Method: "GET",
-			},
-			ExpectedCode:     http.StatusServiceUnavailable,
-			MessageSubstring: `{"error":"NATS KV not available"}`,
-		},
 		{
 			Name: "NotAuthorized",
 			Request: request{

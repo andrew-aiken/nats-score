@@ -31,15 +31,6 @@ func TestLogin(t *testing.T) {
 			MessageSubstring: `{"error":"Invalid request body"}`,
 		},
 		{
-			Name: "NoNATS",
-			Request: request{
-				Method: "POST",
-			},
-			Body:             `{"username":"foo","password":"bar"}`,
-			ExpectedCode:     http.StatusUnauthorized,
-			MessageSubstring: `{"error":"Invalid username or password"}`,
-		},
-		{
 			Name: "MissingUser",
 			Request: request{
 				Method: "POST",

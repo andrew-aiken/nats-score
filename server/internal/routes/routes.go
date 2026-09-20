@@ -33,7 +33,7 @@ func SetupRoutes(serverConfig *handlers.Handler, authMiddleware middleware.AuthM
 	mux.HandleFunc("/auth/login", serverConfig.Login)
 
 	mux.HandleFunc("/api/checks/mutable-fields", authMiddleware.RequireAuth(serverConfig.GetMutableFields))
-	mux.HandleFunc("/api/checks", serverConfig.Checks)
+	mux.HandleFunc("/api/checks", authMiddleware.RequireAuth(serverConfig.Checks))
 	mux.HandleFunc("/api/settings", authMiddleware.RequireAuth(serverConfig.TeamSettings))
 
 	mux.HandleFunc("/api/admin/settings", authMiddleware.RequireAdminAuth(serverConfig.ChecksJSON))

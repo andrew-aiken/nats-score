@@ -14,18 +14,11 @@ func (h *Handler) StartScoringCron(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.CronScheduler == nil {
-		slog.Warn("cron scheduler not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "cron scheduler not initialized"})
-		return
-	}
-
 	h.CronScheduler.Start()
 
 	slog.Info("Starting check cron")
 
-	encodeJson(w, "Started Scoring CronJob") // TODO: switch to json encoding
+	encodeJson(w, "Started Scoring CronJob")
 }
 
 // StopScoringCron handles stopping the scoring cronjob
@@ -34,13 +27,6 @@ func (h *Handler) StopScoringCron(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		encodeJson(w, map[string]string{"error": "Method not allowed"})
-		return
-	}
-
-	if h.CronScheduler == nil {
-		slog.Warn("cron scheduler not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "cron scheduler not initialized"})
 		return
 	}
 

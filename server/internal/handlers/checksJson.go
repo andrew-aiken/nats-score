@@ -16,13 +16,6 @@ func (h *Handler) ChecksJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.NatsKVClient == nil {
-		slog.Warn("NATS KV client not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "NATS KV not available"})
-		return
-	}
-
 	checks, err := nats.GetChecks(h.NatsKVClient)
 
 	if err != nil {

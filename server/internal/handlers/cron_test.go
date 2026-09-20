@@ -37,14 +37,6 @@ func TestStartScoringCron(t *testing.T) {
 			MessageSubstring: `{"error":"Method not allowed"}`,
 		},
 		{
-			Name: "NoCronScheduler",
-			Request: request{
-				Method: "PUT",
-			},
-			ExpectedCode:     http.StatusServiceUnavailable,
-			MessageSubstring: `{"error":"cron scheduler not initialized"}`,
-		},
-		{
 			Name: "StartCron",
 			Request: request{
 				Method: "PUT",
@@ -106,14 +98,6 @@ func TestStopScoringCron(t *testing.T) {
 			},
 			ExpectedCode:     http.StatusMethodNotAllowed,
 			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
-			Name: "NoCronScheduler",
-			Request: request{
-				Method: "PUT",
-			},
-			ExpectedCode:     http.StatusServiceUnavailable,
-			MessageSubstring: `{"error":"cron scheduler not initialized"}`,
 		},
 		{
 			Name: "StopCron",

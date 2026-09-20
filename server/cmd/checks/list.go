@@ -55,5 +55,5 @@ func listChecks(natsAddress string, natsCreds string, deleteKeys bool) error {
 			}
 		}
 	}
-	return err
+	return nil
 }

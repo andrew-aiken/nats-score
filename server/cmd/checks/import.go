@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"server/internal/logging"
@@ -77,7 +78,7 @@ func loadKV(directory string, checkFiles []string, natsClient nats.NatsConnectio
 	for _, file := range checkFiles {
 		checkName := fmt.Sprintf("check.%s", strings.TrimSuffix(file, ".json"))
 
-		filePath := fmt.Sprintf("%s/%s", directory, file)
+		filePath := filepath.Join(directory, file)
 
 		data, err := os.ReadFile(filePath) // #nosec G304 - fine with importing checks from anywhere on the system
 		if err != nil {

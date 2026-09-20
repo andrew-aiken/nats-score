@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"server/internal/logging"
@@ -69,7 +70,8 @@ func Export(natsAddress string, natsCreds string, directory string) error {
 				return err
 			}
 
-			checkPath := fmt.Sprintf("%s/%s.json", directory, checkName)
+			fileName := fmt.Sprintf("%s.json", checkName)
+			checkPath := filepath.Join(directory, fileName)
 
 			if err := os.WriteFile(checkPath, checkJsonBtes, 0600); err != nil {
 				return err

@@ -22,14 +22,6 @@ func TestChecksJSON(t *testing.T) {
 			MessageSubstring: `{"error":"Method not allowed"}`,
 		},
 		{
-			Name: "NoNATS",
-			Request: request{
-				Method: "GET",
-			},
-			ExpectedCode:     http.StatusServiceUnavailable,
-			MessageSubstring: `{"error":"NATS KV not available"}`,
-		},
-		{
 			Name: "Test",
 			Request: request{
 				Method: "GET",

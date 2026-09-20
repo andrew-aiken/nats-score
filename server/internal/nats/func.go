@@ -61,29 +61,29 @@ func GetMutableFields(natsKV nats.KeyValue) (map[string][]string, error) {
 func GetTeamSettings(natsKV nats.KeyValue, teamNumber string) (map[string]map[string]string, error) {
 	key := fmt.Sprintf("%s.settings", teamNumber)
 
-	settings := make(map[string]map[string]string)
+	settingsObj := make(map[string]map[string]string)
 
 	entry, err := natsKV.Get(key)
 	if err != nil {
 		// Return empty map if key doesn't exist
 		if err == nats.ErrKeyNotFound {
-			return settings, nil
+			return settingsObj, nil
 		}
 		return nil, fmt.Errorf("failed to get '%s' key: %w", key, err)
 	}
 
-	if err := json.Unmarshal(entry.Value(), &settings); err != nil {
+	if err := json.Unmarshal(entry.Value(), &settingsObj); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal team settings: %w", err)
 	}
 
-	return settings, nil
+	return settingsObj, nil
 }
 
 // PutTeamSettings writes team-specific settings to the KV bucket
-func PutTeamSettings(natsKV nats.KeyValue, teamNumber string, settings map[string]map[string]string) error {
+func PutTeamSettings(natsKV nats.KeyValue, teamNumber string, settingsObj map[string]map[string]string) error {
 	key := fmt.Sprintf("%s.settings", teamNumber)
 
-	data, err := json.Marshal(settings)
+	data, err := json.Marshal(settingsObj)
 	if err != nil {
 		return fmt.Errorf("failed to marshal settings: %w", err)
 	}

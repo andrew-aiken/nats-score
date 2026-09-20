@@ -40,10 +40,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Username == "" || req.Password == "" || h.NatsUsersKVClient == nil {
-		if h.NatsUsersKVClient == nil {
-			slog.Warn("NATS users KV client not initialized")
-		}
+	if req.Username == "" || req.Password == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		encodeJson(w, map[string]string{"error": invalidCredentialsError})
 		return
@@ -70,13 +67,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if user == (auth.User{}) || pwErr != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		encodeJson(w, map[string]string{"error": invalidCredentialsError})
-		return
-	}
-
-	if h.NatsAuthService == nil {
-		slog.Warn("nats auth service not initialized")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		encodeJson(w, map[string]string{"error": "nats auth service not initialized"})
 		return
 	}
 
