@@ -67,7 +67,7 @@ func TestServer(t *testing.T) {
 			config: config.Config{
 				HttpPort: 1337,
 			},
-			errorMessage: "Failed to initialize NATS auth service: invalid account seed: nkeys: invalid encoded key",
+			errorMessage: `msg="Failed to initialize NATS auth service" error="invalid account seed: nkeys: invalid encoded key"`,
 		})
 	})
 

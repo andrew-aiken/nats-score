@@ -108,9 +108,7 @@ func main() {
 									checkName := cmd.Args().First()
 
 									if checkName == "" {
-										fmt.Println("Check name required")
-										fmt.Println(cmd.UsageText)
-										return nil
+										return fmt.Errorf("check name required\n%s", cmd.UsageText)
 									}
 
 									return checks.Remove(cmd.String("nats-address"), cmd.String("nats-creds"), checkName)
@@ -125,9 +123,7 @@ func main() {
 									checkName := cmd.Args().First()
 
 									if checkName == "" {
-										fmt.Println("Check name required")
-										fmt.Println(cmd.UsageText)
-										return nil
+										return fmt.Errorf("check name required\n%s", cmd.UsageText)
 									}
 
 									return checks.Describe(cmd.String("nats-address"), cmd.String("nats-creds"), checkName)

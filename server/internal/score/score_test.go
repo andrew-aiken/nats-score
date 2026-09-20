@@ -129,7 +129,7 @@ func TestHandleScoreEvent(t *testing.T) {
 			t.Fatalf("failed to publish score trigger %v", err)
 		}
 
-		expectedError := "Failed publish to results stream results.0.noop"
+		expectedError := `"Failed publish to results" stream=results.0.noop`
 		got := waitForLog(logs, expectedError, 1*time.Second)
 		if !strings.Contains(got, expectedError) {
 			t.Errorf("expected \"%s\" to be logged, got:\n%s", expectedError, got)
@@ -287,7 +287,7 @@ func TestHandleScoreEvent(t *testing.T) {
 			t.Fatalf("failed to publish score trigger %v", err)
 		}
 
-		expectedError := "Failed to marshal definition for check noop: json: unsupported type: chan int"
+		expectedError := `"Failed to marshal definition for check noop" error="json: unsupported type: chan int"`
 		got := waitForLog(logs, expectedError, 1*time.Second)
 		if !strings.Contains(got, expectedError) {
 			t.Errorf("expected \"%s\" to be logged, got:\n%s", expectedError, got)

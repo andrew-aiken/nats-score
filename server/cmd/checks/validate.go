@@ -39,8 +39,7 @@ func Validate(natsAddress string, natsCreds string, checkName string) error {
 	logging.SetupLogging("warn")
 
 	if checkName == "" {
-		fmt.Println("Check name required")
-		return nil
+		return fmt.Errorf("check name required")
 	}
 
 	// Connect to NATS settings KV

@@ -34,8 +34,7 @@ func Remove(natsAddress string, natsCreds string, checkName string) error {
 
 	_, err = kv.Get(checkKey)
 	if err == natsnats.ErrKeyNotFound {
-		slog.Warn("Check does not exist", "check", checkName)
-		return nil
+		return fmt.Errorf("Check does not exist")
 	}
 
 	err = kv.Delete(checkKey)
