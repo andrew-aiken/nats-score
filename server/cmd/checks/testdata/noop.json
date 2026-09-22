@@ -1,0 +1,8 @@
+{
+  "type": "noop",
+  "description": "No operation check",
+  "definition": {
+    "pass": true
+  },
+  "scoreWeight": 1
+}

@@ -22,6 +22,7 @@ type NatsConnection struct {
 	NatsUsersKV        nats.KeyValue
 	NatsKVWatchers     []nats.KeyWatcher
 	JetStreamConn      nats.JetStreamContext
+	Retries            uint8
 	natsStreamSub      *nats.Subscription
 }
 
@@ -46,7 +47,11 @@ func (n *NatsConnection) SetupConnection() error {
 func (n *NatsConnection) natsConnect() error {
 	var nc *nats.Conn
 	var err error
-	var natsRetry = 30
+
+	var natsRetry = n.Retries
+	if n.Retries == 0 {
+		natsRetry = 3
+	}
 
 	slog.Debug("Connecting to NATS " + n.NatsUrl)
 
