@@ -47,7 +47,7 @@ func Run(args RunArgs) error {
 		NatsUrl:            args.NatsUrl,
 		NatsConnectionName: connName,
 		NatsCredsFile:      args.NatsCredsFile,
-		NatsInboxPrefix:    "_INBOX.0",
+		NatsInboxPrefix:    inboxPrefix(args.TeamNumbers),
 	}
 
 	err := natsCon.SetupConnection()
@@ -100,9 +100,17 @@ func Run(args RunArgs) error {
 	}()
 
 	// Process KV settings updates
-	agentSettings.MonitorSettings(ctx, natsCon.NatsKVWatcher)
+	agentSettings.MonitorSettings(ctx, natsCon.NatsKVWatchers)
 
 	return nil
+}
+
+// inboxPrefix generates inbox prefix to connect with
+func inboxPrefix(teamNumbers []uint16) string {
+	if len(teamNumbers) == 1 {
+		return fmt.Sprintf("_INBOX.%d", teamNumbers[0])
+	}
+	return "_INBOX.0"
 }
 
 // ParseTeams parses a string like "1,3,5-8,10" into a slice of uint16.

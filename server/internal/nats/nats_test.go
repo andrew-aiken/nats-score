@@ -92,9 +92,12 @@ func TestNats(t *testing.T) {
 	})
 
 	t.Run("SetupKVWatcher", func(t *testing.T) {
-		err = natsConn.SetupKVWatcher([]string{testKeyName})
+		err = natsConn.SetupKVWatcher([]string{testKeyName, "other.key"})
 		if err != nil {
 			t.Fatalf("Failed to watch keys %v", err)
+		}
+		if len(natsConn.NatsKVWatchers) != 2 {
+			t.Fatalf("Expected 2 watchers, got %d", len(natsConn.NatsKVWatchers))
 		}
 	})
 

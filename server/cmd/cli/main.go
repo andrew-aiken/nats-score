@@ -248,7 +248,7 @@ func main() {
 										Usage:    "Generate agent credentials that support any amount of teams",
 										Required: false,
 									},
-									&cli.IntFlag{
+									&cli.Uint16Flag{
 										Name:     "count",
 										Aliases:  []string{"c"},
 										Usage:    "Number of indivitual agent certs to generate",

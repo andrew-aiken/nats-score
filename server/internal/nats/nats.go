@@ -20,7 +20,7 @@ type NatsConnection struct {
 	NatsConn           *nats.Conn
 	NatsKV             nats.KeyValue
 	NatsUsersKV        nats.KeyValue
-	NatsKVWatcher      nats.KeyWatcher
+	NatsKVWatchers     []nats.KeyWatcher
 	JetStreamConn      nats.JetStreamContext
 	natsStreamSub      *nats.Subscription
 }
@@ -104,13 +104,7 @@ func (n *NatsConnection) keyValueConnect() error {
 	return nil
 }
 
-// SetupUsersKV connects to the "users" KV bucket. This is opt-in and must be
-// called explicitly after SetupConnection() by callers that hold
-// full-privilege server credentials (cmd/server, cmd/user). It is
-// intentionally NOT part of SetupConnection()/keyValueConnect() because
-// agent and per-team credentials (see cmd/auth/auth.go createAgentCredentials)
-// are not granted any permissions on the users bucket/stream, and calling
-// this from cmd/agent or cmd/checks/* would fail and break those processes.
+// SetupUsersKV connects to the "users" KV bucket
 func (n *NatsConnection) SetupUsersKV() error {
 	kv, err := n.JetStreamConn.KeyValue("users")
 	if err != nil {
@@ -122,15 +116,22 @@ func (n *NatsConnection) SetupUsersKV() error {
 	return nil
 }
 
-// SetupKVWatcher creates a watcher for specific KVs
+// SetupKVWatcher creates one watcher per key
 func (n *NatsConnection) SetupKVWatcher(keys []string) error {
-	var err error
+	watchers := make([]nats.KeyWatcher, 0, len(keys))
 
-	n.NatsKVWatcher, err = n.NatsKV.WatchFiltered(keys)
-
-	if err != nil {
-		return fmt.Errorf("failed to start KV watcher: %v", err)
+	for _, key := range keys {
+		w, err := n.NatsKV.Watch(key)
+		if err != nil {
+			for _, created := range watchers {
+				_ = created.Stop() // best-effort cleanup before returning the original error
+			}
+			return fmt.Errorf("failed to start KV watcher for key %q: %v", key, err)
+		}
+		watchers = append(watchers, w)
 	}
+
+	n.NatsKVWatchers = watchers
 
 	return nil
 }
@@ -153,13 +154,13 @@ func (n *NatsConnection) SubjectSubscribe(ctx context.Context, settings *setting
 
 // Close closes open nats connections
 func (n *NatsConnection) Close() {
-	// Close KV watcher
-	if n.NatsKVWatcher != nil {
-		if err := n.NatsKVWatcher.Stop(); err != nil {
+	// Close KV watchers
+	for _, w := range n.NatsKVWatchers {
+		if err := w.Stop(); err != nil {
 			slog.Error("Failed to stop key/value watcher", "error", err.Error())
 		}
-		n.NatsKVWatcher = nil
 	}
+	n.NatsKVWatchers = nil
 
 	// Close stream subscription
 	if n.natsStreamSub != nil {

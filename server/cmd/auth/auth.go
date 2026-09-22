@@ -80,7 +80,19 @@ func createAgentCredentials(conf config.Config, streamIndex string) error {
 	userClaim.Pub.Allow.Add("results." + streamIndex + ".>")
 
 	userClaim.Pub.Allow.Add("$JS.API.STREAM.INFO.KV_settings")
-	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*") // This is a known risk. Allows any agent to view settings of other users
+
+	// Every agent watches "check.*"
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*.$KV.settings.check.*")
+
+	if streamIndex == "*" {
+		// Every watch is single-key, so the consumer-create request always carries a filter subject.
+		userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*.>")
+	} else {
+		// Scope consumer creation to this team's own settings key only.
+		userClaim.Pub.Allow.Add(fmt.Sprintf("$JS.API.CONSUMER.CREATE.KV_settings.*.$KV.settings.%s.settings", streamIndex))
+	}
+
+	// CONSUMER.DELETE cannot be scoped per-team the same way: it's authorized by stream + consumer name only
 	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.KV_settings.*")
 
 	userClaim.Sub.Allow.Add("events.score.>")

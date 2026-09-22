@@ -31,7 +31,7 @@ func (ts *TeamState) GetAttributes(checkName string) map[string]string {
 type Settings struct {
 	mu     sync.RWMutex
 	Checks map[string]Check
-	Teams map[uint16]*TeamState
+	Teams  map[uint16]*TeamState
 }
 
 // GetCheck returns the named check, safe for concurrent use.
@@ -42,26 +42,77 @@ func (s *Settings) GetCheck(name string) (Check, bool) {
 	return c, ok
 }
 
-// MonitorSettings loops monitoring the nats KV for settings updates
-func (s *Settings) MonitorSettings(ctx context.Context, natsKVWatcher nats.KeyWatcher) {
-	var startUpCompleted = false
+// watcherUpdate pairs one watcher's Updates() value with whether its channel is still open, mirroring the two-value form of a channel receive.
+type watcherUpdate struct {
+	entry nats.KeyValueEntry
+	ok    bool
+}
+
+// mergeWatchers fans multiple watchers' Updates() channels into one
+func mergeWatchers(watchers []nats.KeyWatcher, done <-chan struct{}) (outChan <-chan watcherUpdate) {
+	merged := make(chan watcherUpdate)
+
+	var wg sync.WaitGroup
+	for _, w := range watchers {
+		wg.Add(1)
+		go func(w nats.KeyWatcher) {
+			defer wg.Done()
+			for entry := range w.Updates() {
+				select {
+				case merged <- watcherUpdate{entry: entry, ok: true}:
+				case <-done:
+					return
+				}
+			}
+			select {
+			case merged <- watcherUpdate{ok: false}:
+			case <-done:
+			}
+		}(w)
+	}
+
+	go func() {
+		wg.Wait()
+		close(merged)
+	}()
+
+	return merged
+}
+
+// MonitorSettings loops monitoring the nats KV for settings updates across one or more watchers
+func (s *Settings) MonitorSettings(ctx context.Context, watchers []nats.KeyWatcher) {
+	done := make(chan struct{})
+	defer close(done)
+
+	merged := mergeWatchers(watchers, done)
+
+	// Each watcher reports its own "initial sync done" marker
+	// Flips startUpCompleted once every watcher has reported in.
+	pendingInit := len(watchers)
+	startUpCompleted := pendingInit == 0
 
 	for {
 		select {
 		case <-ctx.Done():
 			slog.Warn("Context cancelled, stopping watcher")
 			return
-		case entry, okay := <-natsKVWatcher.Updates():
-			// If the KV gets removed error and exit
-			if !okay {
+		case update, chanOpen := <-merged:
+			if !chanOpen {
+				// Every watcher has finished; nothing left to monitor.
+				return
+			}
+			if !update.ok {
 				slog.Error("NATS KV watcher failed")
 				return
 			}
+			entry := update.entry
 
 			if entry == nil {
-				// Initial sync complete
-				slog.Info("Initial KV sync complete, switching to watch for updates")
-				startUpCompleted = true
+				pendingInit--
+				if pendingInit == 0 {
+					slog.Info("Initial KV sync complete, switching to watch for updates")
+					startUpCompleted = true
+				}
 				continue
 			}
 
