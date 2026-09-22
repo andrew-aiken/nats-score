@@ -38,14 +38,6 @@ type testObj struct {
 func TestVerify(t *testing.T) {
 	tests := []testObj{
 		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "POST",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
 			Name: "NoAuthorizationHeader",
 			Request: request{
 				Method: "GET",
@@ -112,14 +104,6 @@ func TestGetMutableFields(t *testing.T) {
 
 	tests := []testObj{
 		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "POST",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
 			Name: "FailMutableFields",
 			Request: request{
 				Method: "GET",
@@ -163,14 +147,6 @@ func TestChecks(t *testing.T) {
 	defer nc.Close()
 
 	tests := []testObj{
-		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "POST",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
 		{
 			Name: "Test",
 			Request: request{
@@ -403,4 +379,61 @@ func setupNatsHandler(t *testing.T) (handlers.Handler, *nats.Conn, *natsserverse
 		NatsUsersKVClient: userKV,
 		NatsAuthService:   &auth.NATSAuthService{},
 	}, nc, server
+}
+
+func TestRequireMethod(t *testing.T) {
+	tests := []struct {
+		Name           string
+		AllowedMethod  string
+		RequestMethod  string
+		ExpectedCode   int
+		ExpectNextCall bool
+	}{
+		{
+			Name:          "WrongMethod",
+			AllowedMethod: http.MethodGet,
+			RequestMethod: http.MethodPost,
+			ExpectedCode:  http.StatusMethodNotAllowed,
+		},
+		{
+			Name:           "MatchingMethod",
+			AllowedMethod:  http.MethodGet,
+			RequestMethod:  http.MethodGet,
+			ExpectedCode:   http.StatusOK,
+			ExpectNextCall: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.Name, func(t *testing.T) {
+			nextCalled := false
+			next := func(w http.ResponseWriter, r *http.Request) {
+				nextCalled = true
+				w.WriteHeader(http.StatusOK)
+			}
+
+			req, err := http.NewRequest(tt.RequestMethod, "/", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			rr := httptest.NewRecorder()
+			handlers.RequireMethod(tt.AllowedMethod, next).ServeHTTP(rr, req)
+
+			if status := rr.Code; status != tt.ExpectedCode {
+				t.Errorf("handler returned wrong status code: got %v want %v", status, tt.ExpectedCode)
+			}
+
+			if nextCalled != tt.ExpectNextCall {
+				t.Errorf("next called = %v, want %v", nextCalled, tt.ExpectNextCall)
+			}
+
+			if !tt.ExpectNextCall {
+				want := `{"error":"Method not allowed"}`
+				if !strings.Contains(rr.Body.String(), want) {
+					t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), want)
+				}
+			}
+		})
+	}
 }

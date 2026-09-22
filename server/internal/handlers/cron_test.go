@@ -29,14 +29,6 @@ func TestStartScoringCron(t *testing.T) {
 
 	tests := []testObj{
 		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "POST",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
 			Name: "StartCron",
 			Request: request{
 				Method: "PUT",
@@ -91,14 +83,6 @@ func TestStopScoringCron(t *testing.T) {
 	}
 
 	tests := []testObj{
-		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "POST",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
 		{
 			Name: "StopCron",
 			Request: request{

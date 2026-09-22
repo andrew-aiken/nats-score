@@ -27,11 +27,6 @@ type Handler struct {
 // Verify validates a NATS JWT token from the Authorization header
 func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		encodeJson(w, map[string]string{"error": "Method not allowed"})
-		return
-	}
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
@@ -59,15 +54,9 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 	encodeJson(w, map[string]bool{"valid": true})
 }
 
-// GetMutableFields returns a map of check names to their mutable fields
-// from the NATS KV settings bucket
+// GetMutableFields returns a map of check names to their mutable fields from the NATS KV settings bucket
 func (h *Handler) GetMutableFields(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		encodeJson(w, map[string]string{"error": "Method not allowed"})
-		return
-	}
 
 	mutableFields, err := nats.GetMutableFields(h.NatsKVClient)
 	if err != nil {
@@ -139,11 +128,6 @@ func (h *Handler) TeamSettings(w http.ResponseWriter, r *http.Request) {
 // Checks returns a sorted list of all check names from the NATS KV settings bucket
 func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		encodeJson(w, map[string]string{"error": "Method not allowed"})
-		return
-	}
 
 	checks, err := nats.GetChecks(h.NatsKVClient)
 	if err != nil {
@@ -160,6 +144,18 @@ func (h *Handler) Checks(w http.ResponseWriter, r *http.Request) {
 	sort.Strings(names)
 
 	encodeJson(w, names)
+}
+
+// RequireMethod rejects requests whose method does not match method with a 405
+func RequireMethod(method string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != method {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			encodeJson(w, map[string]string{"error": "Method not allowed"})
+			return
+		}
+		next(w, r)
+	}
 }
 
 func encodeJson(writer io.Writer, a any) {

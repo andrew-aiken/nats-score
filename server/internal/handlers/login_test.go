@@ -14,14 +14,6 @@ func TestLogin(t *testing.T) {
 
 	tests := []testObj{
 		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "OPTION",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
 			Name: "BadBody",
 			Request: request{
 				Method: "POST",

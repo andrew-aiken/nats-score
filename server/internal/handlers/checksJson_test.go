@@ -14,14 +14,6 @@ func TestChecksJSON(t *testing.T) {
 
 	tests := []testObj{
 		{
-			Name: "WrongMethod",
-			Request: request{
-				Method: "POST",
-			},
-			ExpectedCode:     http.StatusMethodNotAllowed,
-			MessageSubstring: `{"error":"Method not allowed"}`,
-		},
-		{
 			Name: "Test",
 			Request: request{
 				Method: "GET",

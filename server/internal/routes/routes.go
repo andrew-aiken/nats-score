@@ -29,16 +29,16 @@ func SetupRoutes(serverConfig *handlers.Handler, authMiddleware middleware.AuthM
 		mux.Handle("/", staticHandler)
 	}
 
-	mux.HandleFunc("/auth/verify", serverConfig.Verify)
-	mux.HandleFunc("/auth/login", serverConfig.Login)
+	mux.HandleFunc("/auth/verify", handlers.RequireMethod(http.MethodGet, serverConfig.Verify))
+	mux.HandleFunc("/auth/login", handlers.RequireMethod(http.MethodPost, serverConfig.Login))
 
-	mux.HandleFunc("/api/checks/mutable-fields", authMiddleware.RequireAuth(serverConfig.GetMutableFields))
-	mux.HandleFunc("/api/checks", authMiddleware.RequireAuth(serverConfig.Checks))
+	mux.HandleFunc("/api/checks/mutable-fields", authMiddleware.RequireAuth(handlers.RequireMethod(http.MethodGet, serverConfig.GetMutableFields)))
+	mux.HandleFunc("/api/checks", authMiddleware.RequireAuth(handlers.RequireMethod(http.MethodGet, serverConfig.Checks)))
 	mux.HandleFunc("/api/settings", authMiddleware.RequireAuth(serverConfig.TeamSettings))
 
-	mux.HandleFunc("/api/admin/settings", authMiddleware.RequireAdminAuth(serverConfig.ChecksJSON))
-	mux.HandleFunc("/api/admin/cron/start", authMiddleware.RequireAdminAuth(serverConfig.StartScoringCron))
-	mux.HandleFunc("/api/admin/cron/stop", authMiddleware.RequireAdminAuth(serverConfig.StopScoringCron))
+	mux.HandleFunc("/api/admin/settings", authMiddleware.RequireAdminAuth(handlers.RequireMethod(http.MethodGet, serverConfig.ChecksJSON)))
+	mux.HandleFunc("/api/admin/cron/start", authMiddleware.RequireAdminAuth(handlers.RequireMethod(http.MethodPut, serverConfig.StartScoringCron)))
+	mux.HandleFunc("/api/admin/cron/stop", authMiddleware.RequireAdminAuth(handlers.RequireMethod(http.MethodPut, serverConfig.StopScoringCron)))
 
 	return mux
 }

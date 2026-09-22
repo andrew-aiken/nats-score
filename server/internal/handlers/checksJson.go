@@ -10,11 +10,6 @@ import (
 // from the NATS KV settings bucket (key settings)
 func (h *Handler) ChecksJSON(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		encodeJson(w, map[string]string{"error": "Method not allowed"})
-		return
-	}
 
 	checks, err := nats.GetChecks(h.NatsKVClient)
 
