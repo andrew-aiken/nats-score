@@ -127,7 +127,6 @@ func TestValidate(t *testing.T) {
 		})
 	})
 
-
 	t.Run("Definition", func(t *testing.T) {
 		t.Run("Missing", func(t *testing.T) {
 			_, err = kv.Put("check.noop", []byte(`{"scoreWeight": 1, "type": "noop"}`))
