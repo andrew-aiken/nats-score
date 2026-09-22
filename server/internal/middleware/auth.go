@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"server/internal/auth"
 )
@@ -98,16 +97,14 @@ func (m *AuthMiddleware) authenticate(r *http.Request) (AuthResult, *auth.UserCl
 		}, nil
 	}
 
-	// Extract token from "Bearer <token>"
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
+	tokenString, err := auth.ParseBearerToken(authHeader)
+	if err != nil {
 		return AuthResult{
 			Authorized: false,
-			Error:      "invalid authorization header format",
+			Error:      err.Error(),
 		}, nil
 	}
 
-	tokenString := parts[1]
 	claims, err := m.natsAuthService.VerifyJWT(tokenString)
 
 	if err != nil {

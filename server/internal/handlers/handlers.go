@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"net/http"
 	"sort"
-	"strings"
 
 	"server/internal/auth"
 	"server/internal/middleware"
@@ -35,16 +34,14 @@ func (h *Handler) Verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Extract token from "Bearer <token>"
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
+	tokenString, err := auth.ParseBearerToken(authHeader)
+	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		encodeJson(w, map[string]bool{"valid": false})
 		return
 	}
 
-	tokenString := parts[1]
-	_, err := h.NatsAuthService.VerifyJWT(tokenString)
+	_, err = h.NatsAuthService.VerifyJWT(tokenString)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		encodeJson(w, map[string]bool{"valid": false})
