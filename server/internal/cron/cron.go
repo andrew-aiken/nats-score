@@ -11,7 +11,7 @@ import (
 
 func AddCheckCron(cron gocron.Scheduler, natsConnection *nats.Conn, checkName string, checkFrequency uint16) (job gocron.Job, err error) {
 	if checkFrequency == 0 {
-		err = fmt.Errorf("Cron frequency cannot be zero")
+		err = fmt.Errorf("cron frequency cannot be zero")
 		return
 	}
 
