@@ -48,6 +48,7 @@ func Run(args RunArgs) error {
 		NatsConnectionName: connName,
 		NatsCredsFile:      args.NatsCredsFile,
 		NatsInboxPrefix:    inboxPrefix(args.TeamNumbers),
+		Retries:            30,
 	}
 
 	err := natsCon.SetupConnection()

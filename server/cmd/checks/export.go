@@ -22,6 +22,7 @@ func Export(natsAddress string, natsCreds string, directory string) error {
 
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
+			fmt.Println(directory)
 			if err := os.Mkdir(directory, 0700); err != nil {
 				return err
 			}
@@ -65,28 +66,20 @@ func Export(natsAddress string, natsCreds string, directory string) error {
 			if err != nil {
 				return err
 			}
-			checkJsonBtes, err := formatCheck(keyValue.Value())
-			if err != nil {
+
+			var prettyJSON bytes.Buffer
+			if err := json.Indent(&prettyJSON, keyValue.Value(), "", "  "); err != nil {
 				return err
 			}
 
 			fileName := fmt.Sprintf("%s.json", checkName)
 			checkPath := filepath.Join(directory, fileName)
 
-			if err := os.WriteFile(checkPath, checkJsonBtes, 0600); err != nil {
+			if err := os.WriteFile(checkPath, prettyJSON.Bytes(), 0600); err != nil {
 				return err
 			}
 		}
 	}
 
 	return err
-}
-
-func formatCheck(jsonB []byte) ([]byte, error) {
-	var prettyJSON bytes.Buffer
-	if err := json.Indent(&prettyJSON, jsonB, "", "  "); err != nil {
-		return []byte{}, err
-	}
-
-	return prettyJSON.Bytes(), nil
 }

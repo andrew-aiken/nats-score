@@ -73,10 +73,11 @@ func Server(args ServerArgs) (err error) {
 		return fmt.Errorf("initialize NATS auth service: %w", err)
 	}
 
-	// Initialize NATS KV client (optional - only if NATS URL is configured)
+	// Initialize NATS KV client
 	natsClient := nats.NatsConnection{
 		NatsUrl:       args.NatsAddress,
 		NatsCredsFile: args.NatsCreds,
+		Retries:       30,
 	}
 	err = natsClient.SetupConnection()
 	if err != nil {
