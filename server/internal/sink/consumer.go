@@ -102,7 +102,7 @@ func insertBatch(ctx context.Context, db *DB, msgs []*nats.Msg) error {
 			Passed:    results.Passed,
 			Points:    results.Points,
 			Details:   results.Details,
-			Timestamp: results.Timestamp.Format(time.RFC3339Nano),
+			Timestamp: results.Timestamp,
 		})
 		toAck = append(toAck, msg)
 	}

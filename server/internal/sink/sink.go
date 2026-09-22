@@ -22,7 +22,7 @@ type Row struct {
 	Passed    bool
 	Points    uint8
 	Details   map[string]string
-	Timestamp string
+	Timestamp time.Time
 }
 
 type DB struct {
@@ -111,7 +111,7 @@ func (db *DB) InsertBatch(ctx context.Context, rows []Row) (err error) {
 			return fmt.Errorf("marshal details for stream_seq %d: %w", row.StreamSeq, err)
 		}
 
-		if _, err := stmt.ExecContext(ctx, row.StreamSeq, row.Subject, row.TeamID, row.CheckName, row.Message, row.Passed, row.Points, string(details), row.Timestamp); err != nil {
+		if _, err := stmt.ExecContext(ctx, row.StreamSeq, row.Subject, row.TeamID, row.CheckName, row.Message, row.Passed, row.Points, string(details), row.Timestamp.UTC().Format(time.RFC3339Nano)); err != nil {
 			return fmt.Errorf("insert stream_seq %d: %w", row.StreamSeq, err)
 		}
 	}

@@ -21,9 +21,9 @@ func TestList(t *testing.T) {
 	}
 
 	rows := []sink.Row{
-		{StreamSeq: 1, Subject: "results.0.noop.0", TeamID: 0, CheckName: "noop", Passed: true, Points: 5, Timestamp: "2026-01-01T12:00:00Z"},
-		{StreamSeq: 2, Subject: "results.1.noop.0", TeamID: 1, CheckName: "noop", Passed: true, Points: 7, Timestamp: "2026-01-01T12:00:05Z"},
-		{StreamSeq: 3, Subject: "results.1.noop.0", TeamID: 1, CheckName: "noop", Passed: true, Points: 100, Timestamp: "2027-01-01T00:00:00Z"},
+		{StreamSeq: 1, Subject: "results.0.noop.0", TeamID: 0, CheckName: "noop", Passed: true, Points: 5, Timestamp: time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)},
+		{StreamSeq: 2, Subject: "results.1.noop.0", TeamID: 1, CheckName: "noop", Passed: true, Points: 7, Timestamp: time.Date(2026, 1, 1, 12, 0, 5, 0, time.UTC)},
+		{StreamSeq: 3, Subject: "results.1.noop.0", TeamID: 1, CheckName: "noop", Passed: true, Points: 100, Timestamp: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC)},
 	}
 	if err := db.InsertBatch(context.Background(), rows); err != nil {
 		t.Fatalf("Failed to insert rows: %v", err)
