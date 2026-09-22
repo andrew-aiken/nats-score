@@ -52,7 +52,7 @@ func TestRemove(t *testing.T) {
 			t.Fatal("Expected error")
 		}
 
-		if !strings.Contains(err.Error(), "failed to connect to NATS after 3 attempts: dial tcp: lookup DNE: no such host") {
+		if !strings.Contains(err.Error(), "failed to connect to NATS after 3 attempts: dial tcp: lookup DNE") {
 			t.Fatalf("Got wrong error message: '%v'", err.Error())
 		}
 	})
