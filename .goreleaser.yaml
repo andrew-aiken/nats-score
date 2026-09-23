@@ -40,9 +40,9 @@ changelog:
       - "^example:"
       - "^test:"
 
-release:
-  footer: >-
-
-    ---
-
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+sboms:
+  - id: default
+    documents:
+      - "${artifact}.spdx.json"
+    cmd: syft
+    artifacts: any
