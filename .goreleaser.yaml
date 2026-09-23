@@ -39,10 +39,3 @@ changelog:
     exclude:
       - "^example:"
       - "^test:"
-
-sboms:
-  - id: default
-    documents:
-      - "${artifact}.spdx.json"
-    cmd: syft
-    artifacts: any
