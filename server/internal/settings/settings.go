@@ -3,7 +3,6 @@ package settings
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -13,6 +12,9 @@ import (
 
 	"github.com/nats-io/nats.go"
 )
+
+// maxEntrySize bounds how large a single KV entry's value may be before it is unmarshaled.
+const maxEntrySize = 1 << 20 // 1MB
 
 // TeamState contains information about an individuals team config
 type TeamState struct {
@@ -57,16 +59,25 @@ func mergeWatchers(watchers []nats.KeyWatcher, done <-chan struct{}) (outChan <-
 		wg.Add(1)
 		go func(w nats.KeyWatcher) {
 			defer wg.Done()
-			for entry := range w.Updates() {
+			updates := w.Updates()
+			for {
 				select {
-				case merged <- watcherUpdate{entry: entry, ok: true}:
+				case entry, ok := <-updates:
+					if !ok {
+						select {
+						case merged <- watcherUpdate{ok: false}:
+						case <-done:
+						}
+						return
+					}
+					select {
+					case merged <- watcherUpdate{entry: entry, ok: true}:
+					case <-done:
+						return
+					}
 				case <-done:
 					return
 				}
-			}
-			select {
-			case merged <- watcherUpdate{ok: false}:
-			case <-done:
 			}
 		}(w)
 	}
@@ -81,6 +92,12 @@ func mergeWatchers(watchers []nats.KeyWatcher, done <-chan struct{}) (outChan <-
 
 // MonitorSettings loops monitoring the nats KV for settings updates across one or more watchers
 func (s *Settings) MonitorSettings(ctx context.Context, watchers []nats.KeyWatcher) {
+	s.mu.Lock()
+	if s.Checks == nil {
+		s.Checks = make(map[string]Check)
+	}
+	s.mu.Unlock()
+
 	done := make(chan struct{})
 	defer close(done)
 
@@ -119,6 +136,11 @@ func (s *Settings) MonitorSettings(ctx context.Context, watchers []nats.KeyWatch
 			key := entry.Key()
 			value := entry.Value()
 
+			if len(value) > maxEntrySize {
+				slog.Warn("Skipping oversized KV entry", "key", key, "size", len(value))
+				continue
+			}
+
 			checkName, isCheck := strings.CutPrefix(key, "check.")
 
 			switch {
@@ -133,15 +155,15 @@ func (s *Settings) MonitorSettings(ctx context.Context, watchers []nats.KeyWatch
 					s.mu.Lock()
 					delete(s.Checks, checkName)
 					s.mu.Unlock()
-					slog.Info(fmt.Sprintf("Removed check %s", checkName))
+					slog.Info("Removed check", "check", checkName)
 					continue
 				}
 
-				slog.Info(fmt.Sprintf("Loading check %s", checkName))
+				slog.Info("Loading check", "check", checkName)
 
 				check := Check{}
 				if err := json.Unmarshal(value, &check); err != nil {
-					slog.Warn(fmt.Sprintf("Failed to unmarshal settings for check %s: %v", checkName, err))
+					slog.Warn("Failed to unmarshal settings for check", "check", checkName, "error", err)
 					continue
 				}
 
@@ -153,29 +175,33 @@ func (s *Settings) MonitorSettings(ctx context.Context, watchers []nats.KeyWatch
 				// At this time only checks.X and X.settings are valid in the KV
 				settingsTeamID, found := strings.CutSuffix(key, ".settings")
 				if !found {
-					slog.Warn(fmt.Sprintf("Unknown key %v", key))
+					slog.Warn("Unknown key", "key", key)
 					continue
 				}
 
 				teamID, err := strconv.ParseUint(settingsTeamID, 10, 16)
 				if err != nil {
-					slog.Warn(fmt.Sprintf("Invalid team ID %v: %v", settingsTeamID, err))
+					slog.Warn("Invalid team ID", "teamID", settingsTeamID, "error", err)
 					continue
 				}
 
-				if teamState, exists := s.Teams[uint16(teamID)]; exists {
+				s.mu.RLock()
+				teamState, exists := s.Teams[uint16(teamID)]
+				s.mu.RUnlock()
+
+				if exists {
 					// If the nats change updates the setting update the stored value
 					if entry.Operation() == nats.KeyValuePut {
 						var teamSettings map[string]map[string]string
 						if err := json.Unmarshal(value, &teamSettings); err != nil {
-							slog.Warn(fmt.Sprintf("Failed to unmarshal settings for setting %s: %v", key, err))
+							slog.Warn("Failed to unmarshal team settings", "key", key, "error", err)
 							continue
 						}
 
 						teamState.mu.Lock()
 						teamState.Attributes = teamSettings
 						teamState.mu.Unlock()
-						slog.Info(fmt.Sprintf("Team %d settings update", teamID))
+						slog.Info("Team settings update", "team", teamID)
 					} else { // If not updating its removing: drop the attributes key
 						// If initial startup has not completed skip removing checks
 						if !startUpCompleted {
@@ -185,10 +211,10 @@ func (s *Settings) MonitorSettings(ctx context.Context, watchers []nats.KeyWatch
 						teamState.mu.Lock()
 						teamState.Attributes = nil
 						teamState.mu.Unlock()
-						slog.Info(fmt.Sprintf("Removed settings for team %d", teamID))
+						slog.Info("Removed team settings", "team", teamID)
 					}
 				} else {
-					slog.Warn(fmt.Sprintf("Unknown team key %v", key))
+					slog.Warn("Unknown team key", "key", key)
 				}
 			}
 		}

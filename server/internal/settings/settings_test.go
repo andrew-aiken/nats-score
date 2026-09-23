@@ -19,6 +19,7 @@ func setupSettingsKV(t *testing.T) nats.KeyValue {
 	opts.JetStream = true
 	opts.Port = -1
 	opts.StoreDir = t.TempDir()
+	opts.MaxPayload = 4 << 20 // large enough for tests that exercise settings.maxEntrySize (1MB)
 
 	server := natsserver.RunServer(&opts)
 	t.Cleanup(server.Shutdown)
