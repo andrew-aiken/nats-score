@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"server/internal/score"
-	"server/internal/sink"
+	"github.com/andrew-aiken/score/internal/score"
+	"github.com/andrew-aiken/score/internal/sink"
 
 	"github.com/andrew-aiken/checks"
 

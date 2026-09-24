@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"server/internal/sink"
+	"github.com/andrew-aiken/score/internal/sink"
 )
 
 // List prints each team's summed points over a time range

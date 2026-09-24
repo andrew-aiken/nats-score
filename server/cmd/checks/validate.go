@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"server/internal/logging"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/logging"
+	"github.com/andrew-aiken/score/internal/nats"
 
 	"github.com/andrew-aiken/checks/helper"
 

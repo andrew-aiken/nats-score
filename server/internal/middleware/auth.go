@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"server/internal/auth"
+	"github.com/andrew-aiken/score/internal/auth"
 )
 
 // contextKey is a custom type for context keys

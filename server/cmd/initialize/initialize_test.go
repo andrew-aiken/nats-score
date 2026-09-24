@@ -3,7 +3,7 @@ package initialize_test
 import (
 	"testing"
 
-	"server/cmd/initialize"
+	"github.com/andrew-aiken/score/cmd/initialize"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 )

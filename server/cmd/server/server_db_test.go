@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"server/cmd/server"
-	"server/internal/config"
-	"server/internal/score"
+	"github.com/andrew-aiken/score/cmd/server"
+	"github.com/andrew-aiken/score/internal/config"
+	"github.com/andrew-aiken/score/internal/score"
 
 	"github.com/andrew-aiken/checks"
 

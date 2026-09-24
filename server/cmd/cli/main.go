@@ -6,14 +6,14 @@ import (
 	"os"
 	"time"
 
-	"server/cmd/agent"
-	"server/cmd/auth"
-	"server/cmd/checks"
-	"server/cmd/initialize"
-	"server/cmd/query"
-	"server/cmd/server"
-	"server/cmd/user"
-	"server/internal/sink"
+	"github.com/andrew-aiken/score/cmd/agent"
+	"github.com/andrew-aiken/score/cmd/auth"
+	"github.com/andrew-aiken/score/cmd/checks"
+	"github.com/andrew-aiken/score/cmd/initialize"
+	"github.com/andrew-aiken/score/cmd/query"
+	"github.com/andrew-aiken/score/cmd/server"
+	"github.com/andrew-aiken/score/cmd/user"
+	"github.com/andrew-aiken/score/internal/sink"
 
 	"github.com/urfave/cli/v3"
 )

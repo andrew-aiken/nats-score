@@ -6,10 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"server/internal/auth"
-	"server/internal/handlers"
-	"server/internal/middleware"
-	"server/internal/routes"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/handlers"
+	"github.com/andrew-aiken/score/internal/middleware"
+	"github.com/andrew-aiken/score/internal/routes"
 )
 
 func TestStartServer(t *testing.T) {

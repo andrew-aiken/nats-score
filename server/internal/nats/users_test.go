@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"server/internal/auth"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/nats"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 	natsnats "github.com/nats-io/nats.go"

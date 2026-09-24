@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"server/internal/cron"
+	"github.com/andrew-aiken/score/internal/cron"
 
 	"github.com/go-co-op/gocron/v2"
 	natsserver "github.com/nats-io/nats-server/v2/test"

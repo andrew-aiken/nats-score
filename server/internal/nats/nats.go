@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"server/internal/score"
-	"server/internal/settings"
+	"github.com/andrew-aiken/score/internal/score"
+	"github.com/andrew-aiken/score/internal/settings"
 
 	"github.com/nats-io/nats.go"
 )

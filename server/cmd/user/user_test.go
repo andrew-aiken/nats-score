@@ -3,8 +3,8 @@ package user_test
 import (
 	"testing"
 
-	"server/cmd/initialize"
-	"server/cmd/user"
+	"github.com/andrew-aiken/score/cmd/initialize"
+	"github.com/andrew-aiken/score/cmd/user"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 )

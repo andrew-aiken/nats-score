@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"server/internal/auth"
-	"server/internal/middleware"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/middleware"
 
 	"github.com/nats-io/nkeys"
 )

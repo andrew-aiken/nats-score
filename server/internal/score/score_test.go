@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
-	"server/internal/settings"
+	"github.com/andrew-aiken/score/internal/settings"
 	"strings"
 	"sync"
 	"testing"

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"server/internal/logging"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/logging"
+	"github.com/andrew-aiken/score/internal/nats"
 
 	natsnats "github.com/nats-io/nats.go"
 )

@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"server/cmd/server"
-	"server/internal/config"
-	"server/internal/settings"
+	"github.com/andrew-aiken/score/cmd/server"
+	"github.com/andrew-aiken/score/internal/config"
+	"github.com/andrew-aiken/score/internal/settings"
 
 	"github.com/andrew-aiken/checks/noop"
 	natsserver "github.com/nats-io/nats-server/v2/test"

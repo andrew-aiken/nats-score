@@ -3,7 +3,7 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/nats"
 )
 
 // GetGlobalSettings returns an object of the global settings

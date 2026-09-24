@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"server/internal/settings"
+	"github.com/andrew-aiken/score/internal/settings"
 
 	"github.com/andrew-aiken/checks"
 

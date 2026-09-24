@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"server/internal/score"
+	"github.com/andrew-aiken/score/internal/score"
 
 	"github.com/nats-io/nats.go"
 )

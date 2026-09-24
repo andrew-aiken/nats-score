@@ -1,4 +1,4 @@
-module server
+module github.com/andrew-aiken/score
 
 go 1.26.5
 

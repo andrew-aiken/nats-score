@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"time"
 
-	"server/cmd/user"
-	"server/internal/logging"
+	"github.com/andrew-aiken/score/cmd/user"
+	"github.com/andrew-aiken/score/internal/logging"
 
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"

@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"server/cmd/query"
-	"server/internal/sink"
+	"github.com/andrew-aiken/score/cmd/query"
+	"github.com/andrew-aiken/score/internal/sink"
 )
 
 func TestList(t *testing.T) {

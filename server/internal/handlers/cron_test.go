@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"server/internal/handlers"
+	"github.com/andrew-aiken/score/internal/handlers"
 
 	"github.com/go-co-op/gocron/v2"
 )

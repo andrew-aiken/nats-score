@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"server/cmd/checks"
+	"github.com/andrew-aiken/score/cmd/checks"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"

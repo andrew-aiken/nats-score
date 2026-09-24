@@ -6,8 +6,8 @@ import (
 	"slices"
 	"testing"
 
-	"server/internal/nats"
-	"server/internal/settings"
+	"github.com/andrew-aiken/score/internal/nats"
+	"github.com/andrew-aiken/score/internal/settings"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 	natsnats "github.com/nats-io/nats.go"

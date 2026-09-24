@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"server/internal/auth"
+	"github.com/andrew-aiken/score/internal/auth"
 
 	"github.com/nats-io/nats.go"
 )

@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"server/internal/config"
-	"server/internal/logging"
+	"github.com/andrew-aiken/score/internal/config"
+	"github.com/andrew-aiken/score/internal/logging"
 
 	"github.com/nats-io/jwt/v2"
 	"github.com/nats-io/nkeys"
