@@ -12,9 +12,9 @@ import (
 
 	"github.com/andrew-aiken/checks"
 
-	"server/internal/logging"
-	"server/internal/nats"
-	"server/internal/settings"
+	"github.com/andrew-aiken/score/internal/logging"
+	"github.com/andrew-aiken/score/internal/nats"
+	"github.com/andrew-aiken/score/internal/settings"
 )
 
 type RunArgs struct {

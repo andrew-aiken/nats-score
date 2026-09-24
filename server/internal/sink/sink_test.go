@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"server/internal/sink"
+	"github.com/andrew-aiken/score/internal/sink"
 )
 
 func openTestDB(t *testing.T) *sink.DB {

@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"server/internal/auth"
-	"server/internal/logging"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/logging"
+	"github.com/andrew-aiken/score/internal/nats"
 )
 
 // Add creates a new user login account in the NATS "users" KV bucket.

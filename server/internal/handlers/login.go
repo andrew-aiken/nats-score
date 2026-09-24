@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 
-	"server/internal/auth"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/nats"
 )
 
 // LoginRequest represents the request body for username/password login

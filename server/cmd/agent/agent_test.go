@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"server/cmd/agent"
+	"github.com/andrew-aiken/score/cmd/agent"
 
 	natsserver "github.com/nats-io/nats-server/v2/test"
 	"github.com/nats-io/nats.go"

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"server/internal/config"
+	"github.com/andrew-aiken/score/internal/config"
 )
 
 func TestLoad(t *testing.T) {

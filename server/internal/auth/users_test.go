@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"server/internal/auth"
+	"github.com/andrew-aiken/score/internal/auth"
 
 	"golang.org/x/crypto/bcrypt"
 )

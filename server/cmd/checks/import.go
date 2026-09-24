@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"server/internal/logging"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/logging"
+	"github.com/andrew-aiken/score/internal/nats"
 )
 
 func Import(natsAddress string, natsCreds string, directory string) error {

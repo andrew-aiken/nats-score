@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"server/internal/handlers"
-	"server/internal/middleware"
-	"server/internal/static"
+	"github.com/andrew-aiken/score/internal/handlers"
+	"github.com/andrew-aiken/score/internal/middleware"
+	"github.com/andrew-aiken/score/internal/static"
 )
 
 func StartServer(server *http.Server) error {

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"server/internal/static"
+	"github.com/andrew-aiken/score/internal/static"
 )
 
 func TestHandler(t *testing.T) {

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"server/internal/auth"
-	"server/internal/handlers"
-	"server/internal/middleware"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/handlers"
+	"github.com/andrew-aiken/score/internal/middleware"
 
 	natsserverserver "github.com/nats-io/nats-server/v2/server"
 	natsserver "github.com/nats-io/nats-server/v2/test"

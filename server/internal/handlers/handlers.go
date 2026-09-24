@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"sort"
 
-	"server/internal/auth"
-	"server/internal/middleware"
-	"server/internal/nats"
+	"github.com/andrew-aiken/score/internal/auth"
+	"github.com/andrew-aiken/score/internal/middleware"
+	"github.com/andrew-aiken/score/internal/nats"
 
 	"github.com/go-co-op/gocron/v2"
 	natsnats "github.com/nats-io/nats.go"
