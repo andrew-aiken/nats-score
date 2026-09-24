@@ -1,11 +1,3 @@
-# This is an example .goreleaser.yml file with some sensible defaults.
-# Make sure to check the documentation at https://goreleaser.com
-
-# The lines below are called `modelines`. See `:help modeline`
-# Feel free to remove those if you don't want/need to use them.
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
-# vim: set ts=2 sw=2 tw=0 fo=cnqoj
-
 version: 2
 
 project_name: score
@@ -24,7 +16,6 @@ builds:
 
 archives:
   - formats: [tar.gz]
-    # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -32,6 +23,32 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
     files: []
+
+dockers_v2:
+  - id: score
+    images:
+      - "andrew-aiken/nats-score"
+      - "ghcr.io/andrew-aiken/nats-score"
+    tags:
+      - "v{{ .Version }}"
+      - "latest"
+    extra_files:
+      - frontend/
+      - server/
+    labels:
+      "project": "{{.ProjectName}}"
+    annotations:
+      "org.opencontainers.image.description": "Distributed scoring engine"
+      "org.opencontainers.image.created": "{{.Date}}"
+      "org.opencontainers.image.name": "{{.ProjectName}}"
+      "org.opencontainers.image.revision": "{{.FullCommit}}"
+      "org.opencontainers.image.version": "{{.Version}}"
+      "org.opencontainers.image.source": "{{.GitURL}}"
+      "org.opencontainers.image.base.name": "{{.BaseImage}}"
+      "org.opencontainers.image.base.digest": "{{.BaseImageDigest}}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
 
 changelog:
   sort: asc
