@@ -27,7 +27,6 @@ archives:
 dockers_v2:
   - id: score
     images:
-      - "andrew-aiken/nats-score"
       - "ghcr.io/andrew-aiken/nats-score"
     tags:
       - "v{{ .Version }}"
