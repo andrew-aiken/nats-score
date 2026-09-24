@@ -1,14 +1,14 @@
 
 ![License](https://img.shields.io/badge/License-GLP%203.0-blue.svg)
-![GitHub Release](https://img.shields.io/github/v/release/andrew-aiken/nats-score)
-![Tests](https://img.shields.io/github/actions/workflow/status/andrew-aiken/nats-score/gotest.yaml)
+![GitHub Release](https://img.shields.io/github/v/release/andrew-aiken/score)
+![Tests](https://img.shields.io/github/actions/workflow/status/andrew-aiken/score/test.yaml)
 
 
 ## Quick Start
 
 ```bash
 # Pull the code locally
-git clone https://github.com/andrew-aiken/nats-score.git
+git clone https://github.com/andrew-aiken/score.git
 
 # Initialize new certificates for user signing and nats server authentication
 docker run --rm -it -v $(pwd)/scripts/:/scripts:ro -v $(pwd)/nsc:/nsc --entrypoint '/scripts/setup.sh' natsio/nats-box:latest
