@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
-	"github.com/andrew-aiken/score/internal/settings"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/andrew-aiken/score/internal/settings"
 
 	"github.com/andrew-aiken/checks"
 	"github.com/andrew-aiken/checks/noop"

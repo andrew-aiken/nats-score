@@ -3,6 +3,7 @@ package handlers
 import (
 	"log/slog"
 	"net/http"
+
 	"github.com/andrew-aiken/score/internal/nats"
 )
 
