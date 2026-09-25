@@ -2,6 +2,11 @@ version: 2
 
 project_name: score
 
+before:
+  hooks:
+    - sh -c "cd frontend && npm ci --ignore-scripts && npm run build"
+    - sh -c "rm -rf server/internal/static/dist && cp -r frontend/dist server/internal/static/dist"
+
 builds:
   - main: ./cmd/cli/main.go
     dir: ./server/

@@ -1,8 +1,14 @@
-
 ![License](https://img.shields.io/badge/License-GLP%203.0-blue.svg)
 ![GitHub Release](https://img.shields.io/github/v/release/andrew-aiken/score)
 ![Tests](https://img.shields.io/github/actions/workflow/status/andrew-aiken/score/test.yaml)
 
+### Features:
+
+- Distributed agent design
+- minimalist design
+  - Scoring, not injects
+  - Wide variety of configuratble [checks](https://github.com/andrew-aiken/checks)
+- [Documentation](https://github.com/andrew-aiken/score/wiki) & tests
 
 ## Quick Start
 
@@ -22,36 +28,10 @@ docker compose up --build
 # Open https://localhost
 ```
 
-## Contributing
-
-### Testing
-
-```bash
-# Verify formatting is correct
-gofmt -l .
-
-# Lint
-golangci-lint run
-
-# Check for security findings, findings are allowed to be suppressed but need to be documented
-gosec ./...
-
-# Verify the tests all are functioning or just target a specific check being modified
-go test -v -race ./...
-```
-
-#### Coverage
-
-Checks should aim to have ~80% or more test coverage
-
-```bash
-go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
-```
-
-
 ## Similar Projects
+
 - [Quotient](https://github.com/dbaseqp/Quotient)
 - [Scorestack](https://github.com/scorestack/scorestack)
 - [Scorify](https://github.com/Scorify/Scorify)
-- [Scoring Engine](https://github.com/scoringengine/scoringengine) <!-- cli commands & bash scripts for checks -->
+- [Scoring Engine](https://github.com/scoringengine/scoringengine) <!-- checks are just cli commands & bash scripts -->
 - [Scoring-Engine (C2 Games)](https://gitlab.com/c2-games/scoring) <!-- Not going to lie, this one is all over the place -->
