@@ -13,7 +13,7 @@ git clone https://github.com/andrew-aiken/score.git
 # Initialize new certificates for user signing and nats server authentication
 docker run --rm -it -v $(pwd)/scripts/:/scripts:ro -v $(pwd)/nsc:/nsc --entrypoint '/scripts/setup.sh' natsio/nats-box:latest
 
-# Generate caddy TLS certificates
+# Generate localhost TLS certificates
 bash ./caddy/certs/generate.sh
 
 # Launch the docker compose stack

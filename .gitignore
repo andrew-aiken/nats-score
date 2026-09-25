@@ -9,8 +9,5 @@ coverage.out
 caddy/certs/*.key
 caddy/certs/*.crt
 
-# Will be moved into the GitHub wiki when repo is make public
-/wiki
-
 # goreleaser
 dist/
