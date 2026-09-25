@@ -1,6 +1,5 @@
 import { getCredentials } from './auth'
-
-const API_SERVER = 'https://localhost'
+import { API_BASE_URL } from '../config'
 
 /**
  * Fetch all configured check names from the server (NATS KV `check.*` keys).
@@ -15,7 +14,7 @@ export async function getChecks(): Promise<string[]> {
     headers.Authorization = `Bearer ${creds.jwt}`
   }
 
-  const response = await fetch(`${API_SERVER}/api/checks`, {
+  const response = await fetch(`${API_BASE_URL}/api/checks`, {
     method: 'GET',
     headers,
   })
@@ -38,7 +37,7 @@ export async function getMutableFields(): Promise<Record<string, string[]>> {
     throw new Error('Not authenticated')
   }
 
-  const response = await fetch(`${API_SERVER}/api/checks/mutable-fields`, {
+  const response = await fetch(`${API_BASE_URL}/api/checks/mutable-fields`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${creds.jwt}`,
@@ -64,7 +63,7 @@ export async function getTeamSettings(): Promise<Record<string, Record<string, s
     throw new Error('Not authenticated')
   }
 
-  const response = await fetch(`${API_SERVER}/api/settings`, {
+  const response = await fetch(`${API_BASE_URL}/api/settings`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${creds.jwt}`,
@@ -91,7 +90,7 @@ export async function updateTeamSettings(settings: Record<string, Record<string,
     throw new Error('Not authenticated')
   }
 
-  const response = await fetch(`${API_SERVER}/api/settings`, {
+  const response = await fetch(`${API_BASE_URL}/api/settings`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${creds.jwt}`,
@@ -117,7 +116,7 @@ export async function startScoring(): Promise<{ success: boolean }> {
     throw new Error('Not authenticated')
   }
 
-  const response = await fetch(`${API_SERVER}/api/admin/cron/start`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/cron/start`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${creds.jwt}`,
@@ -142,7 +141,7 @@ export async function stopScoring(): Promise<{ success: boolean }> {
     throw new Error('Not authenticated')
   }
 
-  const response = await fetch(`${API_SERVER}/api/admin/cron/stop`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/cron/stop`, {
     method: 'PUT',
     headers: {
       'Authorization': `Bearer ${creds.jwt}`,
@@ -167,7 +166,7 @@ export async function getGlobalSettings(): Promise<any> {
     throw new Error('Not authenticated')
   }
 
-  const response = await fetch(`${API_SERVER}/api/admin/settings`, {
+  const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${creds.jwt}`,

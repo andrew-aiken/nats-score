@@ -1,14 +1,14 @@
 import type { NatsCredentials } from '../types'
+import { API_BASE_URL } from '../config'
 
 const STORAGE_KEY = 'nats_credentials'
-const AUTH_SERVER = 'https://localhost'
 
 /**
  * Login using a username and password
  * Returns credentials on success, throws error on failure
  */
 export async function login(username: string, password: string): Promise<NatsCredentials> {
-  const response = await fetch(`${AUTH_SERVER}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

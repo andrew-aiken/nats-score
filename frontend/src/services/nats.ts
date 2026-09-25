@@ -12,13 +12,14 @@ import {
   isTokenExpired,
   getTeamIdFromJwt,
 } from "./auth";
+import { NATS_URL } from "../config";
 
 function redirectToLogin(): void {
   window.location.href = "/login";
 }
 
 const NATS_CONFIG = {
-  servers: "wss://localhost:8080",
+  servers: NATS_URL,
 };
 
 const sc = StringCodec();
