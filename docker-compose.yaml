@@ -41,12 +41,11 @@ services:
     build:
       context: ./
     working_dir: /
+    environment:
+      NATS_ADDRESS: nats://nats:4222
+      NATS_CREDS: /server.creds
     command:
       - server
-      - --nats-address
-      - nats://nats:4222
-      - --nats-creds
-      - /server.creds
       - start
       - --db
       - --db-path=/data/results.db
@@ -85,14 +84,13 @@ services:
     volumes:
       - ./nsc/config.json:/opt/config.json:ro
       - shared:/shared:ro
+    environment:
+      NATS_ADDRESS: nats://localhost:4222
+      NATS_CREDS: /shared/agent.creds
     command:
       - agent
       - --teams
       - "0-9"
-      - --nats-address
-      - nats://localhost:4222
-      - --nats-creds
-      - /shared/agent.creds
     network_mode: host
 
 volumes:

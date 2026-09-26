@@ -13,10 +13,42 @@ import (
 	"github.com/andrew-aiken/score/cmd/query"
 	"github.com/andrew-aiken/score/cmd/server"
 	"github.com/andrew-aiken/score/cmd/user"
+	"github.com/andrew-aiken/score/internal/settings"
 	"github.com/andrew-aiken/score/internal/sink"
 
 	"github.com/urfave/cli/v3"
 )
+
+var config_flag = cli.StringFlag{
+	Name:    "config",
+	Aliases: []string{"c"},
+	Usage:   "path to the score server configuration file",
+	Value:   "config.json",
+	Sources: cli.EnvVars("SCORE_CONFIG"),
+}
+
+var log_level_flag = cli.StringFlag{
+	Name:     "log-level",
+	Aliases:  []string{"l"},
+	Usage:    "Sets the program log level",
+	Required: false,
+	Value:    "info",
+}
+
+var nats_address_flag = cli.StringFlag{
+	Name:    "nats-address",
+	Aliases: []string{"n"},
+	Usage:   "NATS server address",
+	Value:   "nats://localhost:4222",
+	Sources: cli.EnvVars("NATS_ADDRESS"),
+}
+
+var nats_creds_flag = cli.StringFlag{
+	Name:    "nats-creds",
+	Aliases: []string{"c"},
+	Usage:   "NATS score server credentials",
+	Sources: cli.EnvVars("NATS_CREDS"),
+}
 
 func main() {
 	cmd := &cli.Command{
@@ -27,17 +59,8 @@ func main() {
 				Name:  "server",
 				Usage: "Control plane for distributed scoring",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "nats-address",
-						Aliases: []string{"n"},
-						Usage:   "NATS server address",
-						Value:   "nats://localhost:4222",
-					},
-					&cli.StringFlag{
-						Name:    "nats-creds",
-						Aliases: []string{"c"},
-						Usage:   "NATS score server credentials",
-					},
+					&nats_address_flag,
+					&nats_creds_flag,
 				},
 				Commands: []*cli.Command{
 					{
@@ -75,7 +98,7 @@ func main() {
 									&cli.StringFlag{
 										Name:     "directory",
 										Aliases:  []string{"d"},
-										Usage:    "Directory to load checks from",
+										Usage:    "Directory to write checks into",
 										Required: true,
 									},
 								},
@@ -153,13 +176,8 @@ func main() {
 							})
 						},
 						Flags: []cli.Flag{
-							&cli.StringFlag{
-								Name:     "log-level",
-								Aliases:  []string{"l"},
-								Usage:    "Sets the program log level",
-								Required: false,
-								Value:    "info",
-							},
+							&config_flag,
+							&log_level_flag,
 							&cli.BoolFlag{
 								Name:  "db",
 								Usage: "Store NATS results messages into a sqlite database for simpler querying",
@@ -169,12 +187,6 @@ func main() {
 								Usage:    "Path to sqlite database file",
 								Required: false,
 								Value:    "results.db",
-							},
-							&cli.StringFlag{
-								Name:    "config",
-								Aliases: []string{"c"},
-								Usage:   "path to the score server configuration file",
-								Value:   "config.json",
 							},
 						},
 					},
@@ -242,41 +254,45 @@ func main() {
 								Name:  "auth",
 								Usage: "Generate agent NATS credentials",
 								Flags: []cli.Flag{
+									&config_flag,
+									&cli.StringFlag{
+										Name:     "teams",
+										Aliases:  []string{"t"},
+										Usage:    `comma-separated team numbers or ranges, e.g. "1,3,5-8,10"`,
+										Required: false,
+									},
 									&cli.BoolFlag{
 										Name:     "standalone",
 										Aliases:  []string{"s"},
 										Usage:    "Generate agent credentials that support any amount of teams",
 										Required: false,
 									},
-									&cli.Uint16Flag{
-										Name:     "count",
-										Aliases:  []string{"c"},
-										Usage:    "Number of indivitual agent certs to generate",
-										Required: false,
-									},
-									&cli.StringFlag{
-										Name:    "config",
-										Aliases: []string{"c"},
-										Usage:   "path to the score server configuration file",
-										Value:   "config.json",
-									},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									hasStandalone := cmd.IsSet("standalone")
-									hasCount := cmd.IsSet("count")
+									hasTeams := cmd.IsSet("teams")
 
-									if hasStandalone && hasCount {
-										return fmt.Errorf("--standalone and --count are mutually exclusive")
+									if hasStandalone && hasTeams {
+										return fmt.Errorf("--standalone and --teams are mutually exclusive")
 									}
-									if !hasStandalone && !hasCount {
-										return fmt.Errorf("one of --standalone or --count is required")
+									if !hasStandalone && !hasTeams {
+										return fmt.Errorf("one of --standalone or --teams is required")
 									}
 
-									return auth.Auth(auth.CliParameters{
+									params := auth.CliParameters{
 										ConfigFile: cmd.String("config"),
 										Standalone: cmd.Bool("standalone"),
-										Teams:      cmd.Uint16("count"),
-									})
+									}
+
+									if hasTeams {
+										teamNumbers, err := settings.ParseTeams(cmd.String("teams"))
+										if err != nil {
+											return fmt.Errorf("invalid --teams value: %w", err)
+										}
+										params.Teams = teamNumbers
+									}
+
+									return auth.Auth(params)
 								},
 							},
 							{
@@ -328,53 +344,20 @@ func main() {
 				Name:  "agent",
 				Usage: "a distributed scoring service",
 				Flags: []cli.Flag{
-					&cli.Uint16Flag{
-						Name:    "team",
-						Aliases: []string{"t"},
-						Usage:   "single team number (mutually exclusive with --teams)",
-					},
+					&log_level_flag,
+					&nats_address_flag,
+					&nats_creds_flag,
 					&cli.StringFlag{
-						Name:    "teams",
-						Aliases: []string{"T"},
-						Usage:   `comma-separated team numbers or ranges, e.g. "1,3,5-8,10" (mutually exclusive with --team)`,
-					},
-					&cli.StringFlag{
-						Name:     "nats-creds",
-						Usage:    "path to the nats credentials file",
+						Name:     "teams",
+						Aliases:  []string{"t"},
+						Usage:    `comma-separated team numbers or ranges, e.g. "1,3,5-8,10"`,
 						Required: true,
-					},
-					&cli.StringFlag{
-						Name:  "nats-address",
-						Usage: "NATS server address",
-						Value: "nats://127.0.0.1:4222",
-					},
-					&cli.StringFlag{
-						Name:    "log-level",
-						Aliases: []string{"l"},
-						Usage:   "Sets the program log level",
-						Value:   "info",
 					},
 				},
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					hasTeam := cmd.IsSet("team")
-					hasTeams := cmd.IsSet("teams")
-
-					if hasTeam && hasTeams {
-						return fmt.Errorf("--team and --teams are mutually exclusive")
-					}
-					if !hasTeam && !hasTeams {
-						return fmt.Errorf("one of --team or --teams is required")
-					}
-
-					var teamNumbers []uint16
-					if hasTeam {
-						teamNumbers = []uint16{cmd.Uint16("team")}
-					} else {
-						var err error
-						teamNumbers, err = agent.ParseTeams(cmd.String("teams"))
-						if err != nil {
-							return fmt.Errorf("invalid --teams value: %w", err)
-						}
+					teamNumbers, err := settings.ParseTeams(cmd.String("teams"))
+					if err != nil {
+						return fmt.Errorf("invalid --teams value: %w", err)
 					}
 
 					return agent.Run(agent.RunArgs{
@@ -394,9 +377,7 @@ func main() {
 	}
 }
 
-// buildScoreQuery builds a sink.ScoreQuery from the "query" command's
-// shared flags, applying the --start/--end defaults and the --team
-// IsSet check shared by both "query total" and "query graph".
+// buildScoreQuery builds a sink.ScoreQuery from the "query"
 func buildScoreQuery(cmd *cli.Command) sink.ScoreQuery {
 	start := cmd.Timestamp("start")
 	if start.IsZero() {

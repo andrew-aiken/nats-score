@@ -44,7 +44,7 @@ func TestAuth(t *testing.T) {
 					AccountPublicKey:   string(pubKey),
 				}),
 				Standalone: false,
-				Teams:      1,
+				Teams:      []uint16{0},
 			},
 		},
 		{
@@ -55,7 +55,7 @@ func TestAuth(t *testing.T) {
 					AccountPublicKey:   string(pubKey),
 				}),
 				Standalone: true,
-				Teams:      0,
+				Teams:      []uint16{},
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func TestAuth(t *testing.T) {
 			params: auth.CliParameters{
 				ConfigFile: "DNE",
 				Standalone: true,
-				Teams:      0,
+				Teams:      []uint16{0},
 			},
 			errorMessage: "open DNE: no such file or directory",
 		},
@@ -75,7 +75,7 @@ func TestAuth(t *testing.T) {
 					AccountPublicKey:   string(pubKey),
 				}),
 				Standalone: false,
-				Teams:      0,
+				Teams:      []uint16{0},
 			},
 			errorMessage: "invalid account seed: nkeys: invalid encoded key",
 		},
