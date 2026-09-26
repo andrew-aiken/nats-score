@@ -107,7 +107,7 @@ func Initialize(natsAddress string, natsCreds string) error {
 		return err
 	}
 
-	slog.Info("Generated initial admin user credentials", "password", password)
+	fmt.Printf("Generated initial admin user password: %s\n", password)
 
-	return err
+	return nil
 }

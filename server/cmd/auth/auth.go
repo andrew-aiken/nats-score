@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strconv"
 	"time"
 
@@ -16,14 +17,11 @@ import (
 type CliParameters struct {
 	ConfigFile string
 	Standalone bool
-	Teams      uint16
+	Teams      []uint16
 }
 
 func Auth(args CliParameters) error {
 	logging.SetupLogging("warn")
-
-	// Adds one to team list so index of 1 team include team 0
-	offsetTeams := args.Teams + 1
 
 	// Load configuration
 	cfg, err := config.Load(args.ConfigFile)
@@ -32,11 +30,16 @@ func Auth(args CliParameters) error {
 		return err
 	}
 
-	for team := range offsetTeams {
-		// If its standalone only one set of credentials is needed so it returns one wildcard credential
-		if args.Standalone {
-			return createAgentCredentials(cfg, "*")
-		}
+	if args.Standalone {
+		return createAgentCredentials(cfg, "*")
+	}
+
+	// Sort list so in  ascending order
+	slices.Sort(args.Teams)
+
+	for i := range args.Teams {
+		team := args.Teams[i]
+		fmt.Printf("\n--------- %d ---------\n", team)
 
 		if err := createAgentCredentials(cfg, strconv.FormatUint(uint64(team), 10)); err != nil {
 			return err
@@ -68,29 +71,29 @@ func createAgentCredentials(conf config.Config, streamIndex string) error {
 	userClaim := jwt.NewUserClaims(userPub)
 
 	userClaim.Name = fmt.Sprint("agent-" + streamIndex)
+
 	if streamIndex == "*" {
 		userClaim.Name = "agent-standalone"
-	}
 
-	userClaim.IssuedAt = time.Now().Unix()
-	userClaim.Expires = time.Now().Add(24 * time.Hour).Unix()
-	userClaim.IssuerAccount = conf.AccountPublicKey
-
-	// Apply permissions
-	userClaim.Pub.Allow.Add("results." + streamIndex + ".>")
-
-	userClaim.Pub.Allow.Add("$JS.API.STREAM.INFO.KV_settings")
-
-	// Every agent watches "check.*"
-	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*.$KV.settings.check.*")
-
-	if streamIndex == "*" {
 		// Every watch is single-key, so the consumer-create request always carries a filter subject.
 		userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*.>")
 	} else {
 		// Scope consumer creation to this team's own settings key only.
 		userClaim.Pub.Allow.Add(fmt.Sprintf("$JS.API.CONSUMER.CREATE.KV_settings.*.$KV.settings.%s.settings", streamIndex))
 	}
+
+	// Every agent watches "check.*"
+	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.CREATE.KV_settings.*.$KV.settings.check.*")
+
+	userClaim.IssuedAt = time.Now().Unix()
+	// JWT lasts 30 days
+	userClaim.Expires = time.Now().Add(30 * 24 * time.Hour).Unix()
+	userClaim.IssuerAccount = conf.AccountPublicKey
+
+	// Apply permissions
+	userClaim.Pub.Allow.Add("results." + streamIndex + ".>")
+
+	userClaim.Pub.Allow.Add("$JS.API.STREAM.INFO.KV_settings")
 
 	// CONSUMER.DELETE cannot be scoped per-team the same way: it's authorized by stream + consumer name only
 	userClaim.Pub.Allow.Add("$JS.API.CONSUMER.DELETE.KV_settings.*")
